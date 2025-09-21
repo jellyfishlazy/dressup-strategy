@@ -1,0 +1,35 @@
+name: Deploy static site to Pages
+
+on:
+  push:
+    branches: [ main ]         # 只要你推到 main 就自動部署
+  workflow_dispatch:            # 也可手動觸發
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 如果你的網站檔案就在根目錄，這樣就好
+      - name: Upload static files
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./              # 改成 ./docs 或 ./dist 也行（見下方說明）
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
