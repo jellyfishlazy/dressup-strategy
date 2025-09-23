@@ -236,11 +236,11 @@ function getstrClothes(result){
 	var max = 5;
 	for(var i in result){
 		if(max > 0){
-			str += " " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + ">";		
+			str += " <span class='copy-btn' onclick='copyClothesName(\"" + result[i].name + "\")' title='複製服裝名稱'>📋</span> " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + ">";		
 			max--;
 		}
 		else if(result[i].source.indexOf("少") >=0 || result[i].source.indexOf("公") >= 0 || result[i].source.indexOf("店") >= 0 || result[i].source.indexOf("送") >= 0 ){
-			str += "> " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + " ";
+			str += "> <span class='copy-btn' onclick='copyClothesName(\"" + result[i].name + "\")' title='複製服裝名稱'>📋</span> " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + " ";
 			break;
 		}
 	}
@@ -322,4 +322,103 @@ function onekeyshowall(){
 	if (stgy_showall){stgy_showall=false;}
 	else{stgy_showall=true;}
 	showStrategy();
+}
+
+function copyClothesName(clothesName) {
+	// 使用现代浏览器的 Clipboard API
+	if (navigator.clipboard && window.isSecureContext) {
+		navigator.clipboard.writeText(clothesName).then(function() {
+			showCopySuccess(clothesName);
+		}).catch(function(err) {
+			console.error('复制失败: ', err);
+			fallbackCopyTextToClipboard(clothesName);
+		});
+	} else {
+		// 降级方案，使用传统的 document.execCommand
+		fallbackCopyTextToClipboard(clothesName);
+	}
+}
+
+function fallbackCopyTextToClipboard(text) {
+	var textArea = document.createElement("textarea");
+	textArea.value = text;
+	
+	// 避免滚动到底部
+	textArea.style.top = "0";
+	textArea.style.left = "0";
+	textArea.style.position = "fixed";
+	
+	document.body.appendChild(textArea);
+	textArea.focus();
+	textArea.select();
+	
+	try {
+		var successful = document.execCommand('copy');
+		if (successful) {
+			showCopySuccess(text);
+		} else {
+			showCopyError();
+		}
+	} catch (err) {
+		console.error('降级复制失败: ', err);
+		showCopyError();
+	}
+	
+	document.body.removeChild(textArea);
+}
+
+function showCopySuccess(clothesName) {
+	// 创建临时提示元素
+	var toast = document.createElement('div');
+	toast.className = 'copy-toast copy-success';
+	toast.textContent = '已複製: ' + clothesName;
+	toast.style.cssText = `
+		position: fixed;
+		top: 20px;
+		right: 20px;
+		background: #4CAF50;
+		color: white;
+		padding: 10px 15px;
+		border-radius: 4px;
+		z-index: 10000;
+		font-size: 14px;
+		box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+	`;
+	
+	document.body.appendChild(toast);
+	
+	// 2秒后自动移除
+	setTimeout(function() {
+		if (toast.parentNode) {
+			toast.parentNode.removeChild(toast);
+		}
+	}, 2000);
+}
+
+function showCopyError() {
+	// 创建错误提示元素
+	var toast = document.createElement('div');
+	toast.className = 'copy-toast copy-error';
+	toast.textContent = '複製失敗，請手動複製';
+	toast.style.cssText = `
+		position: fixed;
+		top: 20px;
+		right: 20px;
+		background: #f44336;
+		color: white;
+		padding: 10px 15px;
+		border-radius: 4px;
+		z-index: 10000;
+		font-size: 14px;
+		box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+	`;
+	
+	document.body.appendChild(toast);
+	
+	// 2秒后自动移除
+	setTimeout(function() {
+		if (toast.parentNode) {
+			toast.parentNode.removeChild(toast);
+		}
+	}, 2000);
 }

@@ -24,8 +24,16 @@ var global = {
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14
 Clothes = function(csv) {
   var theType = typeInfo[csv[1]];
-  if(!theType)
-	  console.log(csv);
+  if(!theType) {
+	  console.log("Warning: typeInfo not found for", csv[1], csv);
+	  // 返回一个默认的type对象以避免后续错误
+	  theType = {
+		  mainType: csv[1],
+		  type: csv[1],
+		  score: {},
+		  deviation: {}
+	  };
+  }
   return {
     own: false,
     name: csv[0],
@@ -504,11 +512,25 @@ function scoreWithBonusTd(score, bonus) {
 function realRating(a, b, type) {
   real = a ? a : b;
   symbol = a ? 1 : -1;
-  if(isNaN(real))
-	score = symbol * type.score[real];
-  else
-	score = symbol * real * 15;
-  dev = type.deviation[real];
+  if(isNaN(real)) {
+    // 检查type和type.score是否存在
+    if (!type || !type.score || !type.score[real]) {
+      console.log("Warning: type.score not found for", real, type);
+      score = 0;
+    } else {
+      score = symbol * type.score[real];
+    }
+  } else {
+    score = symbol * real * 15;
+  }
+  
+  // 检查type.deviation是否存在
+  if (!type || !type.deviation) {
+    dev = 0;
+  } else {
+    dev = type.deviation[real] || 0;
+  }
+  
   return [a, b, score, dev];
 }
 
@@ -526,9 +548,19 @@ function parseSource(source, key) {
 
 function calcDependencies() {
   for (var i in pattern) {
+    // 检查clothesSet是否存在所需的类型和ID
+    if (!clothesSet[pattern[i][0]] || !clothesSet[pattern[i][0]][pattern[i][1]]) {
+      console.log("Warning: target clothes not found", pattern[i][0], pattern[i][1]);
+      continue;
+    }
+    if (!clothesSet[pattern[i][2]] || !clothesSet[pattern[i][2]][pattern[i][3]]) {
+      console.log("Warning: source clothes not found", pattern[i][2], pattern[i][3]);
+      continue;
+    }
+    
     var target = clothesSet[pattern[i][0]][pattern[i][1]];
     var source = clothesSet[pattern[i][2]][pattern[i][3]];
-    if (!target) continue;
+    if (!target || !source) continue;
     source.addDep(pattern[i][5], pattern[i][4], target);
   }
 }

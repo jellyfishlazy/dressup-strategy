@@ -565,7 +565,22 @@ function cntKeywordsReturns(kw){
 }
 
 function pspan_id(text, cls, id){
-	var $p = $("<span/>").text(text).addClass("stgy_" + cls).attr('id',id);
+	var $p = $("<span/>").addClass("stgy_" + cls).attr('id',id);
+	
+	// 检查是否包含服装名称（不包含类型标识）
+	if (cls === "clothes" && !text.startsWith('(') && text.trim() !== '') {
+		// 添加复制按钮
+		var $copyBtn = $("<span class='copy-btn' title='複製服裝名稱'>📋</span>");
+		$copyBtn.click(function(e) {
+			e.stopPropagation();
+			copyClothesName(text);
+		});
+		$p.append($copyBtn);
+		$p.append(' ' + text);
+	} else {
+		$p.text(text);
+	}
+	
 	return $p;
 }
 
