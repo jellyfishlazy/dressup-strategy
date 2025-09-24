@@ -2,6 +2,16 @@ body{
 	margin: 1em;
 	font-family: "Helvetica Neue", Helvetica, Microsoft Yahei, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif;
 }
+.notice-text{
+	background: #fff3cd;
+	border: 1px solid #ffeaa7;
+	border-radius: 4px;
+	padding: 8px 12px;
+	margin: 10px 0;
+	color: #856404;
+	font-size: 14px;
+	line-height: 1.4;
+}
 hr{
 	clear: both;
 }

@@ -2,6 +2,7 @@
 
 function thead(isShoppingCart) {
 	var $thead = $("<div>").addClass("table-head");
+	$thead.append(td("", "copy-header"));
 	$thead.append(td("分數", "score"));
 	$thead.append(td("名稱", "name"));
 	$thead.append(td("類別", "category"));
@@ -38,16 +39,67 @@ function td(data, cls, beforeText) {
 	return $("<div>").addClass(cls).addClass("table-td").attr("before-text", beforeText).append(data);
 }
 
+function copyNameText($row) {
+	// 只複製名稱欄位的文字（第三個 table-td，因為第一個是複製按鈕欄位，第二個是分數）
+	var $nameTd = $row.find('.table-td').eq(2);
+	var textToCopy = $nameTd.text().trim();
+	
+	// 創建臨時 textarea 來複製文字
+	var tempTextarea = document.createElement('textarea');
+	tempTextarea.value = textToCopy;
+	document.body.appendChild(tempTextarea);
+	tempTextarea.select();
+	document.execCommand('copy');
+	document.body.removeChild(tempTextarea);
+	
+	// 顯示複製成功的提示
+	var $copyBtn = $row.find('.copy-btn');
+	var originalText = $copyBtn.text();
+	$copyBtn.text('已複製!').css('background-color', '#28a745');
+	setTimeout(function() {
+		$copyBtn.text(originalText).css('background-color', '');
+	}, 1000);
+}
+
+function copyButton() {
+	return $('<button>')
+		.addClass('copy-btn')
+		.addClass('btn')
+		.addClass('btn-sm')
+		.addClass('btn-outline-secondary')
+		.text('複製')
+		.css({
+			'font-size': '10px',
+			'padding': '2px 6px',
+			'margin': '0 auto',
+			'display': 'block'
+		})
+		.click(function() {
+			var $row = $(this).closest('.table-row');
+			copyNameText($row);
+		});
+}
+
 function row(piece, isShoppingCart) {
 	var $row = $("<div>").addClass("table-row");
 	var $lineTop = $row;
 	//var $lineTop = $("<div>").addClass("table-line");
+	
+	// 第一個 table-td：複製按鈕欄位
+	var $copyTd = td("", "copy-cell");
+	$lineTop.append($copyTd);
+	
 	$lineTop.append(td(piece.sumScore, 'score'));
+	
+	// 第三個 table-td：名稱欄位
+	var $nameTd;
 	if (isShoppingCart) {
-		$lineTop.append(td(piece.name, (piece.version==lastVersion ? 'new' : '' )));
+		$nameTd = td(piece.name, (piece.version==lastVersion ? 'new' : '' ));
 	} else {
-		$lineTop.append(clothesNameTd(piece));
+		$nameTd = clothesNameTd(piece);
 	}
+	$lineTop.append($nameTd);
+	
 	var csv = piece.toCsv();
 	
 	$lineTop.append(td(render(csv[0]), 'category'));
@@ -67,6 +119,7 @@ function row(piece, isShoppingCart) {
 	$lineTop.append(td(render(csv[14]), 'source'));
 	$lineTop.append(td(render(csv[15]), 'issuit hidden'));
 	$lineTop.append(td(render(csv[16]), 'version hidden'));
+	
 	if (isShoppingCart) {
 		if (piece.id) {
 			$lineTop.append(td(removeShoppingCartButton(piece.type.type), 'icon'));
@@ -116,7 +169,16 @@ function list(datas, isShoppingCart) {
 		$list.append(row(shoppingCart.totalScore, isShoppingCart));
 	}
 	for (var i in datas) {
-		$list.append(row(datas[i], isShoppingCart));
+		var $row = row(datas[i], isShoppingCart);
+		// 在 shoppingCart 中為所有數據行的第一個 table-td（複製按鈕欄位）添加複製按鈕
+		// 總分行（第一行）不需要按鈕，所以從 i >= 0 開始（因為總分行已經在前面添加了）
+		if (isShoppingCart) {
+			var $copyTd = $row.find('.table-td').eq(0);
+			if ($copyTd.length > 0) {
+				$copyTd.append(copyButton());
+			}
+		}
+		$list.append($row);
 	}
 	return $list;
 }
