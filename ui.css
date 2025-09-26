@@ -41,6 +41,11 @@
 .table-row:hover{
 	background: #f4f4f4
 }
+.table-row.highlighted{
+	border: 3px solid #4CAF50 !important;
+	box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+	background: #f1f8e9 !important;
+}
 .table-td{
 	display: table-cell;
 	padding: 4px;

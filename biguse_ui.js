@@ -1,4 +1,7 @@
 ﻿function copyNameText($row) {
+	// 清除所有其他行的highlight
+	$('.table-row.highlighted').removeClass('highlighted');
+	
 	// 只複製名稱欄位的文字（第三個 table-td，因為第一個是複製按鈕欄位，第二個是分數）
 	var $nameTd = $row.find('.table-td').eq(2);
 	var textToCopy = $nameTd.text().trim();
@@ -10,6 +13,9 @@
 	tempTextarea.select();
 	document.execCommand('copy');
 	document.body.removeChild(tempTextarea);
+	
+	// 添加highlight到當前行
+	$row.addClass('highlighted');
 	
 	// 顯示複製成功的提示
 	var $copyBtn = $row.find('.copy-btn');
