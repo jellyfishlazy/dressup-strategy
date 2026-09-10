@@ -1,0 +1,236 @@
+<!DOCTYPE HTML>
+<html lang="zh-TW">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<title>陸服衣櫃條件搜尋</title>
+	<link rel="stylesheet" href="../bootstrap/bootstrap.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.3.0/dist/umd/full.js"></script>
+	<script src="../data/wardrobe.js"></script>
+	<style>
+		body { padding: 16px 20px 80px; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; }
+		h1 { font-size: 22px; margin: 0 0 4px; }
+		.subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
+		.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
+		.filter-group { display: flex; flex-direction: column; min-width: 140px; }
+		.filter-group label { font-size: 12px; color: #666; margin-bottom: 2px; }
+		.filter-group input[type=text], .filter-group select { padding: 4px 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+		.filter-group.checkbox { flex-direction: row; align-items: center; gap: 4px; min-width: 0; padding-bottom: 6px; }
+		.filter-group.checkbox label { margin: 0; font-size: 13px; color: #444; }
+		.filter-actions { display: flex; gap: 6px; padding-bottom: 1px; }
+		.filter-actions button { padding: 5px 12px; font-size: 13px; }
+		.meta { color: #666; font-size: 13px; margin-bottom: 6px; }
+		.results-wrap { max-height: calc(100vh - 220px); overflow: auto; border: 1px solid #ddd; border-radius: 4px; }
+		table.results { width: 100%; border-collapse: collapse; font-size: 13px; }
+		table.results th, table.results td { padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; text-align: left; white-space: nowrap; }
+		table.results td.wrap { white-space: normal; }
+		table.results thead th { background: #f3f3f3; position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #ccc; }
+		table.results tbody tr:hover { background: #fbf7ea; }
+		table.results tbody tr.cn-only { background: #fff6ec; }
+		table.results tbody tr.cn-only:hover { background: #ffeed4; }
+		.cn-tag { font-size: 11px; color: #c0651b; background: #ffe6c4; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
+		.cn-raw { color: #999; font-size: 11px; }
+		.notice { color: #c33; font-size: 13px; margin: 12px 0; }
+		#status { color: #888; font-size: 12px; }
+		.nav-link { font-size: 13px; color: #06c; }
+		table.results th.col-add, table.results td.col-add { width: 32px; text-align: center; padding: 2px 4px; }
+		.btn-add, .btn-del { font-size: 12px; padding: 0 6px; line-height: 18px; border-radius: 3px; cursor: pointer; }
+		.btn-add { color: #0a7f2e; border: 1px solid #0a7f2e; background: #f3fbf5; }
+		.btn-add:hover { background: #0a7f2e; color: #fff; }
+		.btn-add:disabled { color: #aaa; border-color: #ccc; background: #f3f3f3; cursor: not-allowed; }
+		.btn-del { color: #b03030; border: 1px solid #b03030; background: #fdf2f2; }
+		.btn-del:hover { background: #b03030; color: #fff; }
+		.staging { margin: 16px 0 12px; padding: 12px; border: 1px solid #d6c9a5; border-radius: 6px; background: #fffdf3; }
+		.staging-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+		.staging-head h2 { font-size: 16px; margin: 0; }
+		.staging-head .count-pill { font-size: 12px; color: #555; background: #f0e7c8; border-radius: 10px; padding: 1px 8px; }
+		.staging-head .spacer { flex: 1; }
+		.staging-actions button { font-size: 12px; padding: 3px 10px; margin-left: 4px; }
+		.staging-empty { color: #999; font-size: 13px; padding: 8px 0; }
+		.staging-list { max-height: 240px; overflow: auto; border: 1px solid #eadfb8; border-radius: 4px; background: #fff; }
+		.staging-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #f3eccf; font-size: 12px; }
+		.staging-item:last-child { border-bottom: none; }
+		.staging-item .meta { flex: 0 0 auto; min-width: 180px; }
+		.staging-item .meta b { color: #333; }
+		.staging-item .meta .sub { color: #888; }
+		.staging-item pre { flex: 1; margin: 0; font-family: Consolas, "Courier New", monospace; font-size: 11px; background: #f6f3e8; padding: 4px 6px; border-radius: 3px; white-space: pre-wrap; word-break: break-all; }
+		.toast { position: fixed; right: 20px; bottom: 20px; background: rgba(40,40,40,0.92); color: #fff; padding: 8px 14px; border-radius: 4px; font-size: 13px; z-index: 1000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+		.toast.show { opacity: 1; }
+		.manual-entry { margin: 12px 0; padding: 0; border: 1px solid #cfd9e6; border-radius: 6px; background: #f5f9ff; }
+		.manual-entry > summary { cursor: pointer; padding: 8px 12px; font-size: 14px; font-weight: 600; color: #2a5b8a; user-select: none; list-style: none; outline: none; }
+		.manual-entry > summary::-webkit-details-marker { display: none; }
+		.manual-entry > summary::before { content: '▸ '; display: inline-block; transition: transform 0.15s; }
+		.manual-entry[open] > summary::before { content: '▾ '; }
+		.manual-entry .manual-body { padding: 0 12px 12px; }
+		.manual-grid { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
+		.manual-grid .filter-group { min-width: 120px; }
+		.manual-grid input[type=text], .manual-grid select { padding: 4px 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+		.manual-attrs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px 8px; margin: 8px 0; padding: 8px; background: #fff; border: 1px solid #e0e6ee; border-radius: 4px; }
+		.manual-attrs .attr-cell { display: flex; flex-direction: column; }
+		.manual-attrs .attr-cell label { font-size: 12px; color: #666; margin-bottom: 2px; }
+		.manual-attrs .attr-cell input { padding: 3px 6px; font-size: 13px; text-align: center; border: 1px solid #ccc; border-radius: 3px; text-transform: uppercase; }
+		.manual-attrs .attr-cell input.invalid { border-color: #c33; background: #fff5f5; }
+		.manual-tags { margin: 8px 0; }
+		.manual-tags > .tags-label { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+		.manual-tags .tag-checks { display: flex; flex-wrap: wrap; gap: 4px 10px; max-height: 96px; overflow-y: auto; padding: 6px; background: #fff; border: 1px solid #e0e6ee; border-radius: 4px; }
+		.manual-tags .tag-check { font-size: 12px; color: #444; white-space: nowrap; cursor: pointer; }
+		.manual-tags .tag-check input { margin-right: 2px; vertical-align: -1px; }
+		.manual-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+		.manual-actions button { font-size: 13px; padding: 4px 14px; }
+		.attr-hint { font-size: 11px; color: #888; margin-left: 6px; font-weight: normal; }
+	</style>
+</head>
+<body>
+	<h1>陸服衣櫃條件搜尋</h1>
+	<div class="subtitle">
+		以套裝、版本或活動／來源關鍵字搜尋陸服 (簡體) 擴充資料；繁體優先，僅陸服獨有的項目會自動以 OpenCC 轉繁體顯示。
+		<a class="nav-link" href="../index.html">← 回到搭配器</a>
+	</div>
+
+	<div class="filters">
+		<div class="filter-group">
+			<label for="q-name">名稱</label>
+			<input id="q-name" type="text" placeholder="例：玫瑰、星夢">
+		</div>
+		<div class="filter-group">
+			<label for="q-suit">套裝</label>
+			<input id="q-suit" type="text" placeholder="例：星夢盛典">
+		</div>
+		<div class="filter-group">
+			<label for="q-version">版本</label>
+			<input id="q-version" type="text" placeholder="例：V12.5 或 12">
+		</div>
+		<div class="filter-group">
+			<label for="q-source">活動／來源</label>
+			<input id="q-source" type="text" placeholder="例：活動·圣庭、活动·谜梦解析、店·金幣">
+		</div>
+		<div class="filter-group">
+			<label for="q-category">類別</label>
+			<select id="q-category"><option value="">全部</option></select>
+		</div>
+		<div class="filter-group checkbox">
+			<input type="checkbox" id="q-cn-only">
+			<label for="q-cn-only">僅顯示陸服獨有</label>
+		</div>
+		<div class="filter-actions">
+			<button class="btn btn-sm btn-outline-secondary" id="btn-clear" type="button">清除</button>
+		</div>
+	</div>
+
+	<div class="staging" id="staging">
+		<div class="staging-head">
+			<h2>暫存區</h2>
+			<span class="count-pill" id="staging-count">0 筆</span>
+			<span class="spacer"></span>
+			<div class="staging-actions">
+				<button class="btn btn-sm btn-outline-primary" id="btn-copy-staging" type="button" title="複製為 data/wardrobe.js 可貼上的列">複製為 wardrobe 列</button>
+				<button class="btn btn-sm btn-outline-secondary" id="btn-download-staging" type="button" title="下載為 .js 片段">下載片段</button>
+				<button class="btn btn-sm btn-outline-danger" id="btn-clear-staging" type="button">清空</button>
+			</div>
+		</div>
+		<div class="staging-empty" id="staging-empty">尚未加入任何項目。點擊結果表左側的「＋」或表頭的「＋全部」累加，或使用下方「手動新增項目」自行補資料。</div>
+		<div class="staging-list" id="staging-list" style="display:none"></div>
+	</div>
+
+	<details class="manual-entry" id="manual-entry">
+		<summary>手動新增項目</summary>
+		<div class="manual-body">
+			<div class="manual-grid">
+				<div class="filter-group">
+					<label for="m-name">名稱 *</label>
+					<input id="m-name" type="text" placeholder="例：星夢冠冕">
+				</div>
+				<div class="filter-group">
+					<label for="m-type">類別 *</label>
+					<select id="m-type"><option value="">— 請選擇 —</option></select>
+				</div>
+				<div class="filter-group">
+					<label for="m-id">編號 *</label>
+					<input id="m-id" type="text" placeholder="例：001">
+				</div>
+				<div class="filter-group">
+					<label for="m-stars">星級 *</label>
+					<select id="m-stars">
+						<option value="">—</option>
+						<option value="1">1</option>
+						<option value="2">2</option>
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6">6</option>
+					</select>
+				</div>
+				<div class="filter-group">
+					<label for="m-suit">套裝</label>
+					<input id="m-suit" type="text" placeholder="例：星夢盛典">
+				</div>
+				<div class="filter-group">
+					<label for="m-source">來源</label>
+					<input id="m-source" type="text" placeholder="例：活動·星夢">
+				</div>
+				<div class="filter-group">
+					<label for="m-version">版本</label>
+					<input id="m-version" type="text" placeholder="例：V12.5">
+				</div>
+			</div>
+
+			<div style="font-size:12px;color:#666;margin:6px 0 2px">
+				屬性 <span class="attr-hint">輸入 SS / S / A / B / C，不適用請留空。每對屬性同欄上下對應</span>
+			</div>
+			<div class="manual-attrs">
+				<div class="attr-cell"><label>華麗</label><input data-attr="4" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>優雅</label><input data-attr="6" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>成熟</label><input data-attr="8" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>性感</label><input data-attr="10" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>清涼</label><input data-attr="12" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>簡約</label><input data-attr="5" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>活潑</label><input data-attr="7" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>可愛</label><input data-attr="9" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>清純</label><input data-attr="11" type="text" maxlength="2"></div>
+				<div class="attr-cell"><label>保暖</label><input data-attr="13" type="text" maxlength="2"></div>
+			</div>
+
+			<div class="manual-tags">
+				<div class="tags-label">
+					<span>服裝 Tag</span>
+					<span class="attr-hint" id="m-tags-empty" style="display:none">（wardrobe 內未掃到任何標籤）</span>
+				</div>
+				<div class="tag-checks" id="m-tags"></div>
+			</div>
+
+			<div class="manual-actions">
+				<button class="btn btn-sm btn-outline-secondary" id="btn-manual-reset" type="button">清除表單</button>
+				<button class="btn btn-sm btn-primary" id="btn-manual-add" type="button">新增至暫存</button>
+			</div>
+		</div>
+	</details>
+
+	<div class="meta">
+		<span id="count">—</span>
+		<span style="float:right" id="status">準備中…</span>
+	</div>
+	<div class="results-wrap">
+		<table class="results" id="results">
+			<thead>
+				<tr>
+					<th class="col-add"><button class="btn-add" id="btn-add-all" type="button" title="將目前所有符合條件的項目加入暫存">＋全部</button></th>
+					<th>編號</th>
+					<th>類別</th>
+					<th>名稱</th>
+					<th>套裝</th>
+					<th>標籤</th>
+					<th>來源</th>
+					<th>版本</th>
+					<th>陸服原文</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+
+	<div class="toast" id="toast"></div>
+
+	<script src="cn-search.js?v=8"></script>
+</body>
+</html>

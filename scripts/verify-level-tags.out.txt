@@ -1,0 +1,28 @@
+=== Flist levels with type+tag — count of matching wardrobe rows ===
+  聯盟委託: 7-3 type=["連身裙","上衣","下著"] tag=["旗袍"] -> 38 rows ok
+  聯盟委託: 7-5 type=["連身裙"] tag=["軍裝"] -> 16 rows ok
+  聯盟委託: 7-6 type=["連身裙","上衣","下著"] tag=["未來系"] -> 167 rows ok
+  關卡: I-10-4 type=["連身裙","上衣","下著"] tag=["軍裝"] -> 52 rows ok
+  關卡: I-10-9-1 type=["連身裙","上衣","下著"] tag=["原宿系"] -> 17 rows ok
+  關卡: I-7-支3 type=["連身裙","上衣","下著"] tag=["軍裝"] -> 52 rows ok
+  關卡: I-9-7 type=["連身裙","上衣","下著"] tag=["未來系"] -> 167 rows ok
+
+=== levelBonus tag coverage ===
+  bonus tag strings (unique): 42
+  unreachable (not in any wardrobe [14] token): 0
+
+=== Split sanity check (POP/小動物 etc.) ===
+  [水手少女·白] [14]="海軍風/運動系" -> tokens=["海軍風","運動系"]
+  [遊園·黃] [14]="運動系/碎花" -> tokens=["運動系","碎花"]
+  [遊園·粉] [14]="運動系/碎花" -> tokens=["運動系","碎花"]
+  [遊園·紫] [14]="運動系/碎花" -> tokens=["運動系","碎花"]
+  [綠星魂] [14]="運動系/防曬" -> tokens=["運動系","防曬"]
+
+=== Regression: counts of clothes matched per renamed tag ===
+  小動物 -> 1453 rows
+  海軍風 -> 126 rows
+  印度服飾 -> 222 rows
+  POP -> 834 rows
+  OL -> 274 rows
+  蘿莉塔 -> 1353 rows
+  學院風 -> 172 rows

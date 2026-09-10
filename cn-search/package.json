@@ -1,0 +1,14 @@
+{
+  "name": "dressup-strategy-cn-search",
+  "version": "0.1.0",
+  "private": true,
+  "description": "陸服衣櫃條件搜尋模組：解碼陸服 wardrobe.js 為 data/cn_search_index.json，供 cn-search/index.html 使用。",
+  "scripts": {
+    "build:cn-index": "node scripts/build-cn-search-index.mjs",
+    "sync:wardrobe-tags": "node scripts/sync-wardrobe-tags-from-cn.mjs",
+    "serve": "node scripts/dev-server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

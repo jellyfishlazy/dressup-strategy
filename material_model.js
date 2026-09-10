@@ -39,7 +39,10 @@ Clothes = function(csv) {
     active: realRating(csv[7], csv[6], theType),
     pure: realRating(csv[11], csv[10], theType),
     cool: realRating(csv[12], csv[13], theType),
-    tags: csv[14].split(','),
+    // Split on '/', ',' and full-width '，' so 'POP/小動物' becomes two tokens
+    // that levelBonus / Flist tag whitelists can match individually.
+    tags: csv[14].split(/[\/,，]/).map(function (s) { return s.trim(); }).filter(Boolean),
+    tagsRaw: csv[14],
     source: csv[15],
     set: csv[16],
     version: csv[17],
@@ -55,7 +58,7 @@ Clothes = function(csv) {
       active = this.active;
       pure = this.pure;
       cool = this.cool;
-      extra = this.tags.join(',');
+      extra = this.tagsRaw != null ? this.tagsRaw : this.tags.join(',');
       source = this.source;
       set = this.set;
       version = this.version;
