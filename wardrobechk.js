@@ -14,12 +14,13 @@ var clothes = function() {
 }();
 
 function retClothes(csv){
+	var item = WardrobeDomain.rowToWardrobeItem(csv);
 	return {
 		own: false,
-		name: csv[0],
-		type: csv[1],
-		mainType: csv[1].split('-')[0],
-		id: csv[2],
+		name: item.name,
+		type: item.type,
+		mainType: item.type.split('-')[0],
+		id: item.id,
 	}
 }
 
@@ -72,25 +73,12 @@ function MyClothes() {
       }
     },
     serialize: function() {
-      var txt = "";
-      for (var type in this.mine) {
-        txt += type + ":" + this.mine[type].join(',') + "|";
-      }
-      return txt;
+      return InventoryDomain.serialize(this.mine);
     },
     deserialize: function(raw) {
-      var sections = raw.split('|');
-      this.mine = {};
-      this.size = 0;
-      for (var i in sections) {
-        if (sections[i].length < 1) {
-          continue;
-        }
-        var section = sections[i].split(':');
-        var type = section[0];
-        this.mine[type] = section[1].split(',');
-        this.size += this.mine[type].length;
-      }
+      var decoded = InventoryDomain.deserialize(raw);
+      this.mine = decoded.mine;
+      this.size = decoded.size;
     },
     update: function(clothes) {
       var x = {};
@@ -134,19 +122,12 @@ function loadNew(myClothes) {
 }
 
 function loadFromStorage() {
-  var myClothes;
-  var myClothesNew;
-  if (localStorage) {
-    myClothesNew = localStorage.myClothesNew;
-    myClothes = localStorage.myClothes;
-  } else {
-    myClothesNew = getCookie("mine2");
-    myClothes = getCookie("mine");
-  }
-  if (myClothesNew) {
-    return loadNew(myClothesNew);
-  } else if (myClothes) {
-    return load(myClothes);
+  var storage = typeof localStorage !== 'undefined' ? localStorage : null;
+  var stored = InventoryDomain.read(storage, getCookie);
+  if (stored.current) {
+    return loadNew(stored.current);
+  } else if (stored.legacy) {
+    return load(stored.legacy);
   }
   return MyClothes();
 }

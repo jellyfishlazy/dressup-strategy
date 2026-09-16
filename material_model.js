@@ -24,44 +24,45 @@ var global = {
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm, extra, source, set
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14     15      16
 Clothes = function(csv) {
-  var theType = typeInfo[csv[1]];
+  var item = WardrobeDomain.rowToWardrobeItem(csv);
+  var theType = typeInfo[item.type];
   if(!theType)
 	  console.log(csv);
   return {
     own: false,
-    name: csv[0],
+    name: item.name,
     type: theType,
-    id: csv[2],
-	longid: clotonum(csv[1],csv[2]),
-    stars: csv[3],
-    simple: realRating(csv[5], csv[4], theType),
-    cute: realRating(csv[9], csv[8], theType),
-    active: realRating(csv[7], csv[6], theType),
-    pure: realRating(csv[11], csv[10], theType),
-    cool: realRating(csv[12], csv[13], theType),
+    id: item.id,
+	longid: clotonum(item.type,item.id),
+    stars: item.stars,
+    simple: realRating(item.ratings.simple, item.ratings.gorgeous, theType),
+    cute: realRating(item.ratings.cute, item.ratings.mature, theType),
+    active: realRating(item.ratings.active, item.ratings.elegant, theType),
+    pure: realRating(item.ratings.pure, item.ratings.sexy, theType),
+    cool: realRating(item.ratings.cool, item.ratings.warm, theType),
     // Split on '/', ',' and full-width '，' so 'POP/小動物' becomes two tokens
     // that levelBonus / Flist tag whitelists can match individually.
-    tags: csv[14].split(/[\/,，]/).map(function (s) { return s.trim(); }).filter(Boolean),
-    tagsRaw: csv[14],
-    source: csv[15],
-    set: csv[16],
-    version: csv[17],
+    tags: item.tags.split(/[\/,，]/).map(function (value) { return value.trim(); }).filter(Boolean),
+    tagsRaw: item.tags,
+    source: item.source,
+    set: item.suit,
+    version: item.version,
     deps: [],
     exDep: '',
     toCsv: function() {
-      name = this.name;
-      type = this.type;
-      id = this.id;
-      stars = this.stars;
-      simple = this.simple;
-      cute = this.cute;
-      active = this.active;
-      pure = this.pure;
-      cool = this.cool;
-      extra = this.tagsRaw != null ? this.tagsRaw : this.tags.join(',');
-      source = this.source;
-      set = this.set;
-      version = this.version;
+      var name = this.name;
+      var type = this.type;
+      var id = this.id;
+      var stars = this.stars;
+      var simple = this.simple;
+      var cute = this.cute;
+      var active = this.active;
+      var pure = this.pure;
+      var cool = this.cool;
+      var extra = this.tagsRaw != null ? this.tagsRaw : this.tags.join(',');
+      var source = this.source;
+      var set = this.set;
+      var version = this.version;
       return [type.type, id, stars, simple[0], simple[1], cute[0], cute[1],
           active[0], active[1], pure[0], pure[1], cool[0],
           cool[1], extra, source, set, version];
@@ -291,25 +292,12 @@ function MyClothes() {
       }
     },
     serialize: function() {
-      var txt = "";
-      for (var type in this.mine) {
-        txt += type + ":" + this.mine[type].join(',') + "|";
-      }
-      return txt;
+      return InventoryDomain.serialize(this.mine);
     },
     deserialize: function(raw) {
-      var sections = raw.split('|');
-      this.mine = {};
-      this.size = 0;
-      for (var i in sections) {
-        if (sections[i].length < 1) {
-          continue;
-        }
-        var section = sections[i].split(':');
-        var type = section[0];
-        this.mine[type] = section[1].split(',');
-        this.size += this.mine[type].length;
-      }
+      var decoded = InventoryDomain.deserialize(raw);
+      this.mine = decoded.mine;
+      this.size = decoded.size;
     },
     update: function(clothes) {
       var x = {};
@@ -569,19 +557,12 @@ function loadNew(myClothes) {
 }
 
 function loadFromStorage() {
-  var myClothes;
-  var myClothesNew;
-  if (localStorage) {
-    myClothesNew = localStorage.myClothesNew;
-    myClothes = localStorage.myClothes;
-  } else {
-    myClothesNew = getCookie("mine2");
-    myClothes = getCookie("mine");
-  }
-  if (myClothesNew) {
-    return loadNew(myClothesNew);
-  } else if (myClothes) {
-    return load(myClothes);
+  var storage = typeof localStorage !== 'undefined' ? localStorage : null;
+  var stored = InventoryDomain.read(storage, getCookie);
+  if (stored.current) {
+    return loadNew(stored.current);
+  } else if (stored.legacy) {
+    return load(stored.legacy);
   }
   return MyClothes();
 }
@@ -612,10 +593,7 @@ function save(){
   var myClothes = MyClothes();
   myClothes.filter(clothes);
   var txt = myClothes.serialize();
-  if (localStorage) {
-    localStorage.myClothesNew = txt;
-  } else {
-    setCookie("mine2", txt, 3650);
-  }
+  var storage = typeof localStorage !== 'undefined' ? localStorage : null;
+  InventoryDomain.write(storage, setCookie, txt);
   return myClothes;
 }

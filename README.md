@@ -81,6 +81,8 @@ Gate 5A migrates the main matcher onto the wardrobe boundary without converting 
 
 Gate 5B migrates BigUse away from reverse-adapting `Clothes` through `toCsv()` and `clothesSet` lookups. `src/domain/biguse/runtime.js` owns A/B cart selection, the established ±10% score comparison rule, and legacy image-id derivation from named `Clothes` fields. BigUse buttons/autocomplete now pass the actual `Clothes` object into the selected cart, while rendering reads named type/id data. Cart isolation and score semantics remain unchanged and are covered by regression tests.
 
+Gate 5C migrates the Wardrobe Check and Material secondary entry points onto the same classic wardrobe/inventory bridges. `wardrobechk.js` and `material_model.js` now parse raw rows through `WardrobeDomain.rowToWardrobeItem()` and reuse `InventoryDomain` for the existing persisted inventory format and storage precedence. Material keeps its existing `set`, source, tag, rating and scoring semantics; `material_exc.js` has no active row parser, so its old commented compatibility block remains intentionally untouched. No generated wardrobe data or UI behavior is changed.
+
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy
 job checks out a fresh root static site, so npm dependencies are not uploaded.
