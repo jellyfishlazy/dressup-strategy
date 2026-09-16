@@ -109,11 +109,11 @@ function lanStrategy_init(){
 		if (mainType!='襪子'&&mainType!='飾品') continue; //skip unrelated
 		var type = clothes[i].type.type;
 		var tags = clothes[i].tags;
-		for (var j in tags){
-			if (!tags[j]) continue;
-			//if (tags[j].indexOf('+')>=0) continue; //skip 螢光之靈
+		for (var tagIndex in tags){
+			if (!tags[tagIndex]) continue;
+			//if (tags[tagIndex].indexOf('+')>=0) continue; //skip 螢光之靈
 			var subtype = mainType=='襪子' ? mainType : type.split('·')[0];
-			var tagCate = [subtype,tags[j]].join(' + ');
+			var tagCate = [subtype,tags[tagIndex]].join(' + ');
 			if (tagSet[tagCate] == null){
 				tagSet[tagCate] = {};
 				tagSet[tagCate]['name'] = tagCate;
@@ -145,13 +145,13 @@ function lanStrategy_init(){
 		}
 	}
 	for (var i in tagSet){//remove keywords with too many returns
-		for (var j in tagSet[i]['typeCount']){
-			if (j=='襪子-襪套') tagSet[i]['typeCount'][j] += tagSet[i]['typeCount']['襪子-襪子'];
-			else if (j=='襪子-襪子') tagSet[i]['typeCount'][j] += tagSet[i]['typeCount']['襪子-襪套'];
-			if (tagSet[i]['typeCount'][j] > limitRet){
-				tagSet[tagCate]['count'] -= tagSet[i]['typeCount'][j];
-				delete tagSet[i]['clothes'][j];
-				delete tagSet[i]['acc'][j];
+		for (var typeName in tagSet[i]['typeCount']){
+			if (typeName=='襪子-襪套') tagSet[i]['typeCount'][typeName] += tagSet[i]['typeCount']['襪子-襪子'];
+			else if (typeName=='襪子-襪子') tagSet[i]['typeCount'][typeName] += tagSet[i]['typeCount']['襪子-襪套'];
+			if (tagSet[i]['typeCount'][typeName] > limitRet){
+				tagSet[tagCate]['count'] -= tagSet[i]['typeCount'][typeName];
+				delete tagSet[i]['clothes'][typeName];
+				delete tagSet[i]['acc'][typeName];
 			}
 		}
 	}
@@ -196,9 +196,9 @@ function lanStrategy_recalc(n){
 			lazyKeywords[suitArray[0]['name']] = {};
 			for (var i in suitArray[0]['result']){
 				var cl = suitArray[0]['result'][i];
-				var type = cl.type.type;
-				lazyKeywords[suitArray[0]['name']][type] = cl;
-				lazySet[type] = cl;
+				var clothesType = cl.type.type;
+				lazyKeywords[suitArray[0]['name']][clothesType] = cl;
+				lazySet[clothesType] = cl;
 			}
 			lazySetScore.push(getLazySetScore(lazySet));
 			step += 1;
@@ -216,16 +216,16 @@ function lanStrategy_recalc(n){
 			lazyKeywords[wordArray[0]['name']] = {};
 			for (var i in wordArray[0]['result']){
 				var cl = wordArray[0]['result'][i];
-				var type = cl.type.type;
-				lazyKeywords[wordArray[0]['name']][type] = cl;
+				var clothesType = cl.type.type;
+				lazyKeywords[wordArray[0]['name']][clothesType] = cl;
 				for (var j in repelCates){ //check repelCates before push into lazySet
-					if (type==repelCates[j][0]) {
+					if (clothesType==repelCates[j][0]) {
 						for (var k=1; k<repelCates[j].length; k++) if (lazySet[repelCates[j][k]]) delete lazySet[repelCates[j][k]];
-					}else if (Dom.inArray(type,repelCates[j])>0) {
+					}else if (Dom.inArray(clothesType,repelCates[j])>0) {
 						if (lazySet[repelCates[j][0]]) delete lazySet[repelCates[j][0]];
 					}
 				}
-				lazySet[type] = cl;
+				lazySet[clothesType] = cl;
 			}
 			lazySetScore.push(getLazySetScore(lazySet));
 		}
@@ -490,7 +490,7 @@ function evalSets(resultObj,existObj){
 			for (var k in repelCates[j]){
 				if (resultObj[str]['typeScore'][repelCates[j][k]]){
 					var score = resultObj[str]['typeScore'][repelCates[j][k]];
-					if (k==0) { sumFirst[0]++; sumFirst[1] += score;}
+					if (Number(k)==0) { sumFirst[0]++; sumFirst[1] += score;}
 					else { sumOthers[0]++; sumOthers[1] += score; }
 				}
 			}
@@ -500,10 +500,10 @@ function evalSets(resultObj,existObj){
 					delete resultObj[str]['result'][repelCates[j][0]];
 					delete resultObj[str]['typeScore'][repelCates[j][0]];
 				}
-			}else for (k=1; k<repelCates[j].length; k++) {
-				if (resultObj[str]['typeScore'][repelCates[j][k]]){
-					delete resultObj[str]['result'][repelCates[j][k]];
-					delete resultObj[str]['typeScore'][repelCates[j][k]];
+			}else for (let removeIndex=1; removeIndex<repelCates[j].length; removeIndex++) {
+				if (resultObj[str]['typeScore'][repelCates[j][removeIndex]]){
+					delete resultObj[str]['result'][repelCates[j][removeIndex]];
+					delete resultObj[str]['typeScore'][repelCates[j][removeIndex]];
 				}
 			}
 		}

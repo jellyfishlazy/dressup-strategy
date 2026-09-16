@@ -165,7 +165,7 @@ function showStrategy(keywords, suits){
 	var $author_sign = Dom("<div/>").addClass("stgy_author_sign_div");
 	var d = new Date();
 	$author_sign.append(p("nikkiup2u3 One Key Strategy@莫默墨陌", "author_sign_name"));
-	$author_sign.append(p("generate in " + (1900+d.getYear()) + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + d.getHours() + ":" + d.getMinutes(), "author_sign_name"));
+	$author_sign.append(p("generate in " + d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + d.getHours() + ":" + d.getMinutes(), "author_sign_name"));
 	$strategy.append($author_sign);
 
 	Dom("#StrategyInfo").empty().append($strategy);
@@ -286,7 +286,7 @@ function isGrey(c,result){
 		var sumOthers=0;
 		if(Dom.inArray(c, repelCates[i])>=0){
 			for (var j in repelCates[i]){
-				if (j>0) {
+				if (Number(j)>0) {
 					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumOthers+=actScore(result[repelCates[i][j]][0]);
 				}else {
 					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumFirst+=actScore(result[repelCates[i][j]][0]);

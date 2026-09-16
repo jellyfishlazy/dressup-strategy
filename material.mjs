@@ -87,11 +87,11 @@ function chgScope(){
 		case '2':
 			var catelist=[];
 			allSetInCate=[];
-			for (var i in setcategory){
-				if(Dom.inArray(setcategory[i][0], catelist)<0){
-					catelist.push(setcategory[i][0]);
+			for (var setIndex in setcategory){
+				if(Dom.inArray(setcategory[setIndex][0], catelist)<0){
+					catelist.push(setcategory[setIndex][0]);
 				}
-				allSetInCate.push(setcategory[i][1]);
+				allSetInCate.push(setcategory[setIndex][1]);
 			}
 			for (var c in clothes){//add any set not listed to undefined
 				if(clothes[c].set&&Dom.inArray(clothes[c].set, allSetInCate)<0){
@@ -111,15 +111,15 @@ function chgScope(){
 			chgScopeSub();
 			break;
 		case '4': 
-			var chapVal=[]; var chapText=[];
+			var starValues=[]; var starTexts=[];
 			for (var c in clothes){
-				if(Dom.inArray(clothes[c].stars, chapVal)<0){
-					chapVal.push(clothes[c].stars);
+				if(Dom.inArray(clothes[c].stars, starValues)<0){
+					starValues.push(clothes[c].stars);
 				}
 			}
-			chapVal.sort(function(a,b){return b - a});
-			for (var i in chapVal) chapText.push(chapVal[i]+'星');
-			chooseLevel+=selectBox("degree_level","chgStars()",chapVal,chapText);
+			starValues.sort(function(a,b){return b - a});
+			for (var starIndex in starValues) starTexts.push(starValues[starIndex]+'星');
+			chooseLevel+=selectBox("degree_level","chgStars()",starValues,starTexts);
 			Dom("#chooseLevel").html(chooseLevel);
 			chgStars();
 			break;
@@ -137,9 +137,9 @@ function chooseSet(){
 		enterKey();
 	}else {
 		if(cate.substr(0,1)!='-'){
-			for (var i in setcategory){
-				if(setcategory[i][0]==cate){
-					setlist.push(setcategory[i][1]);
+			for (var setIndex in setcategory){
+				if(setcategory[setIndex][0]==cate){
+					setlist.push(setcategory[setIndex][1]);
 				}
 			}
 		}else{
@@ -177,10 +177,10 @@ function searchBySetId(){
 				searchBySetName.push(clothes[c].set);
 			}
 		}
-		for (var i in setcategory){
+		for (var setIndex in setcategory){
 			for (var j in searchBySetName){
-				if (setcategory[i][1] == searchBySetName[j]) 
-					levelDropNote += tr(tab(ahref(setcategory[i][1],"chgScopeSub2(3,'"+setcategory[i][1]+"')"))+tab(setcategory[i][0]));
+				if (setcategory[setIndex][1] == searchBySetName[j])
+					levelDropNote += tr(tab(ahref(setcategory[setIndex][1],"chgScopeSub2(3,'"+setcategory[setIndex][1]+"')"))+tab(setcategory[setIndex][0]));
 			}
 		}
 		for (var j in searchBySetName){
@@ -361,7 +361,7 @@ function chgStars(){
 		if(clothes[i].stars==j){
 			for (var s in src_desc){
 				if (src_desc[s].indexOf('重構')>-1) continue;
-				for (var ss in src[s]){
+				for (let ss = 0; ss < src[s].length; ss++){
 					if(clothes[i].source.indexOf(src[s][ss])>-1){
 						selectArr.push(src_desc[s]);
 						break;
@@ -442,7 +442,7 @@ function chgStars2(){
 		}
 		var levelDropNote='';
 		for (var h in highlight){
-			if(h>0){levelDropNote+='&ensp;/&ensp;';}
+			if(Number(h)>0){levelDropNote+='&ensp;/&ensp;';}
 			levelDropNote+=span(highlight[h]+'材料',highlight_style[h]);
 		}
 		Dom("#levelDropInfo").html(levelDropInfo);
@@ -538,7 +538,7 @@ function showLevelDropInfo(){
 		}
 		levelDropInfo+=table(1);
 		for (var h in highlight){
-			if(h>0){levelDropNote+='&ensp;/&ensp;';}
+			if(Number(h)>0){levelDropNote+='&ensp;/&ensp;';}
 			levelDropNote+=span(highlight[h]+'材料',highlight_style[h]);
 		}
 	}
@@ -561,7 +561,7 @@ function showLevelDropInfo(){
 		}
 		levelDropInfo+=table(1);
 		for (var h in highlight){
-			if(h>0){levelDropNote+='&ensp;/&ensp;';}
+			if(Number(h)>0){levelDropNote+='&ensp;/&ensp;';}
 			levelDropNote+=span(highlight[h]+'材料',highlight_style[h]);
 		}
 	}
@@ -824,7 +824,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 	
 	for (var s in src){//sort by source
 		header[s]='<u>'+src_desc[s]+'</u>'+((src[s]=='重構')?'　'+ahref(constxt,construct_href_1+oppoConstructInd+','+showConsumeInd+')'):'');
-		if(s<2){
+		if(Number(s)<2){
 			for (l1=0; l1<chapList.length; l1++){
 				for (l=1;l<30;l++){//sort by level
 					var l2=l;
@@ -833,8 +833,8 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 						var srci=clothes[i].source;
 						var src_sp=clothes[i].source.split("/");
 						for (var ss in src_sp){
-							if( (s==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0&&srci.indexOf(src[1])<0) || 
-								(s==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0) ){
+							if( (Number(s)==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0&&srci.indexOf(src[1])<0) ||
+								(Number(s)==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0) ){
 								if(!content[s]) content[s]='';
 								content[s]+=retFactor(i,srci);
 								break;
@@ -898,7 +898,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 	//explain if content all blank
 	for (var s in src){
 		if(content[s]) break;
-		if(s==src.length-1) output += tr(tab('無','colspan="3"'));
+		if(Number(s)==src.length-1) output += tr(tab('無','colspan="3"'));
 	}
 	
 	var dye=''; var dye_jjc=0; var dye_lm=0;

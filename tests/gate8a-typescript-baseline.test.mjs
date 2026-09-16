@@ -16,14 +16,14 @@ test('Gate 8A adds check-only TypeScript without changing runtime file extension
   }
 });
 
-test('TypeScript baseline is explicit, version-locked and non-empty', () => {
+test('TypeScript baseline is explicit and version-locked', () => {
   const pkg = JSON.parse(read('package.json'));
   const baseline = JSON.parse(read('typecheck-baseline.json'));
   assert.equal(pkg.devDependencies.typescript, '7.0.2');
   assert.equal(baseline.typescript_version, '7.0.2');
-  assert.ok(baseline.diagnostic_count > 0);
+  assert.ok(baseline.diagnostic_count >= 0);
   assert.equal(baseline.diagnostics.length, baseline.diagnostic_count);
-  assert.ok(Object.keys(baseline.summary_by_code).length > 0);
+  assert.equal(Object.keys(baseline.summary_by_code).length > 0, baseline.diagnostic_count > 0);
   for (const diagnostic of baseline.diagnostics) {
     assert.equal(typeof diagnostic.file, 'string');
     assert.equal(typeof diagnostic.code, 'number');

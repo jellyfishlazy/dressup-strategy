@@ -450,7 +450,8 @@ function filtering(criteria, filters) {
 			size = 5;
 		var tsize = size;
 		for (var i in result) {
-			if (i > 0 && result[i].type.type != result[i - 1].type.type)
+			var resultIndex = Number(i);
+			if (resultIndex > 0 && result[resultIndex].type.type != result[resultIndex - 1].type.type)
 				tsize = size;
 			if (tsize > 0)
 				result2.push(result[i]);
@@ -958,21 +959,21 @@ function initEvent() {
 			return;
 		}
 		var confirmStr = "";
-		for(var type in clotheslist){
-			var names = clotheslist[type]["namelist"].join(",");
+		for(var typeName in clotheslist){
+			var names = clotheslist[typeName]["namelist"].join(",");
 			if(names.length > 50){
-				names = names.substring(0,50) + "...等" + clotheslist[type]["namelist"].length + "件衣服";
+				names = names.substring(0,50) + "...等" + clotheslist[typeName]["namelist"].length + "件衣服";
 			}
-			confirmStr += "你將要在>>" + type + "<<中導入：\n" + names + "\n";
+			confirmStr += "你將要在>>" + typeName + "<<中導入：\n" + names + "\n";
 		}
 		if (confirm(confirmStr)) {
 			var myClothes = MyClothes();
 			myClothes.filter(clothes);
-			for(var type in clotheslist){
-				if (myClothes.mine[type]) {
-					myClothes.mine[type] = myClothes.mine[type].concat(clotheslist[type]["idlist"]);
+			for(var typeName in clotheslist){
+				if (myClothes.mine[typeName]) {
+					myClothes.mine[typeName] = myClothes.mine[typeName].concat(clotheslist[typeName]["idlist"]);
 				} else {
-					myClothes.mine[type] = clotheslist[type]["idlist"];
+					myClothes.mine[typeName] = clotheslist[typeName]["idlist"];
 				}
 			}
 			myClothes.update(clothes);
@@ -1022,7 +1023,7 @@ function filterClotherHTML(btn){
 					ifhide = false;
 				}
 				else{
-					ifhide &= filterLoop(Dom(clothesDivList[i]), type, cls, strs[j]);
+					ifhide = ifhide && filterLoop(Dom(clothesDivList[i]), type, cls, strs[j]);
 				}
 			}
 			if(ifhide){
@@ -1095,10 +1096,13 @@ function exportCustomInventory() {
 
 function saveTextAsFile()
 {
-    var textToSave = document.getElementById("myClothes").value;
+    var textarea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById("myClothes"));
+    var fileNameInput = /** @type {HTMLInputElement|null} */ (document.getElementById("inputFileNameToSaveAs"));
+    if (!textarea || !fileNameInput) return;
+    var textToSave = textarea.value;
     var textToSaveAsBlob = new Blob([textToSave], {type:"text/plain"});
     var textToSaveAsURL = window.URL.createObjectURL(textToSaveAsBlob);
-    var fileNameToSaveAs = document.getElementById("inputFileNameToSaveAs").value;
+    var fileNameToSaveAs = fileNameInput.value;
 
     var downloadLink = document.createElement("a");
     downloadLink.download = fileNameToSaveAs;
@@ -1118,13 +1122,16 @@ function destroyClickedElement(event)
 
 function loadFileAsText()
 {
-    var fileToLoad = document.getElementById("fileToLoad").files[0];
+    var fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById("fileToLoad"));
+    var textarea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById("myClothes"));
+    var fileToLoad = fileInput?.files?.[0];
+    if (!fileToLoad || !textarea) return;
 
     var fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent)
     {
-        var textFromFileLoaded = fileLoadedEvent.target.result;
-        document.getElementById("myClothes").value = textFromFileLoaded;
+        var textFromFileLoaded = String(fileLoadedEvent.target?.result ?? '');
+        textarea.value = textFromFileLoaded;
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
 }

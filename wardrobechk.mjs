@@ -69,7 +69,7 @@ function loadFromStorage() {
 
 /** @param {WardrobeInventory} mine */
 function updateSize(mine) {
-  const textarea = document.getElementById('myClothes');
+  const textarea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('myClothes'));
   if (textarea) textarea.value = mine.serialize();
   const subcount = {};
   for (const type in mine.mine) {

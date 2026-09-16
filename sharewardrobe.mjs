@@ -97,15 +97,15 @@ function getWardrobe() {
 		txt += ":";
 		var str = unzipNum(request[t]);
 		str = str.substr(1,str.length);
-		for (var i in str) {
-			if (str.charAt(i) == "1") {
-				i = 1*i+1;
-				if (i < 10) {
-					txt += "00" + i + ",";
-				} else if (i < 100) {
-					txt += "0" + i + ",";
+		for (let index = 0; index < str.length; index++) {
+			if (str.charAt(index) == "1") {
+				var id = index + 1;
+				if (id < 10) {
+					txt += "00" + id + ",";
+				} else if (id < 100) {
+					txt += "0" + id + ",";
 				} else {
-					txt += i + ",";
+					txt += id + ",";
 				}
 			}
 		}
@@ -127,32 +127,30 @@ function GetRequest() {
 	return theRequest;
 }
 
+function zipChunk(inputNum){
+	var numeric = parseInt(inputNum, 2);
+	if(numeric > 61){
+		if(numeric == 62)
+			return "(";
+		if(numeric == 63)
+			return ")";
+	}
+	else if(numeric > 35){//用大寫字母表示36-61
+		return String.fromCharCode('A'.charCodeAt(0) + numeric % 36);
+	} else if(numeric > 9){//用小寫字母表示10-35
+		return String.fromCharCode('a'.charCodeAt(0) + numeric % 10);
+	}
+	return String(numeric);
+}
+
 function zipNum(num){
-    if(!zipNum.zip){
-        zipNum.zip = function(inputNum){
-			inputNum = parseInt(inputNum, 2);
-			if(inputNum > 61){
-				if(inputNum == 62)
-					return "(";
-				if(inputNum == 63)
-					return ")";
-			}
-            else if(inputNum > 35){//用大寫字母表示36-61
-                return String.fromCharCode('A'.charCodeAt(0) + inputNum % 36);
-            } else if(inputNum > 9){//用小寫字母表示10-35
-                return String.fromCharCode('a'.charCodeAt(0) + inputNum % 10);
-            } else {
-                return inputNum;
-            }
-        }
-    }
 	var result = "";
 	for(var i = num.length; i>0; i-=6){
 		if(i<6){
-			result = zipNum.zip(num.substr(0,i)) + result;
+			result = zipChunk(num.substr(0,i)) + result;
 		}
 		else{
-			result = zipNum.zip(num.substr(i-6,6)) + result;
+			result = zipChunk(num.substr(i-6,6)) + result;
 		}
 	}
     return result;
@@ -171,8 +169,8 @@ function unzip(inputNum){
 		return "111110";
 	if(inputNum == ")")
 		return "111111";
-	if(inputNum <= 9){
-		return pad(inputNum.toString(2), 6);
+	if(/^[0-9]$/.test(inputNum)){
+		return pad(Number(inputNum).toString(2), 6);
 	}
 	if(inputNum.charCodeAt() <= 'Z'.charCodeAt(0)){
 		return pad((inputNum.charCodeAt() - 'A'.charCodeAt(0) + 36).toString(2), 6);
