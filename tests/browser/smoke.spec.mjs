@@ -70,6 +70,11 @@ test('Wardrobe Check boots and renders category navigation', async ({ page }) =>
   await expect(page.locator('#check_container_right')).toHaveCount(1);
   await page.locator('#categoryTab li a').nth(1).click();
   await expect(page.locator('#categoryTab li.active')).toHaveCount(1);
+  const legacyGlobals = await page.evaluate(() => ({
+    wardrobe: typeof globalThis.WardrobeDomain,
+    inventory: typeof globalThis.InventoryDomain,
+  }));
+  expect(legacyGlobals).toEqual({ wardrobe: 'undefined', inventory: 'undefined' });
   await expectNoFailures(failures);
 });
 

@@ -64,8 +64,8 @@ export default [
     rules: safetyRules,
   },
   {
-    files: ['wardrobechk.js'],
-    languageOptions: { sourceType: 'script', globals: { ...browser, WardrobeDomain: 'readonly', InventoryDomain: 'readonly', wardrobe: 'readonly', category: 'readonly' } },
+    files: ['wardrobechk.mjs'],
+    languageOptions: { globals: { ...browser, CSS: 'readonly' } },
     rules: safetyRules,
   },
   {

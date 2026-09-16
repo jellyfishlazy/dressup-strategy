@@ -57,19 +57,23 @@ test('browser storage helpers preserve localStorage precedence and cookie fallba
 });
 
 test('migrated legacy entry points delegate inventory behavior and are lint-covered', () => {
-  for (const file of ['model.js', 'material_model.js', 'wardrobechk.js']) {
+  for (const file of ['model.js', 'material_model.js']) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
     assert.match(source, /InventoryDomain\.createInventory\(/, file);
     assert.match(source, /InventoryDomain\.readBrowser\(/, file);
     assert.doesNotMatch(source, /function getCookie\(/, file);
   }
+  const wardrobeCheck = readFileSync(new URL('../wardrobechk.mjs', import.meta.url), 'utf8');
+  assert.match(wardrobeCheck, /createInventory\(/);
+  assert.match(wardrobeCheck, /readBrowser\(/);
+  assert.doesNotMatch(wardrobeCheck, /InventoryDomain|function getCookie\(/);
   for (const file of ['model.js', 'material_model.js']) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
     assert.match(source, /InventoryDomain\.writeBrowser\(/, file);
     assert.doesNotMatch(source, /function setCookie\(/, file);
   }
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  for (const file of ['model.js', 'biguse_model.js', 'biguse_ui.js', 'material_model.js', 'wardrobechk.js']) {
+  for (const file of ['model.js', 'biguse_model.js', 'biguse_ui.js', 'material_model.js', 'wardrobechk.mjs']) {
     assert.match(pkg.scripts.lint, new RegExp(file.replace('.', '\\.')));
   }
 });

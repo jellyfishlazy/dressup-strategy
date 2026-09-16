@@ -20,27 +20,14 @@ const wardrobeRow = () => [
   'POP/小動物', '活動·測試', '測試套裝', 'V1',
 ];
 
-test('Wardrobe Check parses rows through WardrobeDomain and preserves inventory format', () => {
-  const document = { addEventListener() {} };
-  const context = loadBridges({
-    document,
-    wardrobe: [wardrobeRow()],
-    category: ['髮型'],
-  });
-  loadScript('wardrobechk.js', context);
-  const piece = context.clothes[0];
-  assert.deepEqual(
-    { name: piece.name, type: piece.type, mainType: piece.mainType, id: piece.id },
-    { name: '測試衣', type: '髮型', mainType: '髮型', id: '001' },
-  );
-  const mine = context.MyClothes();
-  mine.mine = { '髮型': ['001', '010'] };
-  mine.size = 2;
-  assert.equal(mine.serialize(), '髮型:001,010|');
-  const restored = context.MyClothes();
-  restored.deserialize('髮型:001,010|');
-  assert.equal(restored.size, 2);
-  assert.deepEqual(Array.from(restored.mine['髮型']), ['001', '010']);
+test('Wardrobe Check uses the ESM wardrobe/inventory boundaries', () => {
+  const source = readFileSync(new URL('../wardrobechk.mjs', import.meta.url), 'utf8');
+  assert.match(source, /import \{ rowToWardrobeItem \} from '\.\/src\/domain\/wardrobe\/index\.mjs'/);
+  assert.match(source, /import \{ createInventory, readBrowser \} from '\.\/src\/domain\/inventory\/index\.mjs'/);
+  assert.match(source, /rowToWardrobeItem\(csv\)/);
+  assert.match(source, /createInventory\(\{/);
+  assert.match(source, /readBrowser\(storage, document\)/);
+  assert.doesNotMatch(source, /WardrobeDomain|InventoryDomain/);
 });
 
 test('Material Clothes uses named wardrobe fields without changing material semantics', () => {
@@ -76,12 +63,13 @@ test('Material inventory delegates to shared InventoryDomain format', () => {
 });
 
 test('secondary entry points no longer parse wardrobe columns by magic index', () => {
-  for (const file of ['wardrobechk.js', 'material_model.js']) {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-    assert.doesNotMatch(source, /csv\s*\[\s*\d+\s*\]/, file);
-    assert.match(source, /WardrobeDomain\.rowToWardrobeItem/, file);
-    assert.match(source, /InventoryDomain\.(?:serialize|deserialize|read)/, file);
-  }
+  const wardrobeCheck = readFileSync(new URL('../wardrobechk.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(wardrobeCheck, /csv\s*\[\s*\d+\s*\]/);
+  assert.match(wardrobeCheck, /rowToWardrobeItem\(csv\)/);
+  const materialSource = readFileSync(new URL('../material_model.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(materialSource, /csv\s*\[\s*\d+\s*\]/);
+  assert.match(materialSource, /WardrobeDomain\.rowToWardrobeItem/);
+  assert.match(materialSource, /InventoryDomain\.(?:serialize|deserialize|read)/);
   const exc = readFileSync(new URL('../material_exc.js', import.meta.url), 'utf8');
   assert.match(exc, /^﻿?\/\*[\s\S]*?wardrobe\[i\][\s\S]*?\*\//, 'material_exc magic-index-looking code remains commented/dead');
 });

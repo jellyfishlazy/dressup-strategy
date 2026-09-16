@@ -32,8 +32,8 @@ test('native event bridge replaces inline handlers and Bootstrap button data API
 
 test('Wardrobe Check no longer depends on jQuery', () => {
   assert.doesNotMatch(read('wardrobechk.html'), /src=['"]jquery(?:\.js|\.min\.js)['"]/);
-  assert.doesNotMatch(read('wardrobechk.js'), /\$\(|jQuery/);
-  assert.match(read('wardrobechk.js'), /DOMContentLoaded/);
+  assert.doesNotMatch(read('wardrobechk.mjs'), /\$\(|jQuery/);
+  assert.match(read('wardrobechk.mjs'), /DOMContentLoaded/);
 });
 
 test('active entry points no longer load jQuery', () => {

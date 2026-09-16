@@ -43,13 +43,13 @@ test('Material delegated actions parse simple legacy call arguments without eval
 });
 
 test('classic wardrobe/inventory compatibility is contained to known synchronous consumers', () => {
-  const consumers = ['model.js', 'material_model.js', 'wardrobechk.js'];
+  const consumers = ['model.js', 'material_model.js'];
   for (const file of consumers) {
     const source = read(file);
     assert.match(source, /WardrobeDomain\.rowToWardrobeItem/);
     assert.match(source, /InventoryDomain\./);
   }
-  for (const file of ['ui.js', 'nikki.js', 'biguse_ui.js', 'biguse_nikki.js', 'material.js']) {
+  for (const file of ['ui.js', 'nikki.js', 'biguse_ui.js', 'biguse_nikki.js', 'material.js', 'wardrobechk.mjs']) {
     const source = read(file);
     assert.doesNotMatch(source, /WardrobeDomain|InventoryDomain/, file);
   }
