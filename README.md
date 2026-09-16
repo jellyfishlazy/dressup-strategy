@@ -79,6 +79,8 @@ are covered by Node regression tests and share Gate 3's wardrobe schema.
 
 Gate 5A migrates the main matcher onto the wardrobe boundary without converting legacy browser scripts to ESM yet. `src/domain/wardrobe/runtime.js` is a thin classic-script compatibility bridge whose field order and row conversion are regression-checked against Gate 3's canonical ESM schema/adapter. `model.js` converts raw rows to named items before scoring/model construction, so its `Clothes` parser no longer depends on numeric wardrobe indexes. Inventory serialization and storage access are isolated in `src/domain/inventory/runtime.js`; the existing `mainType:id,id|` data format, `myClothesNew` key, legacy fallback, and cookie fallback remain compatible. This bridge is temporary and can be removed when the remaining legacy runtime becomes ESM in the later cleanup gate.
 
+Gate 5B migrates BigUse away from reverse-adapting `Clothes` through `toCsv()` and `clothesSet` lookups. `src/domain/biguse/runtime.js` owns A/B cart selection, the established ±10% score comparison rule, and legacy image-id derivation from named `Clothes` fields. BigUse buttons/autocomplete now pass the actual `Clothes` object into the selected cart, while rendering reads named type/id data. Cart isolation and score semantics remain unchanged and are covered by regression tests.
+
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy
 job checks out a fresh root static site, so npm dependencies are not uploaded.

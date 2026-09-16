@@ -90,18 +90,10 @@ function rowBiguse(piece, isShoppingCart, index) {
 	}
 	$lineTop.append($nameTd);
 	
-	var csv = piece.toCsv();
-	
+	var identity = BigUseDomain.pieceIdentity(piece);
+	var longid = BigUseDomain.imageLongId(piece);
+
 	var $imagetd = td("點擊查看", 'image');
-	var typename = render(csv[0]);
-	if(typename.indexOf("襪子-") >=0){
-		typename = "襪子"
-	}
-	if(typename.indexOf("飾品-") >=0){
-		typename = "飾品"
-	}
-	var typeid = typename.replace("髮型","10").replace("連身裙","20").replace("外套", "30").replace("上衣", "40").replace("下著", "50").replace("襪子", "60").replace("鞋子", "70").replace("飾品", "80").replace("妝容", "90").replace("螢光之靈", "100");
-	var longid = (render(csv[1]).length>3 ? typeid.replace("0","") : typeid) + render(csv[1]);
 	$imagetd.click(function(){
 		$("#imgModel").show();
 		$("#imgModel").css("background-image", "url(http://seal100x.github.io/nikkiup2u3_img/" +  longid + ".png)");
@@ -124,16 +116,16 @@ function rowBiguse(piece, isShoppingCart, index) {
 		$lineTop.append(td("尚未收錄", "color1"));
 		$lineTop.append(td("尚未收錄", "color2"));
 	}
-	$lineTop.append(td(render(csv[0]), 'category'));
-	$lineTop.append(td(render(csv[1]), 'id'));
+	$lineTop.append(td(render(identity.type), 'category'));
+	$lineTop.append(td(render(identity.id), 'id'));
 	
 	if (isShoppingCart) {
 		if (piece.id) {
 			$lineTop.append(td(removeShoppingCartButton(piece.type.type, index), 'icon'));
 		}
 	} else {
-		$lineTop.append(td(shoppingCartButton(piece.type.mainType, piece.id, 1), 'icon'));
-		$lineTop.append(td(shoppingCartButton(piece.type.mainType, piece.id, 2), 'icon'));
+		$lineTop.append(td(shoppingCartButton(piece, 1), 'icon'));
+		$lineTop.append(td(shoppingCartButton(piece, 2), 'icon'));
 	}
 	//$row.append($lineTop);
 	return $lineTop;
@@ -142,7 +134,7 @@ function rowBiguse(piece, isShoppingCart, index) {
 function listBiguse(datas, isShoppingCart, index) {
 	var $list = $("<div>").addClass("table-body");
 	if (isShoppingCart) {
-		$list.append(rowBiguse(index == 1 ? shoppingCart1.totalScore : shoppingCart2.totalScore, isShoppingCart, index));
+		$list.append(rowBiguse(BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2).totalScore, isShoppingCart, index));
 	}
 	for (var i in datas) {
 		var $row = rowBiguse(datas[i], isShoppingCart, index);
@@ -188,11 +180,11 @@ function clothesNameTd(piece) {
 	return $clothesNameTd;
 }
 
-function shoppingCartButton(type, id, index) {
+function shoppingCartButton(piece, index) {
 	var $shoppingCartButton = $("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
-	var tShoppingCart = index == 1 ? shoppingCart1 : shoppingCart2;
+	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$shoppingCartButton.click(function () {
-		tShoppingCart.put(clothesSet[type][id]);
+		tShoppingCart.put(piece);
 		refreshShoppingCartBiguse();
 	});		
 	return $shoppingCartButton;
@@ -200,7 +192,7 @@ function shoppingCartButton(type, id, index) {
 
 function removeShoppingCartButton(detailedType, index) {
 	var $removeShoppingCartButton = $("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
-	var tShoppingCart = index == 1 ? shoppingCart1 : shoppingCart2;
+	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$removeShoppingCartButton.click(function () {
 		tShoppingCart.remove(detailedType);
 		refreshShoppingCartBiguse();
@@ -213,13 +205,12 @@ function refreshShoppingCartBiguse() {
 	shoppingCart2.calc(criteria);
 	drawTable(shoppingCart1.toList(byCategoryAndScore), "shoppingCart1", true, 1);
 	drawTable(shoppingCart2.toList(byCategoryAndScore), "shoppingCart2", true, 2);
-	var scoreA = shoppingCart1.totalScore.sumScore;
-	var scoreB = shoppingCart2.totalScore.sumScore;
-	if(scoreA >= scoreB * 0.9 && scoreA <= scoreB * 1.1){
+	var comparison = BigUseDomain.compareScores(shoppingCart1.totalScore.sumScore, shoppingCart2.totalScore.sumScore);
+	if(comparison.close){
 		$("#advise").text("當前兩種搭配分值過於接近, 建議去詢問群裡的小夥伴後再選擇");
 	}
 	else{
-		var info = "搭配A:" + scoreA + "分, 搭配B: " + scoreB + "分, 當前搭配情況下選擇   [" + (scoreA > scoreB ? "A" : "B") + "]    ";
+		var info = "搭配A:" + comparison.scoreA + "分, 搭配B: " + comparison.scoreB + "分, 當前搭配情況下選擇   [" + comparison.winner + "]    ";
 		$("#advise").text(info);
 	}
 }
@@ -258,14 +249,14 @@ var match = function(query, done){
 	$('#autocomplete1').autocomplete({
 		lookup: match,
 		onSelect: function (suggestion) {
-			shoppingCart1.put(clothesSet[suggestion.data.type.mainType][suggestion.data.id]);
+			shoppingCart1.put(suggestion.data);
 			refreshShoppingCartBiguse();
 		}
 	});
 	$('#autocomplete2').autocomplete({
 		lookup: match,
 		onSelect: function (suggestion) {
-			shoppingCart2.put(clothesSet[suggestion.data.type.mainType][suggestion.data.id]);
+			shoppingCart2.put(suggestion.data);
 			refreshShoppingCartBiguse();
 		}
 	});

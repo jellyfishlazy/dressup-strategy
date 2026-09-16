@@ -170,6 +170,7 @@ test('BigUse uses numeric model totals without DOM score reads, preserving bound
     return { text(value) { assert.equal(typeof value, 'string'); advice = value; } };
   };
   loadScript('biguse_model.js', model);
+  loadScript('src/domain/biguse/runtime.js', model);
   loadScript('biguse_ui.js', model);
   let renders = 0;
   model.drawTable = () => { renders++; }; // no rendered score text exists
