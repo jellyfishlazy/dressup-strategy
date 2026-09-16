@@ -1,51 +1,81 @@
-﻿import { clothes, clothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
+﻿import { clothes as legacyClothes, clothesSet as legacyClothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
+
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing & { set: string, stars: string | number }} MaterialClothing */
+/** @typedef {Record<string, any>} LegacyDict */
+/** @typedef {[MaterialClothing, string, string]} StarDrop */
+/** @typedef {string | number} MaterialId */
+
+// Local views retain the model collections' identity; recipe tables remain legacy dictionaries.
+/** @type {MaterialClothing[]} */
+const clothes = legacyClothes;
+/** @type {LegacyDict} */
+const clothesSet = legacyClothesSet;
 
 /** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
-const Dom = globalThis.Dom;
-const MaterialActions = globalThis.MaterialActions;
-const html2canvas = globalThis.html2canvas;
-const category = globalThis.category;
-const pattern = globalThis.pattern;
-const setcategory = globalThis.setcategory;
-const convert = globalThis.convert;
-const construct = globalThis.construct;
-const merchant = globalThis.merchant;
-const convertPrice = globalThis.convertPrice;
-const constructMaterialName = globalThis.constructMaterialName;
-const patternPrice = globalThis.patternPrice;
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const MaterialActions = /** @type {typeof globalThis & { MaterialActions: { register(actions: Record<string, (...args: any[]) => any>): void } }} */ (globalThis).MaterialActions;
+const html2canvas = /** @type {typeof globalThis & { html2canvas: (element: HTMLElement, options: { onrendered(canvas: HTMLCanvasElement): void }) => void }} */ (globalThis).html2canvas;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const pattern = /** @type {typeof globalThis & { pattern: LegacyDict }} */ (globalThis).pattern;
+const setcategory = /** @type {typeof globalThis & { setcategory: LegacyDict }} */ (globalThis).setcategory;
+const convert = /** @type {typeof globalThis & { convert: LegacyDict }} */ (globalThis).convert;
+const construct = /** @type {typeof globalThis & { construct: LegacyDict }} */ (globalThis).construct;
+const merchant = /** @type {typeof globalThis & { merchant: LegacyDict }} */ (globalThis).merchant;
+const convertPrice = /** @type {typeof globalThis & { convertPrice: LegacyDict }} */ (globalThis).convertPrice;
+const constructMaterialName = /** @type {typeof globalThis & { constructMaterialName: string[] }} */ (globalThis).constructMaterialName;
+const patternPrice = /** @type {typeof globalThis & { patternPrice: LegacyDict }} */ (globalThis).patternPrice;
 var highlight=['星之海','韶顏傾城','格萊斯','冰風戰歌','白櫻戀歌'];
 var highlight_style=['xzh','syqc','gls','bfzg','bylg'];
 
 var src=['公','少','店·金幣,店·鑽石,店','設計圖','重構','抽·,禮盒·','兌·,聯盟·','']; //note:'重構'&'聯盟·小鋪' are hardcoded in function
 var src_desc = ['公主級掉落','少女級掉落','商店購買','設計圖','重構','謎之屋','兌換','其它']; //note:'謎之屋','兌換' is hardcoded in function
+/** @type {string[]} */
 var chapList = [];
+/** @type {number[]} */
 var reqCnt=[];
+/** @type {number[]} */
 var parentInd=[];
+/** @type {number[]} */
 var extraInd=[];
+/** @type {number[]} */
 var extraAdded=[];
+/** @type {number[]} */
 var shownFactor=[];
+/** @type {string[]} */
 var convertlist=[];
+/** @type {number[]} */
 var convertlistCnt=[];
+/** @type {string[]} */
 var allSetInCate=[];
+/** @type {MaterialId[]} */
 var cartCont=[];
 
 var highlight_parts = function(){
+	/** @type {Record<string, string[]>} */
 	var ret = {};
+	/** @type {Record<string, string[]>} */
 	var highlight_id = {};
 	for (var i in highlight){
 		var setName = highlight[i];
-		ret[setName] = [];
-		highlight_id[setName] = [];
+		if (setName === undefined) continue;
+		/** @type {string[]} */
+		const parts = ret[setName] = [];
+		/** @type {string[]} */
+		const ids = highlight_id[setName] = [];
 		for (var c in clothes){
-			if (clothes[c].set == setName) {
-				ret[setName].push(clothes[c].name);
-				highlight_id[setName].push(clothes[c].type.mainType+clothes[c].id);
+			const clothing = clothes[c];
+			if (clothing === undefined) continue;
+			if (clothing.set == setName) {
+				parts.push(clothing.name);
+				ids.push(clothing.type.mainType+clothing.id);
 			}
 		}
 		for (var c in clothes){//search for dye once only
-			if (clothes[c].source.indexOf('定')==0){
-				var cl = clothes[c].type.mainType+clothes[c].source.replace('定','');
-				if (Dom.inArray(cl,highlight_id[setName])>=0) ret[setName].push(clothes[c].name);
+			const clothing = clothes[c];
+			if (clothing === undefined) continue;
+			if (clothing.source.indexOf('定')==0){
+				var cl = clothing.type.mainType+clothing.source.replace('定','');
+				if (Dom.inArray(cl,ids)>=0) parts.push(clothing.name);
 			}
 		}
 	}
@@ -71,9 +101,12 @@ function chgScope(){
 		case '1':
 			chooseLevel+=selectBox("degree_level","showLevelDropInfo()",['公','少'],['公主','少女']);
 			chooseLevel+='&ensp;-&ensp;';
+			/** @type {(string | number)[]} */
 			var chapVal=[0];var chapText=['請選擇章節'];
 			for(var i=0; i<chapList.length; i++){
-				chapVal.push(chapList[i]);
+				const chapter = chapList[i];
+				if (chapter === undefined) continue;
+				chapVal.push(chapter);
 				chapText.push('第'+chapList[i]+'章');
 			}
 			if(chapList.length>0) {
@@ -95,7 +128,9 @@ function chgScope(){
 				allSetInCate.push(setcategory[setIndex][1]);
 			}
 			for (var c in clothes){//add any set not listed to undefined
-				if(clothes[c].set&&Dom.inArray(clothes[c].set, allSetInCate)<0){
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(clothing.set&&Dom.inArray(clothing.set, allSetInCate)<0){
 					catelist.push('-未分類-'); break;
 				}
 			}
@@ -106,7 +141,7 @@ function chgScope(){
 			break;
 		case '3': 
 			//20160304: move 3-setSearch into chgScope-'2'
-			var chapVal=[0,4,1,2];var chapText=['自訂','特殊屬性','設計圖','進化'];
+			chapVal=[0,4,1,2];var chapText=['自訂','特殊屬性','設計圖','進化'];
 			chooseLevel+=selectBox("degree_level","chgScopeSub()",chapVal,chapText);
 			Dom("#chooseLevel").html(chooseLevel);
 			chgScopeSub();
@@ -114,11 +149,13 @@ function chgScope(){
 		case '4': 
 			var starValues=[]; var starTexts=[];
 			for (var c in clothes){
-				if(Dom.inArray(clothes[c].stars, starValues)<0){
-					starValues.push(clothes[c].stars);
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(Dom.inArray(clothing.stars, starValues)<0){
+					starValues.push(clothing.stars);
 				}
 			}
-			starValues.sort(function(a,b){return b - a});
+			starValues.sort(function(a,b){return Number(b) - Number(a)});
 			for (var starIndex in starValues) starTexts.push(starValues[starIndex]+'星');
 			chooseLevel+=selectBox("degree_level","chgStars()",starValues,starTexts);
 			Dom("#chooseLevel").html(chooseLevel);
@@ -145,8 +182,10 @@ function chooseSet(){
 			}
 		}else{
 			for (var c in clothes){//any set not listed
-				if(clothes[c].set&&Dom.inArray(clothes[c].set, allSetInCate)<0){
-					setlist.push(clothes[c].set);
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(clothing.set&&Dom.inArray(clothing.set, allSetInCate)<0){
+					setlist.push(clothing.set);
 				}
 			}
 		}
@@ -174,8 +213,10 @@ function searchBySetId(){
 		var levelDropInfo = '查找：'+searchById;
 		levelDropNote = table()+tr(tab('套裝')+tab('分類'),'style="font-weight:bold;"');
 		for (var c in clothes){
-			if(clothes[c].set && clothes[c].set.indexOf(searchById)>=0 && Dom.inArray(clothes[c].set, searchBySetName)<0){
-				searchBySetName.push(clothes[c].set);
+			const clothing = clothes[c];
+			if (clothing === undefined) continue;
+			if(clothing.set && clothing.set.indexOf(searchById)>=0 && Dom.inArray(clothing.set, searchBySetName)<0){
+				searchBySetName.push(clothing.set);
 			}
 		}
 		for (var setIndex in setcategory){
@@ -185,8 +226,10 @@ function searchBySetId(){
 			}
 		}
 		for (var j in searchBySetName){
+			const setName = searchBySetName[j];
+			if (setName === undefined) continue;
 			if (Dom.inArray(searchBySetName[j], allSetInCate)<0)
-				levelDropNote += tr(tab(ahref(searchBySetName[j],"chgScopeSub2(3,'"+searchBySetName[j]+"')"))+tab('(未分類)'));
+				levelDropNote += tr(tab(ahref(setName,"chgScopeSub2(3,'"+searchBySetName[j]+"')"))+tab('(未分類)'));
 		}
 		levelDropNote += table(1);
 		Dom("#levelDropInfo").html(levelDropInfo);
@@ -209,12 +252,15 @@ function chgScopeSub(){
 		enterKey();
 	}
 	else{
+		/** @type {string[]} */
 		var selectArr=[];
 		if (j==1){
 			for(var i in category){
 				for(var c in clothes){
-					if(clothes[c].type.type==category[i]&&clothes[c].source.indexOf('設')>-1) {
-						selectArr.push(category[i]);
+					const clothing = clothes[c];
+					if (clothing === undefined) continue;
+					if(clothing.type.type==category[i]&&clothing.source.indexOf('設')>-1) {
+						selectArr.push(clothing.type.type);
 						break;
 					}
 				}
@@ -222,8 +268,10 @@ function chgScopeSub(){
 		}else if (j==2){
 			for(var i in category){
 				for(var c in clothes){
-					if(clothes[c].type.type==category[i]&&clothes[c].source.indexOf('進')>-1) {
-						selectArr.push(category[i]);
+					const clothing = clothes[c];
+					if (clothing === undefined) continue;
+					if(clothing.type.type==category[i]&&clothing.source.indexOf('進')>-1) {
+						selectArr.push(clothing.type.type);
 						break;
 					}
 				}
@@ -231,16 +279,20 @@ function chgScopeSub(){
 		}else if(j==3){//design&evo > others
 			var tmpArr1=[];
 			for(var c in clothes){
-				if(clothes[c].set&&(clothes[c].source.indexOf('設')>-1||clothes[c].source.indexOf('進')>-1)){
-					tmpArr1.push(clothes[c].set);
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(clothing.set&&(clothing.source.indexOf('設')>-1||clothing.source.indexOf('進')>-1)){
+					tmpArr1.push(clothing.set);
 				}
 			}
 			selectArr=getDistinct(tmpArr1);
 			selectArr.sort();
 			tmpArr1=[];
 			for(var c in clothes){
-				if(clothes[c].set&&Dom.inArray(clothes[c].set, selectArr)<0){
-					tmpArr1.push(clothes[c].set);
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(clothing.set&&Dom.inArray(clothing.set, selectArr)<0){
+					tmpArr1.push(clothing.set);
 				}
 			}
 			tmpArr1=getDistinct(tmpArr1);
@@ -248,10 +300,13 @@ function chgScopeSub(){
 			selectArr=selectArr.concat(tmpArr1);
 		}else if(j==4){
 			for(var c in clothes){
-				if(clothes[c].type.type=='螢光之靈') continue;
-				if(clothes[c].tags[0]){
-					for (var tag in clothes[c].tags){
-						selectArr.push(clothes[c].tags[tag]);
+				const clothing = clothes[c];
+				if (clothing === undefined) continue;
+				if(clothing.type.type=='螢光之靈') continue;
+				if(clothing.tags[0]){
+					for (var tag in clothing.tags){
+						const tagName = clothing.tags[tag];
+						if (tagName !== undefined) selectArr.push(tagName);
 					}
 				}
 			}
@@ -266,43 +321,57 @@ function chgScopeSub(){
 	}
 }
 
+/** @param {number} [j] @param {string} [k] @param {number} [l] */
 function chgScopeSub2(j,k,l){
-	if(!j) j = Dom("#degree_level").val();
+	if(!j) j = Number(Dom("#degree_level").val());
 	if(!k) k = Dom("#chooseCate").val();
+	if (k === undefined) return;
 
 	var valArr=[];
 	var levelDropInfo='';
 	var levelDropNote='';
 	if (j==1){
 		for(var i in clothes){
-			if(clothes[i].type.type==k&&clothes[i].source.indexOf('設')>-1){
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.type.type==k&&clothing.source.indexOf('設')>-1){
 				valArr.push(i);
 			}
 		}
 	}else if(j==2){
 		for(var i in clothes){
-			if(clothes[i].type.type==k&&clothes[i].source.indexOf('進')>-1){
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.type.type==k&&clothing.source.indexOf('進')>-1){
 				valArr.push(i);
 			}
 		}
 	}else if(j==3){
 		for(var i in clothes){
-			if(clothes[i].set==k){
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.set==k){
 				valArr.push(i);
 			}
 		}
 		if(l){//count for dye
 			var dyeArr=[];
 			for(var a in valArr){
+				const clothingId = valArr[a];
+				if (clothingId === undefined) continue;
 				for(var p in pattern){
-					if(pattern[p][5]=='染'&&clothesSet[pattern[p][0]][pattern[p][1]]==clothes[valArr[a]]) dyeArr.push(pattern[p][2]+','+pattern[p][3]);
-					if(pattern[p][5]=='染'&&clothesSet[pattern[p][2]][pattern[p][3]]==clothes[valArr[a]]) dyeArr.push(pattern[p][0]+','+pattern[p][1]);
+					if(pattern[p][5]=='染'&&clothesSet[pattern[p][0]][pattern[p][1]]==clothes[Number(clothingId)]) dyeArr.push(pattern[p][2]+','+pattern[p][3]);
+					if(pattern[p][5]=='染'&&clothesSet[pattern[p][2]][pattern[p][3]]==clothes[Number(clothingId)]) dyeArr.push(pattern[p][0]+','+pattern[p][1]);
 				}
 			}
 			for(var d in dyeArr){
-				var dd=dyeArr[d].split(',');
+				const dye = dyeArr[d];
+				if (dye === undefined) continue;
+				var dd=dye.split(',');
 				for(var i in clothes){
-					if(clothes[i].type.mainType==dd[0]&&clothes[i].id==dd[1]){
+					const clothing = clothes[i];
+					if (clothing === undefined) continue;
+					if(clothing.type.mainType==dd[0]&&clothing.id==dd[1]){
 						valArr.push(i);
 						break;
 					}
@@ -312,9 +381,11 @@ function chgScopeSub2(j,k,l){
 		}
 	}else if(j==4){
 		for(var i in clothes){
-			if(clothes[i].tags[0]){
-				for (var tag in clothes[i].tags){
-					if(clothes[i].tags[tag]==k){
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.tags[0]){
+				for (var tag in clothing.tags){
+					if(clothing.tags[tag]==k){
 						valArr.push(i);
 					}
 				}
@@ -331,11 +402,13 @@ function chgScopeSub2(j,k,l){
 		for (var c in category){//sort by category
 			if(j<=2&&category[c]!=k) continue;//if j<=2 skip other categories
 			for (var i in clothes){
-				if(Dom.inArray(i,valArr)>-1&&clothes[i].type.type==category[c]){
-					var line=tab(ahref(clothes[i].name,'genFactor('+i+')'));
-						line+=tab(clothes[i].type.type);
-						line+=tab(clothes[i].id);
-						var srcs = conv_source(clothes[i].source, clothes[i].type.mainType);
+				const clothing = clothes[i];
+				if (clothing === undefined) continue;
+				if(Dom.inArray(i,valArr)>-1&&clothing.type.type==category[c]){
+					var line=tab(ahref(clothing.name,'genFactor('+i+')'));
+						line+=tab(clothing.type.type);
+						line+=tab(clothing.id);
+						var srcs = conv_source(clothing.source, clothing.type.mainType);
 						line+=tab(srcs);
 						line+=tab(cartButton('addCart('+i+')'));
 					levelDropNote+=tr(line);
@@ -359,16 +432,19 @@ function chgStars(){
 	var j=Dom("#degree_level").val();
 	var chooseSub='&ensp;-&ensp;';
 	
+	/** @type {string[]} */
 	var selectArr=[];
 	for (var i in clothes){
-		if(clothes[i].stars==j){
+		const clothing = clothes[i];
+		if (clothing === undefined) continue;
+		if(clothing.stars==j){
 			for (let sourceIndex = 0; sourceIndex < src_desc.length; sourceIndex++){
 				const sourceDescription = src_desc[sourceIndex];
 				const sourceRule = src[sourceIndex];
 				if (sourceDescription === undefined || sourceRule === undefined) continue;
 				if (sourceDescription.indexOf('重構')>-1) continue;
 				for (let ss = 0; ss < sourceRule.length; ss++){
-					if(clothes[i].source.indexOf(sourceRule[ss] ?? '')>-1){
+					if(clothing.source.indexOf(sourceRule[ss] ?? '')>-1){
 						selectArr.push(sourceDescription);
 						break;
 					}
@@ -400,35 +476,46 @@ function chgStars2(){
 		var sourceRule = src[kp];
 		if (sourceRule === undefined) return;
 		var srcs=sourceRule.split(',');
+		/** @type {StarDrop[]} */
 		var outStars2=[];
 		for (var i in clothes){
-			if(clothes[i].stars!=j) continue;
-			var thisSrc=clothes[i].source;
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.stars!=j) continue;
+			var thisSrc=clothing.source;
 			for (var s in srcs){
+				const sourcePart = srcs[s];
+				if (sourcePart === undefined) continue;
 				//note: hardcoded skip part of '聯盟·小鋪' & '謎之屋'
-				if(srcs[s]=='聯盟·小鋪'&&thisSrc!=srcs[s]) continue;
+				if(sourcePart=='聯盟·小鋪'&&thisSrc!=sourcePart) continue;
 				if(k=='謎之屋'&&(thisSrc.indexOf('店')>-1||thisSrc.indexOf('進')>-1||thisSrc.indexOf('公')>-1||thisSrc.indexOf('少')>-1)) continue;
-				if(thisSrc.indexOf(srcs[s])>-1) {outStars2.push([clothes[i],srcs[s],i]);break;}
+				if(thisSrc.indexOf(sourcePart)>-1) {outStars2.push([clothing,sourcePart,i]);break;}
 			}
 		}
 		if(kp<2){
+			/** @type {StarDrop[]} */
 			var outStars2tmp=[];
 			for (l1=0; l1<chapList.length; l1++){
 				for (l=1;l<30;l++){//sort by level
+					/** @type {string | number} */
 					var l2=l;
 					if(l>20) l2 = "支"+l%10;
 					for (var i in outStars2){
-						var src_sp=outStars2[i][0].source.split("/");
+						const starDrop = outStars2[i];
+						if (starDrop === undefined) continue;
+						var src_sp=starDrop[0].source.split("/");
 						for (var ss in src_sp){
-							if(src_sp[ss]==chapList[l1]+'-'+l2+sourceRule){
-								outStars2tmp.push([outStars2[i][0],src_sp[ss],outStars2[i][2]]);
+							const sourcePart = src_sp[ss];
+							if (sourcePart === undefined) continue;
+							if(sourcePart==chapList[l1]+'-'+l2+sourceRule){
+								outStars2tmp.push([starDrop[0],sourcePart,starDrop[2]]);
 								break;
 							}
 						}
 					}
 				}
 			}
-			var outStars2=outStars2tmp;
+			outStars2=outStars2tmp;
 		}else{
 			//first by source position, then by source, last by clothes type
 			if (k=='兌換') outStars2.sort(function(a,b){return Dom.inArray(a[1],srcs)==Dom.inArray(b[1],srcs) ? ( a[0].source==b[0].source ? Dom.inArray(a[0].type.type,category)-Dom.inArray(b[0].type.type,category) : compareStr(a[0].source,b[0].source) ) : Dom.inArray(a[1],srcs)-Dom.inArray(b[1],srcs)})
@@ -438,13 +525,15 @@ function chgStars2(){
 		if(outStars2.length>0){
 			var levelDropInfo=table()+tr(tab('名稱')+tab('來源')+tab('部位')+tab('材料需求統計'),'style="font-weight:bold;"');
 			for (var i in outStars2){
-				var thisDeps=addhighlightdeps(outStars2[i][2]);
-				var thisName=ahref((thisDeps[1]?thisDeps[1]:outStars2[i][0].name),'genFactor('+outStars2[i][2]+')','inherit');
-				var thisSrc=outStars2[i][0].source;
-				var thisPrice=getMerc(outStars2[i][0]);
+				const starDrop = outStars2[i];
+				if (starDrop === undefined) continue;
+				var thisDeps=addhighlightdeps(starDrop[2]);
+				var thisName=ahref((thisDeps[1]?thisDeps[1]:starDrop[0].name),'genFactor('+starDrop[2]+')','inherit');
+				var thisSrc=starDrop[0].source;
+				var thisPrice=getMerc(starDrop[0]);
 				if(thisPrice) thisSrc += '<br>('+thisPrice[1]+thisPrice[0]+')';
-				thisSrc=kp<2?outStars2[i][1]:thisSrc;
-				var thisType=outStars2[i][0].type.mainType;
+				thisSrc=kp<2?starDrop[1]:thisSrc;
+				var thisType=starDrop[0].type.mainType;
 				levelDropInfo+=tr(tab(thisName)+tab(thisSrc)+tab(thisType)+tab(thisDeps[0], 'class="level_drop_cnt"'));
 			}
 			levelDropInfo+=table(1);
@@ -461,6 +550,7 @@ function chgStars2(){
 	}
 }
 
+/** @param {string} str1 @param {string} str2 */
 function compareStr(str1,str2){
 	if (str1 < str2) return -1;
 	if (str1 > str2) return 1;
@@ -477,28 +567,33 @@ function showFactorInfo(){
 	else genFactor(t);
 }
 
-/** @returns {[string, string]} */
+/** @param {MaterialId} i @returns {[string, string]} */
 function addhighlightdeps(i){
-	var deps1=clothes[i].getDeps('   ', 1);
+	const clothing = clothes[Number(i)];
+	if (!clothing) return ['', ''];
+	var deps1=clothing.getDeps('   ', 1);
 	var deps=add_genFac(deps1,1);
 	var item='';
 	
 	for (var h in highlight){
-		if(getLastIndexHL(deps1,highlight[h])>-1){
+		const setName = highlight[h];
+		if (setName === undefined) continue;
+		if(getLastIndexHL(deps1,setName)>-1){
 			var style=highlight_style[h];
-			var ind=getLastIndexHL(deps,highlight[h]);			
+			var ind=getLastIndexHL(deps,setName);
 			while(ind>-1){//in case it appears 2 times like 5-10
 				var HRow_end=deps.indexOf('\n',ind)>-1 ? deps.indexOf('\n',ind) : deps.length;
 				var HRow_start=deps.substr(0,ind).lastIndexOf('\n   [')+1;
 				deps=deps.substr(0,HRow_start)+span(deps.substr(HRow_start,HRow_end-HRow_start),style)+deps.substr(HRow_end);
-				ind=getLastIndexHL(deps.substr(0,HRow_start),highlight[h]);
+				ind=getLastIndexHL(deps.substr(0,HRow_start),setName);
 			}
-			item+=span(clothes[i].name,style)+'<br/>';
+			item+=span(clothing.name,style)+'<br/>';
 		}
 	}
 	return [deps,item];
 }
 
+/** @param {string} txt @param {string} setName */
 function getLastIndexHL(txt,setName){
 	var max_index = -1;
 	//var max_name = '';
@@ -522,12 +617,15 @@ function showLevelDropInfo(){
 		levelDropInfo+=table()+tr(tab('名稱')+tab('關卡')+tab('材料需求統計'),'style="font-weight:bold;"');
 		for(var c=0; c<chapList.length; c++){ //by chapter
 			for (l=1;l<30;l++){ //by levels
+				/** @type {string | number} */
 				var l2=l;
 				if(l>20) l2 = "支"+l%10;
 				var curLevel = chapList[c]+'-'+l2+degree;
 				for (var i in clothes){
+					const clothing = clothes[i];
+					if (clothing === undefined) continue;
 					if (matchClothesLevels(i,curLevel)){//if source matches chapter&level
-						var currDeps=clothes[i].getDeps('   ', 1);
+						var currDeps=clothing.getDeps('   ', 1);
 						if (currDeps&&currDeps.indexOf('總計需 1 件')<0){
 							var depsResult=addhighlightdeps(i);
 							var depsSplit=depsResult[0].split('\n');
@@ -535,7 +633,7 @@ function showLevelDropInfo(){
 							for (const depLine of depsSplit){
 								if(depLine.indexOf('總計需')>0||depLine.indexOf('[消耗')>0) lack.push(depLine);
 							}
-							var item=depsResult[1]?depsResult[1]:clothes[i].name;
+							var item=depsResult[1]?depsResult[1]:clothing.name;
 							var line=tab(ahref(item,'genFactor('+i+')','inherit'));
 								line+=tab(curLevel);
 								line+=tab(lack.join('\n'),'class="level_drop_cnt"');
@@ -555,13 +653,16 @@ function showLevelDropInfo(){
 	else if (j!=0){//chapter chosen
 		levelDropInfo+=table()+tr(tab('名稱')+tab('關卡')+tab('材料需求統計'),'style="font-weight:bold;"');
 		for (l=1;l<30;l++){//sort by levels
+			/** @type {string | number} */
 			var l2=l;
 			if(l>20) l2 = "支"+l%10;
 			var curLevel=j+'-'+l2+degree;
 			for (var i in clothes){
+				const clothing = clothes[i];
+				if (clothing === undefined) continue;
 				if (matchClothesLevels(i,curLevel)){//if source matches chapter&level
 					var depsResult=addhighlightdeps(i);
-					var item=depsResult[1]?depsResult[1]:clothes[i].name;
+					var item=depsResult[1]?depsResult[1]:clothing.name;
 					var line=tab(ahref(item,'genFactor('+i+')','inherit'));
 						line+=tab(curLevel);
 						line+=tab(depsResult[0],'class="level_drop_cnt"');
@@ -580,9 +681,12 @@ function showLevelDropInfo(){
 	Dom("#downloadimage").html(imageButton());
 }
 
+/** @param {MaterialId} i @param {string} level */
 function matchClothesLevels(i,level){
+	const clothing = clothes[Number(i)];
+	if (!clothing) return false;
 	var k;
-	var src_sp=clothes[i].source.split("/");
+	var src_sp=clothing.source.split("/");
 	for (k=0;k<src_sp.length;k++){
 		if(src_sp[k]==level){
 			return true;
@@ -595,9 +699,11 @@ function genFactor_main(){
 	do{
 		var total=0;
 		for (var i in clothes){//add extra count once only
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
 			if(extraInd[i]&&(!extraAdded[i])){
-				reqCnt[i]+=1; 
-				genFactor2(clothes[i],1); 
+				reqCnt[i]=(reqCnt[i] ?? 0)+1;
+				genFactor2(clothing,1);
 				extraAdded[i]=1; 
 				total+=1;
 			}
@@ -605,52 +711,60 @@ function genFactor_main(){
 	}while(total>0);
 }
 
+/** @param {MaterialId} id @param {number} [showConstructInd] @param {number} [showConsumeInd] */
 function genFactor(id,showConstructInd,showConsumeInd){
+	const clothing = clothes[Number(id)];
+	if (!clothing) return;
 	if(!showConstructInd) showConstructInd = 0;
 	if(!showConsumeInd) showConsumeInd = 0;
 	clearCnt();
 	
-	if(showConsumeInd>0) genFactor2(clothes[id],1);
-	else {extraInd[id]=1; genFactor_main();}
+	if((showConsumeInd ?? 0)>0) genFactor2(clothing,1);
+	else {extraInd[Number(id)]=1; genFactor_main();}
 	
 	var cell='';
-	var output=table()+tr(tab('<b>'+clothes[id].name+'</b>&ensp;'+clothes[id].type.type+'&ensp;'+clothes[id].id+'&ensp;'+cartButton('addCart('+id+')'),'colspan="3"'));
-	if(clothes[id].simple[0]) cell+='簡約'+clothes[id].simple[0];
-	if(clothes[id].simple[1]) cell+='華麗'+clothes[id].simple[1];
-	if(clothes[id].active[0]) cell+='&ensp;活潑'+clothes[id].active[0];
-	if(clothes[id].active[1]) cell+='&ensp;優雅'+clothes[id].active[1];
-	if(clothes[id].cute[0]) cell+='&ensp;可愛'+clothes[id].cute[0];
-	if(clothes[id].cute[1]) cell+='&ensp;成熟'+clothes[id].cute[1];
-	if(clothes[id].pure[0]) cell+='&ensp;清純'+clothes[id].pure[0];
-	if(clothes[id].pure[1]) cell+='&ensp;性感'+clothes[id].pure[1];
-	if(clothes[id].cool[0]) cell+='&ensp;清涼'+clothes[id].cool[0];
-	if(clothes[id].cool[1]) cell+='&ensp;保暖'+clothes[id].cool[1];
-	if(clothes[id].tags[0]) {
+	var output=table()+tr(tab('<b>'+clothing.name+'</b>&ensp;'+clothing.type.type+'&ensp;'+clothing.id+'&ensp;'+cartButton('addCart('+id+')'),'colspan="3"'));
+	if(clothing.simple[0]) cell+='簡約'+clothing.simple[0];
+	if(clothing.simple[1]) cell+='華麗'+clothing.simple[1];
+	if(clothing.active[0]) cell+='&ensp;活潑'+clothing.active[0];
+	if(clothing.active[1]) cell+='&ensp;優雅'+clothing.active[1];
+	if(clothing.cute[0]) cell+='&ensp;可愛'+clothing.cute[0];
+	if(clothing.cute[1]) cell+='&ensp;成熟'+clothing.cute[1];
+	if(clothing.pure[0]) cell+='&ensp;清純'+clothing.pure[0];
+	if(clothing.pure[1]) cell+='&ensp;性感'+clothing.pure[1];
+	if(clothing.cool[0]) cell+='&ensp;清涼'+clothing.cool[0];
+	if(clothing.cool[1]) cell+='&ensp;保暖'+clothing.cool[1];
+	if(clothing.tags[0]) {
+		/** @type {string[]} */
 		var tags_conv=[];
-		for (var tg in clothes[id].tags){
-			tags_conv[tg]=ahref(clothes[id].tags[tg],"chgScopeSub2(4,'"+clothes[id].tags[tg]+"')");
+		for (var tg in clothing.tags){
+			const tagName = clothing.tags[tg];
+			if (tagName === undefined) continue;
+			tags_conv[tg]=ahref(tagName,"chgScopeSub2(4,'"+clothing.tags[tg]+"')");
 		}
 		cell+='&ensp;'+tags_conv.join(',');
 	}
-	if(clothes[id].set) cell+='&ensp;套裝:'+ahref(clothes[id].set,"chgScopeSub2(3,'"+clothes[id].set+"')");
+	if(clothing.set) cell+='&ensp;套裝:'+ahref(clothing.set,"chgScopeSub2(3,'"+clothing.set+"')");
 	output+=tr(tab(cell,'colspan="3"'));
 	
-	cell='來源:'+clothes[id].source;
-	var thisPrice=getMerc(clothes[id]);
+	cell='來源:'+clothing.source;
+	var thisPrice=getMerc(clothing);
 	if(thisPrice) cell += ' ('+thisPrice[1]+thisPrice[0]+')';
 	
-	if(parentInd[id]) { //if parent show price & formula
+	if(parentInd[Number(id)]) { //if parent show price & formula
 		var thisPatternPrice=getPatternPrice(id);
 		if(thisPatternPrice) cell += '('+thisPatternPrice+')';
 	
 		cell+=' = ';
 		for (var p in pattern) {
-			if (clothesSet[pattern[p][0]][pattern[p][1]]==clothes[id]){
+			if (clothesSet[pattern[p][0]][pattern[p][1]]==clothing){
 				//output+=clothesSet[pattern[p][2]][pattern[p][3]].name+'x'+pattern[p][4]+' ';
 				//show link
 				for (var c in clothes){
-					if(clothes[c]==clothesSet[pattern[p][2]][pattern[p][3]]){
-						cell+=ahref(clothes[c].name,'genFactor('+c+')')+'x'+pattern[p][4]+' ';
+					const clothing = clothes[c];
+					if (clothing === undefined) continue;
+					if(clothing==clothesSet[pattern[p][2]][pattern[p][3]]){
+						cell+=ahref(clothing.name,'genFactor('+c+')')+'x'+pattern[p][4]+' ';
 						break;
 					}
 				}
@@ -658,10 +772,10 @@ function genFactor(id,showConstructInd,showConsumeInd){
 		}
 		output+=tr(tab(cell,'colspan="3"'));
 		output+=genBasicMaterial(0,id,showConstructInd,showConsumeInd);
-	}else if(clothes[id].source.indexOf('重構')>-1){ //if construct show formula
+	}else if(clothing.source.indexOf('重構')>-1){ //if construct show formula
 		cell+=' = ';
 		for (var con in construct) {
-			if (clothesSet[construct[con][0]][construct[con][1]]==clothes[id]){
+			if (clothesSet[construct[con][0]][construct[con][1]]==clothing){
 				cell+=construct[con][2]+'x'+construct[con][3]+' ';
 			}
 		}
@@ -672,7 +786,7 @@ function genFactor(id,showConstructInd,showConsumeInd){
 	
 	output+=tr(tab('','colspan="3"'));
 	
-	var deps1=clothes[id].getDeps('   ', 1);
+	var deps1=clothing.getDeps('   ', 1);
 	if (deps1){
 		var pos1=deps1.indexOf('總計需');
 		var pos2=deps1.indexOf('件',pos1);
@@ -689,21 +803,28 @@ function genFactor(id,showConstructInd,showConsumeInd){
 	Dom("#downloadimage").html(imageButton());
 }
 
+/** @param {MaterialClothing} cloth @param {number} num */
 function genFactor2(cloth,num){
 	for (var i in pattern) {
 		if (clothesSet[pattern[i][0]][pattern[i][1]]==cloth){//found factor
 			for (var j in clothes){//mark it as parent
-				if(clothes[j]==cloth) parentInd[j]=1;
+				const clothing = clothes[j];
+				if (clothing === undefined) continue;
+				if(clothing==cloth) parentInd[j]=1;
 			}
 			if(pattern[i][4]>1){//if num required>1
 				for (var j in clothes){//mark sub as extra count needed
-					if(clothes[j]==clothesSet[pattern[i][2]][pattern[i][3]]){extraInd[j]=1;break;}
+					const clothing = clothes[j];
+					if (clothing === undefined) continue;
+					if(clothing==clothesSet[pattern[i][2]][pattern[i][3]]){extraInd[j]=1;break;}
 				}
 				addreqCnt(clothesSet[pattern[i][2]][pattern[i][3]],(pattern[i][4]-1)*num);
 				genFactor2(clothesSet[pattern[i][2]][pattern[i][3]],(pattern[i][4]-1)*num);
 			}else if(pattern[i][5]!='染'){//do not consume
 				for (var j in clothes){
-					if(clothes[j]==clothesSet[pattern[i][2]][pattern[i][3]]) extraInd[j]=1;
+					const clothing = clothes[j];
+					if (clothing === undefined) continue;
+					if(clothing==clothesSet[pattern[i][2]][pattern[i][3]]) extraInd[j]=1;
 				}
 			}else{//dye
 				addreqCnt(clothesSet[pattern[i][2]][pattern[i][3]],pattern[i][4]*num);
@@ -733,10 +854,13 @@ function clearCnt(){
 	}
 }
 
+/** @param {MaterialClothing} cloth @param {number} num */
 function addreqCnt(cloth,num){//add num in reqCnt[]
 	for (var i in clothes){
-		if (clothes[i]==cloth){
-			if(reqCnt[i]) reqCnt[i]+=num;
+		const clothing = clothes[i];
+		if (clothing === undefined) continue;
+		if (clothing==cloth){
+			if(reqCnt[i]) reqCnt[i]=(reqCnt[i] ?? 0)+num;
 			else reqCnt[i]=num;
 		}
 	}
@@ -751,12 +875,14 @@ function searchById(){
 		levelDropNote=table()+tr(tab('名稱')+tab('分類')+tab('編號')+tab('來源')+tab(''),'style="font-weight:bold;"');
 		for (var c in category){//sort by category
 			for (var i in clothes){
-				if( (clothes[i].name.indexOf(searchById)>-1||parseInt(clothes[i].id)==parseInt(searchById)) 
-					&& clothes[i].type.type==category[c]){
-					var line=tab(ahref(clothes[i].name,'genFactor('+i+')'));
-						line+=tab(clothes[i].type.type);
-						line+=tab(clothes[i].id);
-						var srcs = conv_source(clothes[i].source, clothes[i].type.mainType);
+				const clothing = clothes[i];
+				if (clothing === undefined) continue;
+				if( (clothing.name.indexOf(searchById)>-1||parseInt(clothing.id)==parseInt(searchById))
+					&& clothing.type.type==category[c]){
+					var line=tab(ahref(clothing.name,'genFactor('+i+')'));
+						line+=tab(clothing.type.type);
+						line+=tab(clothing.id);
+						var srcs = conv_source(clothing.source, clothing.type.mainType);
 						line+=tab(srcs);
 						line+=tab(cartButton('addCart('+i+')'));
 					levelDropNote+=tr(line);
@@ -772,6 +898,7 @@ function searchById(){
 	}
 }
 
+/** @param {string} setName @param {number} [showConstructInd] @param {number} [showConsumeInd] */
 function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is dummy now
 	if(!showConstructInd) showConstructInd=0;
 	if(!showConsumeInd) showConsumeInd=0;
@@ -779,7 +906,9 @@ function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is 
 	
 	var setCnt=0; var thisPatternPrice=0;
 	for (var i in clothes){
-		if(clothes[i].set==setName){
+		const clothing = clothes[i];
+		if (clothing === undefined) continue;
+		if(clothing.set==setName){
 			extraInd[i]=1;
 			setCnt+=1;
 			var thisPatternPrice_i=getPatternPrice(i); 
@@ -787,11 +916,13 @@ function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is 
 		}
 	}
 	
-	if(showConsumeInd>0){
+	if((showConsumeInd ?? 0)>0){
 		clearCnt();
 		for (var i in clothes){
-			if(clothes[i].set==setName){
-				genFactor2(clothes[i],1);
+			const clothing = clothes[i];
+			if (clothing === undefined) continue;
+			if(clothing.set==setName){
+				genFactor2(clothing,1);
 			}
 		}
 	}
@@ -799,7 +930,7 @@ function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is 
 	
 	var thisPatternPrice_2=0;
 	for (var i in clothes){
-		if(parentInd[i]>0||reqCnt[i]>0){
+		if((parentInd[i] ?? 0)>0||(reqCnt[i] ?? 0)>0){
 			var thisPatternPrice_in=getPatternPrice(i); 
 			if(thisPatternPrice_in) thisPatternPrice_2 += thisPatternPrice_in;
 		}
@@ -820,13 +951,16 @@ function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is 
 	Dom("#downloadimage").html(imageButton());
 }
 
+/** @param {number} setInd @param {MaterialId} id @param {number} [showConstructInd] @param {number} [showConsumeInd] */
 function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 	var l, l1;
 	if(!showConstructInd){showConstructInd=0; var constxt='查看重構材料'; var oppoConstructInd=1;}
 	else{var constxt='查看部件材料'; var oppoConstructInd=0;}
 	if(!showConsumeInd){showConsumeInd=0; var reqtxt='需求數量'; var oppoConsumeInd=1;}
 	else{var reqtxt='消耗數量'; var oppoConsumeInd=0;}
+	/** @type {string[]} */
 	var header=[];
+	/** @type {string[]} */
 	var content=[];
 	var construct_href_1='genFactor('+id+',';
 	if(setInd==1) construct_href_1 = "searchSet('"+id+"',";
@@ -843,14 +977,20 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 		if(Number(s)<2){
 			for (l1=0; l1<chapList.length; l1++){
 				for (l=1;l<30;l++){//sort by level
+					/** @type {string | number} */
 					var l2=l;
 					if(l>20) l2="支"+l%10;
-					for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])){
-						var srci=clothes[i].source;
-						var src_sp=clothes[i].source.split("/");
+					for (var i in clothes){
+						const clothing = clothes[i];
+						if (clothing === undefined) continue;
+						if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])){
+						var srci=clothing.source;
+						var src_sp=clothing.source.split("/");
 						for (var ss in src_sp){
-							if( (Number(s)==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+sourceRule)==0&&srci.indexOf(src[1])<0) ||
-								(Number(s)==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+sourceRule)==0) ){
+							const sourcePart = src_sp[ss];
+							if (sourcePart === undefined) continue;
+							if( (Number(s)==0&&sourcePart.indexOf(chapList[l1]+'-'+l2+sourceRule)==0&&srci.indexOf(src[1] ?? '')<0) ||
+								(Number(s)==1&&sourcePart.indexOf(chapList[l1]+'-'+l2+sourceRule)==0) ){
 								if(!content[s]) content[s]='';
 								content[s]+=retFactor(i,srci);
 								break;
@@ -867,36 +1007,45 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 				}
 				return ret;
 			}();
-			for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])&&clothes[i].source.indexOf(sourceRule)>-1){
+			for (var i in clothes){
+				const clothing = clothes[i];
+				if (clothing === undefined) continue;
+				if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])&&clothing.source.indexOf(sourceRule)>-1){
 				for (var con in construct) {
-					if (clothesSet[construct[con][0]][construct[con][1]]==clothes[i]){
+					if (clothesSet[construct[con][0]][construct[con][1]]==clothing){
 						shownFactor[i]=1;
 						for (var m in constructMaterialName){ if(Dom.trim(construct[con][2])==constructMaterialName[m]) {
-							constructMaterial[m]+=(construct[con][3]-1)*reqCnt[i];
+							constructMaterial[m]=(constructMaterial[m] ?? 0)+(construct[con][3]-1)*(reqCnt[i] ?? 0);
 							break;
 						}}
 					}
 				}
 			}}
 			for (var i in constructMaterial){
-				if (constructMaterial[i]>0){
+				const count = constructMaterial[i];
+				if (count !== undefined && count>0){
 					if(!content[s]) content[s]='';
-					content[s]+=tr(tab(constructMaterialName[i])+tab('分解')+tab(constructMaterial[i]+(showConsumeInd?0:1)));
+					content[s]+=tr(tab(constructMaterialName[i])+tab('分解')+tab(count+(showConsumeInd?0:1)));
 				}
 			}
 		}else{
 
 			var s_split=sourceRule.split(',');//sort by defined order
 			for(var sp_n in s_split){
-				for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])){
-					var srci=clothes[i].source;
-					if(srci.indexOf(s_split[sp_n])>-1){
+				const sourcePart = s_split[sp_n];
+				if (sourcePart === undefined) continue;
+				for (var i in clothes){
+					const clothing = clothes[i];
+					if (clothing === undefined) continue;
+				if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])){
+					var srci=clothing.source;
+					if(srci.indexOf(sourcePart)>-1){
 						if(!content[s]) content[s]='';
 						content[s]+=retFactor(i,srci);
-						var price=getMerc(clothes[i]); //add sum of price for each category
+						var price=getMerc(clothing); //add sum of price for each category
 						if(price){
-							if(!mercRes[price[0]]) mercRes[price[0]]=price[1]*reqCnt[i];
-							else mercRes[price[0]] = (mercRes[price[0]] || 0) + price[1]*reqCnt[i];
+							if(!mercRes[price[0]]) mercRes[price[0]]=price[1]*(reqCnt[i] ?? 0);
+							else mercRes[price[0]] = (mercRes[price[0]] || 0) + price[1]*(reqCnt[i] ?? 0);
 						}
 					}
 				}}
@@ -918,51 +1067,66 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 	}
 	
 	var dye=''; var dye_jjc=0; var dye_lm=0;
-	for (var c in convertlist) {if(convertlistCnt[c]>0) {
-		dye+=tr(tab(convertlist[c],'colspan="2"')+tab(convertlistCnt[c]));
-		dye_jjc+=convertlistCnt[c]*convertPrice[convertlist[c]][0];
-		dye_lm+=convertlistCnt[c]*convertPrice[convertlist[c]][1];
+	for (var c in convertlist) {
+		const dyeName = convertlist[c];
+		const dyeCount = convertlistCnt[c];
+		if (dyeName === undefined || dyeCount === undefined) continue;
+		if(dyeCount>0) {
+		dye+=tr(tab(dyeName,'colspan="2"')+tab(dyeCount));
+		dye_jjc+=dyeCount*convertPrice[dyeName][0];
+		dye_lm+=dyeCount*convertPrice[dyeName][1];
 	}}
 	if(dye) {output+=tr(tab('<u>染料</u><br>&emsp;總計：'+dye_jjc+'星光幣/'+dye_lm+'聯盟幣','colspan="3"'))+dye;}
 	
 	return output;
 }
 
+/** @param {string} text @param {number} [inherit] */
 function add_genFac(text,inherit){
 	var textArr=text.split('\n'); //[0] to [length-2];
 	var parents=[];
 	for (var i=1;i<textArr.length-1;i++){//discard [0] for its own name
-		var pos_end=(textArr[i].indexOf('[消耗')>-1 ? textArr[i].indexOf('[消耗') : textArr[i].length);
-		var pos_start=textArr[i].substr(0,pos_end).lastIndexOf(']')+1;
-		var pos_start_1=textArr[i].substr(0,pos_start).lastIndexOf('[')+1;
-		var clo_name=textArr[i].substr(pos_start,pos_end-pos_start);
-		var clo_type=textArr[i].substr(pos_start_1,pos_start-pos_start_1-1);
+		const line = textArr[i];
+		if (line === undefined) continue;
+		var pos_end=(line.indexOf('[消耗')>-1 ? line.indexOf('[消耗') : line.length);
+		var pos_start=line.substr(0,pos_end).lastIndexOf(']')+1;
+		var pos_start_1=line.substr(0,pos_start).lastIndexOf('[')+1;
+		var clo_name=line.substr(pos_start,pos_end-pos_start);
+		var clo_type=line.substr(pos_start_1,pos_start-pos_start_1-1);
 		for (var c in clothes){
-			if (clothes[c].type.mainType==clo_type&&clothes[c].name==clo_name){
+			const clothing = clothes[c];
+			if (clothing === undefined) continue;
+			if (clothing.type.mainType==clo_type&&clothing.name==clo_name){
 				clo_name=ahref(clo_name,'genFactor('+c+')',(inherit? 'inherit' : ''));
 				break;
 			}
 		}
-		parents[i-1]=textArr[i].substr(0,pos_start)+clo_name+textArr[i].substr(pos_end);
-		if(!inherit) parents[i-1]=parents[i-1].substr(3);
+		const parent = line.substr(0,pos_start)+clo_name+line.substr(pos_end);
+		parents[i-1]=inherit ? parent : parent.substr(3);
 	}
 	var out=(inherit? textArr[0]+'\n':'')+parents.join('\n')+'\n';
 	return out;
 }
 
+/** @param {MaterialId} i @param {string} srci */
 function retFactor(i,srci){
-	shownFactor[i]=1;
-	var ret=tab(ahref(clothes[i].name,'genFactor('+i+')'));
+	const clothing = clothes[Number(i)];
+	if (!clothing) return '';
+	shownFactor[Number(i)]=1;
+	var ret=tab(ahref(clothing.name,'genFactor('+i+')'));
 		ret+=tab(srci);
-		ret+=tab(reqCnt[i]);
+		ret+=tab(reqCnt[Number(i)]);
 	return tr(ret);
 }
 
+/** @param {string} setName */
 function hvConvert(setName){
 	for(var i in clothes){
-		if(clothes[i].set==setName){
+		const clothing = clothes[i];
+		if (clothing === undefined) continue;
+		if(clothing.set==setName){
 			for (var p in pattern){
-				if (pattern[p][5]=='染'&&(clothesSet[pattern[p][0]][pattern[p][1]]==clothes[i]||clothesSet[pattern[p][2]][pattern[p][3]]==clothes[i])){
+				if (pattern[p][5]=='染'&&(clothesSet[pattern[p][0]][pattern[p][1]]==clothing||clothesSet[pattern[p][2]][pattern[p][3]]==clothing)){
 					return 1;
 				}
 			}
@@ -971,16 +1135,20 @@ function hvConvert(setName){
 	return 0;
 }
 
+/** @param {string} src @param {string} mainType */
 function conv_source(src,mainType){
 	if (src.indexOf('定')>=0 || src.indexOf('進')>=0) {
 		var orig_num = src.replace(/[^(定|進)]*(定|進)([0-9]+)[^0-9]*/, "$2");
 		for (var p in clothes){
-			if (clothes[p].type.mainType==mainType&&clothes[p].id==orig_num) return src.replace(orig_num, '-' + clothes[p].name);
+			const clothing = clothes[p];
+			if (clothing === undefined) continue;
+			if (clothing.type.mainType==mainType&&clothing.id==orig_num) return src.replace(orig_num, '-' + clothing.name);
 		}
 	}
 	return src;
 }
 
+/** @param {MaterialClothing} piece @returns {[string, number] | undefined} */
 function getMerc(piece){
 	for (var m in merchant){
 		if(piece==clothesSet[merchant[m][0]][merchant[m][1]]){
@@ -990,20 +1158,26 @@ function getMerc(piece){
 	return;
 }
 
+/** @param {MaterialId} id @returns {number | undefined} */
 function getPatternPrice(id){
+	const clothing = clothes[Number(id)];
+	if (!clothing) return;
 	for (var pc in patternPrice){
-		if (clothes[id].type.mainType==patternPrice[pc][0]&&clothes[id].id==patternPrice[pc][1]){
+		if (clothing.type.mainType==patternPrice[pc][0]&&clothing.id==patternPrice[pc][1]){
 			return patternPrice[pc][2];
 		}
 	}
 	return;
 }
 
+/** @template T @param {T[]} arr @returns {T[]} */
 function getDistinct(arr){
 	var newArr=[];
 	for (var i in arr){
-		if(Dom.inArray(arr[i], newArr)<0){
-			newArr.push(arr[i]);
+		// for...in supplies an existing key; retain explicit undefined values if T includes them.
+		const value = /** @type {T} */ (arr[i]);
+		if(Dom.inArray(value, newArr)<0){
+			newArr.push(value);
 		}
 	}
 	return newArr;
@@ -1018,11 +1192,15 @@ function get_convertlist(){
 
 function get_maxc(){
 	for (var i in clothes){
-		if(clothes[i].source.indexOf('公')>0||clothes[i].source.indexOf('少')>0){
-			var srcs=clothes[i].source.split('/');
+		const clothing = clothes[i];
+		if (clothing === undefined) continue;
+		if(clothing.source.indexOf('公')>0||clothing.source.indexOf('少')>0){
+			var srcs=clothing.source.split('/');
 			for (var s in srcs){
-				if ((srcs[s].indexOf('公')>0||srcs[s].indexOf('少')>0)&&srcs[s].indexOf('-')>0){
-					var chapter = srcs[s].substr(0,srcs[s].lastIndexOf('-'));
+				const sourcePart = srcs[s];
+				if (sourcePart === undefined) continue;
+				if ((sourcePart.indexOf('公')>0||sourcePart.indexOf('少')>0)&&sourcePart.indexOf('-')>0){
+					var chapter = sourcePart.substr(0,sourcePart.lastIndexOf('-'));
 					if (Dom.inArray(chapter,chapList)<0) chapList.push(chapter);
 				}
 			}
@@ -1033,31 +1211,37 @@ function get_maxc(){
 		var be = b.replace(/[0-9-]*/g,'');
 		var ac = a.replace(/[^0-9]*/g,''); //chapter
 		var bc = b.replace(/[^0-9]*/g,'');
-		if (ae == be) return ac - bc; //same episode, compare only chapter
+		if (ae == be) return Number(ac) - Number(bc); //same episode, compare only chapter
 		else return ae > be ? 1 : (ae < be ? -1 : 0) ; //differnt episode
 	});
 }
 
+/** @param {unknown} text @param {string} [attr] */
 function tab(text,attr){
 	return '<td'+(attr? ' '+attr : '')+'>'+text+'</td>';
 }
 
+/** @param {string} text @param {string} [attr] */
 function tr(text,attr){
 	return '<tr'+(attr? ' '+attr : '')+'>'+text+'</tr>';
 }
 
+/** @param {string} text @param {string} [cls] */
 function span(text,cls){
 	return '<span'+(cls? ' class="'+cls+'"' : '')+'>'+text+'</span>';
 }
 
+/** @param {string} action */
 function materialActionAttr(action){
 	return 'data-material-action="'+encodeURIComponent(action || '')+'"';
 }
 
+/** @param {string} action */
 function materialChangeAttr(action){
 	return 'data-material-change="'+encodeURIComponent(action || '')+'"';
 }
 
+/** @param {string} text @param {string} action @param {string} [cls] */
 function ahref(text,action,cls){
 	return '<a href="#" '+materialActionAttr(action)+' '+(cls? 'class="'+cls+'" ' : '')+'>'+text+'</a>';
 }
@@ -1066,15 +1250,19 @@ function imageButton(){
 	return '<button '+materialActionAttr('toimage()')+' class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>';
 }
 
+/** @param {number} [ind] */
 function table(ind){
 	return ind? '</table>' : '<table border="1">';
 }
 
+/** @param {string} id @param {string} onchange @param {(string | number)[]} valArr @param {(string | number)[]} [textArr] */
 function selectBox(id,onchange,valArr,textArr){
 	var ret='<select id="'+id+'" '+materialChangeAttr(onchange)+'>';
 	if(!textArr) textArr = valArr;
 	for (var i in valArr){
-		ret+='<option value="'+valArr[i]+'">'+textArr[i]+'</option>';
+		const value = valArr[i];
+		if (value === undefined) continue;
+		ret+='<option value="'+value+'">'+textArr[i]+'</option>';
 	}
 	ret+='</select>';;
 	return ret;
@@ -1124,27 +1312,34 @@ function clearCustomInventory(){
 	loadCustomInventory();
 }
 
+/** @param {number} [showConstructInd] @param {number} [showConsumeInd] */
 function calcCart(showConstructInd,showConsumeInd){
 	if(!showConstructInd) showConstructInd = 0;
 	clearCnt();
 	var thisPatternPrice=0;
 	for (var i in cartCont){
-		extraInd[cartCont[i]]=1;
-		var thisPatternPrice_i=getPatternPrice(cartCont[i]); 
+		const cartId = cartCont[i];
+		if (cartId === undefined) continue;
+		extraInd[Number(cartId)]=1;
+		var thisPatternPrice_i=getPatternPrice(cartId);
 		if(thisPatternPrice_i) thisPatternPrice += thisPatternPrice_i;
 	}
 	
-	if(showConsumeInd>0){
+	if((showConsumeInd ?? 0)>0){
 		clearCnt();
 		for (var i in cartCont){
-			genFactor2(clothes[cartCont[i]],1);
+			const cartId = cartCont[i];
+			if (cartId === undefined) continue;
+			const clothing = clothes[Number(cartId)];
+			if (!clothing) continue;
+			genFactor2(clothing,1);
 		}
 	}
 	else genFactor_main();
 	
 	var thisPatternPrice_2=0;
 	for (var i in clothes){
-		if(parentInd[i]>0||reqCnt[i]>0){
+		if((parentInd[i] ?? 0)>0||(reqCnt[i] ?? 0)>0){
 			var thisPatternPrice_in=getPatternPrice(i); 
 			if(thisPatternPrice_in) thisPatternPrice_2 += thisPatternPrice_in;
 		}
@@ -1164,24 +1359,31 @@ function calcCart(showConstructInd,showConsumeInd){
 	Dom("#downloadimage").html(imageButton());
 }
 
+/** @param {MaterialId} i */
 function addCart(i){
 	cartCont.push(i);
 	refreshCart();
 }
 
+/** @param {MaterialId} id */
 function delCart(id){
 	var newArr=cartCont;
 	cartCont=[];
 	for (var i in newArr){
-		if(newArr[i]!=id) cartCont.push(newArr[i]);
+		const cartId = newArr[i];
+		if (cartId === undefined) continue;
+		if(cartId!=id) cartCont.push(cartId);
 	}
 	refreshCart();
 }
 
+/** @param {string} val */
 function addCartList(val){
 	var valArr=val.split('/');
 	for(var i in valArr){
-		cartCont.push(parseInt(valArr[i]));
+		const clothingId = valArr[i];
+		if (clothingId === undefined) continue;
+		cartCont.push(parseInt(clothingId));
 	}
 	refreshCart();
 }
@@ -1191,7 +1393,11 @@ function refreshCart(){
 	cartCont=getDistinct(cartCont);
 	if(cartCont.length>0) Dom('#cartCont').append('<br>');
 	for (var i in cartCont){
-		Dom('#cartCont').append('<button class="btn btn-xs btn-default">'+ahref(clothes[cartCont[i]].name,"genFactor("+cartCont[i]+")","search")+ahref('[×]','delCart('+cartCont[i]+')')+'</button>&ensp;');
+		const cartId = cartCont[i];
+		if (cartId === undefined) continue;
+		const clothing = clothes[Number(cartId)];
+		if (!clothing) continue;
+		Dom('#cartCont').append('<button class="btn btn-xs btn-default">'+ahref(clothing.name,"genFactor("+cartId+")","search")+ahref('[×]','delCart('+cartId+')')+'</button>&ensp;');
 	}
 }
 
@@ -1200,6 +1406,7 @@ function clearCart(){
 	refreshCart();
 }
 
+/** @param {string} action */
 function cartButton(action){
 	return '<button class="glyphicon glyphicon-shopping-cart btn btn-xs btn-default" '+materialActionAttr(action)+'></button>'
 }
@@ -1211,6 +1418,7 @@ Dom(document).ready(function () {
 	updateSize(mine);
 });
 
+/** @param {import('./src/domain/inventory/types.d.ts').Inventory<import('./src/domain/scoring/types.d.ts').ScoringClothing>} mine */
 function updateSize(mine) {
 	Dom("#myClothes").val(mine.serialize());
 }
@@ -1231,7 +1439,9 @@ function saveAndUpdate() {
 }
 
 function toimage() {
-	html2canvas(document.getElementById("levelDropInfo"), {
+	const element = document.getElementById("levelDropInfo");
+	if (!element) return;
+	html2canvas(element, {
         	onrendered: function(canvas) {
                     Dom("#auto").attr('href', canvas.toDataURL("image/png"));
                     Dom("#auto").attr('download','download.png');

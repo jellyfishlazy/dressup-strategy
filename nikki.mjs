@@ -1,67 +1,105 @@
-import { FEATURES, global, shoppingCart, clothesSet, clothes, accMul, accSumScore, accCateNum, loadNew, load, MyClothes, loadFromStorage, save, calcDependencies } from './model.mjs';
+import { FEATURES, global, shoppingCart, clothesSet as legacyClothesSet, clothes as legacyClothes, accMul, accSumScore, accCateNum, loadNew, load, MyClothes, loadFromStorage, save, calcDependencies } from './model.mjs';
 import { drawTable, button_search, clothesNameTd_Search } from './ui.mjs';
 import { initOnekey } from './onekeystrategy.mjs';
 import { shareWardrobe } from './sharewardrobe.mjs';
 
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {import('./src/domain/scoring/types.d.ts').Criteria} Criteria */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoreBonus} ScoreBonus */
+/** @typedef {import('./src/legacy/native-dom-types.d.ts').DomCollection} DomCollection */
+/** @typedef {ScoringClothing & { isSuit: string }} NikkiClothing */
+/** @typedef {{ tag: string, replace?: boolean, base: string, weight: number }} BonusInfo */
+/** @typedef {{ tagWhitelist?: string, nameWhitelist?: string }} LevelFilter */
+/** @typedef {ScoreBonus & LevelFilter & { note?: string, param?: string | number }} LevelBonus */
+/** @typedef {{ weight: Criteria, additionalBonus?: LevelBonus[] | null | undefined, filter?: LevelFilter | null, hint?: string[][] | undefined, skills?: string[][], bonus?: BonusInfo[] }} NikkiLevel */
+/** @typedef {string | number | null | undefined} CategorySelection */
+/** @typedef {(base: string, weight: number, tag: string) => (criteria: Criteria) => ScoreBonus} BonusFactory */
+
+// Consume model's deliberately loose exports locally; preserve collection identity.
+/** @type {NikkiClothing[]} */
+const clothes = legacyClothes;
+/** @type {Record<string, Record<string, NikkiClothing>>} */
+const clothesSet = legacyClothesSet;
+
 /** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
-const Dom = globalThis.Dom;
-const category = globalThis.category;
-const skipCategory = globalThis.skipCategory;
-const replaceScoreBonusFactory = globalThis.replaceScoreBonusFactory;
-const addScoreBonusFactory = globalThis.addScoreBonusFactory;
-const clone = globalThis.clone;
-const ReDrawcloneHeaderRow = globalThis.ReDrawcloneHeaderRow;
-const allThemes = globalThis.allThemes;
-const themeFilter = globalThis.themeFilter;
-const scoring = globalThis.scoring;
-const clothesHistoryNotice = globalThis.clothesHistoryNotice;
-const levelHistoryNotice = globalThis.levelHistoryNotice;
-const clothesNotice = globalThis.clothesNotice;
-const levelNotice = globalThis.levelNotice;
-const lastVersion = globalThis.lastVersion;
-const menuFixed = globalThis.menuFixed;
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: string[] }} */ (globalThis).skipCategory;
+const replaceScoreBonusFactory = /** @type {typeof globalThis & { replaceScoreBonusFactory: BonusFactory }} */ (globalThis).replaceScoreBonusFactory;
+const addScoreBonusFactory = /** @type {typeof globalThis & { addScoreBonusFactory: BonusFactory }} */ (globalThis).addScoreBonusFactory;
+const clone = /** @type {typeof globalThis & { clone: <T>(value: T) => T }} */ (globalThis).clone;
+const ReDrawcloneHeaderRow = /** @type {typeof globalThis & { ReDrawcloneHeaderRow: () => void }} */ (globalThis).ReDrawcloneHeaderRow;
+const allThemes = /** @type {typeof globalThis & { allThemes: Record<string, NikkiLevel> }} */ (globalThis).allThemes;
+const themeFilter = /** @type {typeof globalThis & { themeFilter: string[][] }} */ (globalThis).themeFilter;
+const scoring = /** @type {typeof globalThis & { scoring: Record<string, unknown> }} */ (globalThis).scoring;
+const clothesHistoryNotice = /** @type {typeof globalThis & { clothesHistoryNotice: string }} */ (globalThis).clothesHistoryNotice;
+const levelHistoryNotice = /** @type {typeof globalThis & { levelHistoryNotice: string }} */ (globalThis).levelHistoryNotice;
+const clothesNotice = /** @type {typeof globalThis & { clothesNotice: string }} */ (globalThis).clothesNotice;
+const levelNotice = /** @type {typeof globalThis & { levelNotice: string }} */ (globalThis).levelNotice;
+const lastVersion = /** @type {typeof globalThis & { lastVersion: string }} */ (globalThis).lastVersion;
+const menuFixed = /** @type {typeof globalThis & { menuFixed: ((id: string) => void) | undefined }} */ (globalThis).menuFixed;
+// BigUse injects its legacy draw/filter/category callbacks through this callable seam.
+/** @typedef {(...args: any[]) => any} RuntimeHook */
+/** @type {Record<'drawTable' | 'chooseAccessories' | 'switchCate', RuntimeHook | null>} */
 const runtimeHooks = { drawTable: null, chooseAccessories: null, switchCate: null };
 
+/** @param {Partial<typeof runtimeHooks>} hooks */
 function configureRuntimeHooks(hooks = {}) {
-	for (const name of ['drawTable', 'chooseAccessories', 'switchCate']) {
+	for (const name of /** @type {const} */ (['drawTable', 'chooseAccessories', 'switchCate'])) {
 		if (Object.hasOwn(hooks, name)) {
-			if (hooks[name] !== null && typeof hooks[name] !== 'function') throw new TypeError(`Invalid runtime hook: ${name}`);
-			runtimeHooks[name] = hooks[name];
+			const hook = hooks[name];
+			if (hook !== null && typeof hook !== 'function') throw new TypeError(`Invalid runtime hook: ${name}`);
+			runtimeHooks[name] = hook;
 		}
 	}
 }
 
+/** @param {Parameters<typeof drawTable>} args */
 function invokeDrawTable(...args) {
 	return (runtimeHooks.drawTable || drawTable)(...args);
 }
 
+/** @param {[accfilters: Criteria]} args */
 function invokeChooseAccessories(...args) {
 	return (runtimeHooks.chooseAccessories || chooseAccessories)(...args);
 }
 
+/** @param {[category: CategorySelection]} args */
 function invokeSwitchCate(...args) {
 	return (runtimeHooks.switchCate || switchCate)(...args);
 }
 // Ivan's Workshop
 
-var CATEGORY_HIERARCHY = function () {
+var categoryHierarchy = function () {
+	/** @type {Record<string, string[]>} */
 	var ret = {};
 	for (var i in category) {
-		var type = category[i].split('-')[0];
-		if (!ret[type]) {
-			ret[type] = [];
+		var categoryName = category[i];
+		if (categoryName === undefined) continue;
+		var type = categoryName.split('-')[0] ?? '';
+		var group = ret[type];
+		if (!group) {
+			group = ret[type] = [];
 		}
-		ret[type].push(category[i]);
+		group.push(categoryName);
 	}
 	return ret;
 }
 ();
 
+// Material still consumes dynamic hierarchy entries; the alias keeps object identity.
+/** @type {Record<string, any>} */
+const CATEGORY_HIERARCHY = categoryHierarchy;
+
+/** @param {string} type @param {string} id */
 function addShoppingCart(type, id) {
-	shoppingCart.put(clothesSet[type][id]);
+	const clothing = clothesSet[type]?.[id];
+	if (!clothing) return;
+	shoppingCart.put(clothing);
 	refreshShoppingCart();
 }
 
+/** @param {string} type */
 function removeShoppingCart(type) {
 	shoppingCart.remove(type);
 	refreshShoppingCart();
@@ -78,12 +116,15 @@ function clearShoppingCart() {
  * @param {HTMLElement | null} [_triggerElement]
  */
 function toggleInventory(type, id, _triggerElement) {
-	var checked = !clothesSet[type][id].own;
+	const clothing = clothesSet[type]?.[id];
+	if (!clothing) return;
+	var checked = !clothing.own;
 	checked ? Dom('#clickable-' + type + id).addClass('own') : Dom('#clickable-' + type + id).removeClass("own");
-	clothesSet[type][id].own = checked;
+	clothing.own = checked;
 	saveAndUpdate();
 }
 
+/** @type {Criteria} */
 var criteria = {};
 function onChangeCriteria() {
 	criteria = {};
@@ -118,6 +159,7 @@ function onChangeCriteria() {
 		var totalscores = shoppingCart.totalScore.toCsv();
 		/** @type {[string, number][]} */
 		var rank = [];
+		/** @param {number} index */
 		const scoreAt = index => Number(totalscores[index] ?? 0);
 		rank.push(["simplerank", Math.max(scoreAt(3), scoreAt(4))]);
 		rank.push(["cuterank", Math.max(scoreAt(5), scoreAt(6))]);
@@ -136,8 +178,10 @@ function onChangeCriteria() {
 	}
 }
 
+/** @param {Criteria} criteria @param {string} id */
 function tagToBonus(criteria, id) {
 	var tag = Dom('#' + id).val();
+	/** @type {ScoreBonus | null} */
 	var bonus = null;
 	if (tag.length > 0) {
 		var base = Dom('#' + id + 'base :selected').text();
@@ -154,6 +198,7 @@ function tagToBonus(criteria, id) {
 	}
 }
 
+/** @param {string} id */
 function clearTag(id) {
 	Dom('#' + id).val('');
 	Dom('#' + id + 'base').val('SS');
@@ -163,6 +208,7 @@ function clearTag(id) {
 	Dom(Dom('input[name=' + id + 'method]:radio').get(1)).parent().removeClass("active");
 }
 
+/** @param {number} idx @param {BonusInfo} info */
 function bonusToTag(idx, info) {
 	Dom('#tag' + idx).val(info.tag);
 	if (info.replace) {
@@ -177,6 +223,7 @@ function bonusToTag(idx, info) {
 	Dom('#tag' + idx + 'weight').val(info.weight);
 }
 
+/** @type {Record<string, boolean>} */
 var uiFilter = {};
 function onChangeUiFilter() {
 	uiFilter = {};
@@ -192,7 +239,7 @@ function onChangeUiFilter() {
 	}
 
 	if (currentCategory && currentCategory != 'switchall') {
-		var activeCategories = CATEGORY_HIERARCHY[currentCategory];
+		var activeCategories = categoryHierarchy[currentCategory];
 		if (activeCategories && activeCategories.length > 1) {
 			Dom('input[name=category-' + currentCategory + ']:checked').each(function () {
 				uiFilter[Dom(this).val()] = true;
@@ -203,10 +250,11 @@ function onChangeUiFilter() {
 	}
 
 	if(currentCategory == 'switchall'){
-		for (var c in CATEGORY_HIERARCHY) {
-			if (CATEGORY_HIERARCHY[c].length > 1) {
-				for (var i in CATEGORY_HIERARCHY[c]) {
-					uiFilter[CATEGORY_HIERARCHY[c][i]] = true;
+		for (var c in categoryHierarchy) {
+			const group = categoryHierarchy[c];
+			if (group && group.length > 1) {
+				for (const subtype of group) {
+					uiFilter[subtype] = true;
 				}
 			}
 			uiFilter[c] = true;
@@ -219,6 +267,7 @@ function refreshTable() {
 	invokeDrawTable(filtering(criteria, uiFilter), "clothes", false);
 }
 
+/** @param {Criteria} accfilters */
 function chooseAccessories(accfilters) {
 	shoppingCart.clear();
 	shoppingCart.putAll(filterTopAccessories(clone(accfilters)));
@@ -253,6 +302,7 @@ function drawLevelInfo() {
 		if (currentLevel.additionalBonus) {
 			for (var i in currentLevel.additionalBonus) {
 				var bonus = currentLevel.additionalBonus[i];
+				if (!bonus) continue;
 				var match = "(";
 				if (bonus.tagWhitelist) {
 					match += "tag符合: " + bonus.tagWhitelist + " ";
@@ -266,16 +316,16 @@ function drawLevelInfo() {
 		}
 		if (currentLevel.hint) {
 			var notF = "";
-			if (currentLevel.hint[0] && currentLevel.hint[0] != '') {
+			if (currentLevel.hint[0] && String(currentLevel.hint[0]) != '') {
 				var $hintInfo = Dom("<font>").text("過關提示:  ").addClass("hintInfo");
 				$hint.append($hintInfo).append(currentLevel.hint[0]);
 			}
-			if (currentLevel.hint[1] && currentLevel.hint[1] != '') {
+			if (currentLevel.hint[1] && String(currentLevel.hint[1]) != '') {
 				var $notF = Dom("<font>").text("可穿戴部件:  ").addClass("not_f");
 				$categoryF.append($notF).append(currentLevel.hint[1]);
 			}
 			$categoryF.append(Dom("<br>"));
-			if (currentLevel.hint[2] && currentLevel.hint[2] != '') {
+			if (currentLevel.hint[2] && String(currentLevel.hint[2]) != '') {
 				var $isF = Dom("<font>").text("會導致F的部件: ").addClass("is_f");
 				$categoryF.append($isF).append(currentLevel.hint[2]);
 			}
@@ -318,58 +368,71 @@ function drawLevelInfo() {
 	Dom("#tagInfo").text(info);
 }
 
+/** @param {ScoringClothing} a @param {ScoringClothing} b */
 function byCategoryAndScore(a, b) {
 	var cata = category.indexOf(a.type.type);
 	var catb = category.indexOf(b.type.type);
-	return (cata - catb == 0) ? b.sumScore - a.sumScore : cata - catb;
+	return (cata - catb == 0) ? Number(b.sumScore) - Number(a.sumScore) : cata - catb;
 }
+/** @param {string} a @param {string} b */
 function byCategory(a, b) {
 	var cata = category.indexOf(a);
 	var catb = category.indexOf(b);
 	return cata - catb;
 }
 
+/** @param {ScoringClothing} a @param {ScoringClothing} b */
 function byScore(a, b) {
-	return a.sumScore - b.sumScore == 0 ? a.id - b.id : b.sumScore - a.sumScore;
+	return Number(a.sumScore) - Number(b.sumScore) == 0 ? Number(a.id) - Number(b.id) : Number(b.sumScore) - Number(a.sumScore);
 }
 
+/** @param {number} Num @returns {(a: ScoringClothing, b: ScoringClothing) => number} */
 function byScoreS(Num) {
 	return function(a, b) {
-		return accSumScore(a,Num) - accSumScore(b,Num) == 0 ? a.id - b.id : accSumScore(b,Num) - accSumScore(a,Num);
+		return accSumScore(a,Num) - accSumScore(b,Num) == 0 ? Number(a.id) - Number(b.id) : accSumScore(b,Num) - accSumScore(a,Num);
 	}
 }
 
+/** @param {ScoringClothing} a @param {ScoringClothing} b */
 function byId(a, b) {
 	var cata = category.indexOf(a.type.type);
 	var catb = category.indexOf(b.type.type);
-	return (cata - catb == 0) ? a.id - b.id : cata - catb;
+	return (cata - catb == 0) ? Number(a.id) - Number(b.id) : cata - catb;
 }
 
+/** @param {Criteria} filters */
 function filterTopAccessories(filters) {
 	filters['own'] = true;
-	var accCate = CATEGORY_HIERARCHY['飾品'];
+	var accCate = categoryHierarchy['飾品'];
 	var accCNum = accCateNum;
 	var accSNum = 9;
-	for (var i in accCate) {
-		filters[accCate[i]] = true;
+	for (const subtype of accCate ?? []) {
+		filters[subtype] = true;
 	}
-	for (var i in skipCategory) {
-		filters[skipCategory[i]] = false;
+	for (const subtype of skipCategory) {
+		filters[subtype] = false;
 	}
-	var resultS = {}; var resultAll = {};
+	/** @type {Record<string, NikkiClothing>} */
+	var resultS = {};
+	/** @type {Record<string, NikkiClothing>} */
+	var resultAll = {};
 	for (var i in clothes) {
-		if (matches(clothes[i], {}, filters)) {
-			clothes[i].calc(filters);
-			if (clothes[i].isF || clothes[i].sumScore <= 0) continue;
-			if (!resultS[clothes[i].type.type]) {
-				resultS[clothes[i].type.type] = clothes[i];
-			} else if (accSumScore(clothes[i],accSNum) > accSumScore(resultS[clothes[i].type.type],accSNum)) {
-				resultS[clothes[i].type.type] = clothes[i];
+		const clothing = clothes[i];
+		if (!clothing) continue;
+		if (matches(clothing, {}, filters)) {
+			clothing.calc(filters);
+			if (clothing.isF || Number(clothing.sumScore) <= 0) continue;
+			const previousShort = resultS[clothing.type.type];
+			if (!previousShort) {
+				resultS[clothing.type.type] = clothing;
+			} else if (accSumScore(clothing,accSNum) > accSumScore(previousShort,accSNum)) {
+				resultS[clothing.type.type] = clothing;
 			}
-			if (!resultAll[clothes[i].type.type]) {
-				resultAll[clothes[i].type.type] = clothes[i];
-			} else if (accSumScore(clothes[i],accCNum) > accSumScore(resultAll[clothes[i].type.type],accCNum)) {
-				resultAll[clothes[i].type.type] = clothes[i];
+			const previousAll = resultAll[clothing.type.type];
+			if (!previousAll) {
+				resultAll[clothing.type.type] = clothing;
+			} else if (accSumScore(clothing,accCNum) > accSumScore(previousAll,accCNum)) {
+				resultAll[clothing.type.type] = clothing;
 			}
 		}
 	}
@@ -394,10 +457,11 @@ function filterTopAccessories(filters) {
 	else return toSortAll;
 }
 
+/** @param {Criteria} filters */
 function filterTopClothes(filters) {
 	filters['own'] = true;
-	for (var i in CATEGORY_HIERARCHY) {
-		var categoryGroup = CATEGORY_HIERARCHY[i];
+	for (var i in categoryHierarchy) {
+		var categoryGroup = categoryHierarchy[i];
 		if (!categoryGroup) continue;
 		if (i == "襪子") {
 			if (categoryGroup[0]) filters[categoryGroup[0]] = true;
@@ -407,31 +471,38 @@ function filterTopClothes(filters) {
 			filters[String(categoryGroup)] = true;
 		}
 	}
-	for (var i in skipCategory) {
-		filters[skipCategory[i]] = false;
+	for (const subtype of skipCategory) {
+		filters[subtype] = false;
 	}
+	/** @type {Record<string, NikkiClothing>} */
 	var result = {};
 	for (var i in clothes) {
-		if (matches(clothes[i], {}, filters)) {
-			clothes[i].calc(filters);
-			if (clothes[i].isF || clothes[i].sumScore <= 0) continue;
-			if (!result[clothes[i].type.type]) {
-				result[clothes[i].type.type] = clothes[i];
-			} else if (clothes[i].sumScore > result[clothes[i].type.type].sumScore) {
-				result[clothes[i].type.type] = clothes[i];
+		const clothing = clothes[i];
+		if (!clothing) continue;
+		if (matches(clothing, {}, filters)) {
+			clothing.calc(filters);
+			if (clothing.isF || Number(clothing.sumScore) <= 0) continue;
+			const previous = result[clothing.type.type];
+			if (!previous) {
+				result[clothing.type.type] = clothing;
+			} else if (Number(clothing.sumScore) > Number(previous.sumScore)) {
+				result[clothing.type.type] = clothing;
 			}
 		}
 	}
 	return result;
 }
 
+/** @param {Criteria} criteria @param {Criteria} filters */
 function filtering(criteria, filters) {
 	var result = [];
 	var result2 = [];
 	for (var i in clothes) {
-		if (matches(clothes[i], criteria, filters)) {
-			clothes[i].calc(criteria);
-			result.push(clothes[i]);
+		const clothing = clothes[i];
+		if (!clothing) continue;
+		if (matches(clothing, criteria, filters)) {
+			clothing.calc(criteria);
+			result.push(clothing);
 		}
 	}
 	var haveCriteria = false;
@@ -459,10 +530,13 @@ function filtering(criteria, filters) {
 		var tsize = size;
 		for (var i in result) {
 			var resultIndex = Number(i);
-			if (resultIndex > 0 && result[resultIndex].type.type != result[resultIndex - 1].type.type)
+			const current = result[resultIndex];
+			const previous = result[resultIndex - 1];
+			if (!current) continue;
+			if (previous && current.type.type != previous.type.type)
 				tsize = size;
 			if (tsize > 0)
-				result2.push(result[i]);
+				result2.push(current);
 			tsize--;
 		}
 		if (filters.sortbyscore)
@@ -474,6 +548,7 @@ function filtering(criteria, filters) {
 	return result;
 }
 
+/** @param {Pick<ScoringClothing, "own" | "type">} c @param {Criteria} criteria @param {Criteria} filters */
 function matches(c, criteria, filters) {
 	return ((c.own && filters.own) || (!c.own && filters.missing)) && filters[c.type.type];
 }
@@ -491,6 +566,7 @@ function loadCustomInventory() {
 	refreshTable();
 }
 
+/** @param {string | null} c */
 function toggleAll(c) {
 	var all = Dom('#all-' + c)[0].checked;
 	var x = Dom('input[name=category-' + c + ']:checkbox');
@@ -502,20 +578,21 @@ function toggleAll(c) {
 
 function drawFilter() {//refactor me
 	var out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
-	for (var c in CATEGORY_HIERARCHY) {
+	for (var c in categoryHierarchy) {
 		out += '<li id="' + c + '"><a href="#" data-switch-cate="' + c + '">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
 	}
 		out += '<li id="switchall"><a href="#" data-switch-cate="switchall">全部&nbsp;&nbsp;<span class="badge"></span></a></li>';
 	out += "</ul>";
-	for (var c in CATEGORY_HIERARCHY) {
+	for (var c in categoryHierarchy) {
 		out += '<div id="category-' + c + '">';
-		if (CATEGORY_HIERARCHY[c].length > 1) {
+		const group = categoryHierarchy[c];
+		if (group && group.length > 1) {
 			// draw a select all checkbox...
 			out += "<label><input type='checkbox' id='all-" + c + "' data-toggle-all='" + c + "' checked>全選</label><br/>";
 			// draw sub categories
-			for (var i in CATEGORY_HIERARCHY[c]) {
-				out += "<label class='filterlabel'><input type='checkbox' name='category-" + c + "' value='" + CATEGORY_HIERARCHY[c][i]
-				 + "' id='" + CATEGORY_HIERARCHY[c][i] + "' data-category-filter checked />" + CATEGORY_HIERARCHY[c][i].split("-")[1] + "</label>\n";
+			for (const subtype of group) {
+				out += "<label class='filterlabel'><input type='checkbox' name='category-" + c + "' value='" + subtype
+				 + "' id='" + subtype + "' data-category-filter checked />" + subtype.split("-")[1] + "</label>\n";
 			}
 		}
 		out += '</div>';
@@ -531,10 +608,13 @@ function drawFilter() {//refactor me
 	Dom('input[data-category-filter]').change(onChangeUiFilter);
 }
 
+/** @type {CategorySelection} */
 var currentCategory;
+/** @param {CategorySelection} value */
 function setCurrentCategory(value) {
 	currentCategory = value;
 }
+/** @param {CategorySelection} c */
 function switchCate(c) {
 	Dom("#searchResultList").html('');
 	currentCategory = c;
@@ -558,17 +638,21 @@ function changeTheme() {
 	currentLevel = null;
 	global.additionalBonus = null;
 	var theme = Dom("#theme").val();
-	if (allThemes[theme]) {
-		setFilters(allThemes[theme]);
+	const level = allThemes[theme];
+	if (level) {
+		setFilters(level);
 	}
 	if (uiFilter['highscore']) autogenLimit();
 	else onChangeCriteria();
 }
 
+/** @type {NikkiLevel | null | undefined} */
 var currentLevel; // used for post filtering.
+/** @param {NikkiLevel} level */
 function setFilters(level) {
 	currentLevel = level;
-	global.additionalBonus = currentLevel.additionalBonus;
+	// Legacy levels may omit this field; preserve the existing undefined assignment.
+	/** @type {{ additionalBonus: ScoreBonus[] | null | undefined }} */ (global).additionalBonus = currentLevel.additionalBonus;
 	var weights = level.weight;
 	for (const f of FEATURES) {
 
@@ -596,7 +680,8 @@ function setFilters(level) {
 	clearTag('tag2');
 	if (level.bonus) {
 		for (var i in level.bonus) {
-			bonusToTag(parseInt(i) + 1, level.bonus[i]);
+			const bonus = level.bonus[i];
+			if (bonus) bonusToTag(parseInt(i) + 1, bonus);
 		}
 	}
 }
@@ -669,9 +754,11 @@ function saveAndUpdate() {
 	updateSize(mine);
 }
 
+/** @param {import('./src/domain/inventory/types.d.ts').Inventory<ScoringClothing>} mine */
 function updateSize(mine) {
 	Dom("#inventoryCount").text('(' + mine.size + ')');
 	Dom("#myClothes").val(mine.serialize());
+	/** @type {Record<string, number>} */
 	var subcount = {};
 	for (var c in mine.mine) {
 		var type = c.split('-')[0] ?? c;
@@ -691,6 +778,7 @@ function doImport() {
 	var type = dropdown.options[dropdown.selectedIndex].value;
 	var raw = Dom("#importData").val();
 	var data = raw.match(/\d+/g) || [];
+	/** @type {Record<string, boolean>} */
 	var mapping = {}
 	for (let dataIndex = 0; dataIndex < data.length; dataIndex++) {
 		let value = data[dataIndex] ?? '';
@@ -702,8 +790,10 @@ function doImport() {
 	}
 	var updating = [];
 	for (var i in clothes) {
-		if (clothes[i].type.mainType == type && mapping[clothes[i].id]) {
-			updating.push(clothes[i].name);
+		const clothing = clothes[i];
+		if (!clothing) continue;
+		if (clothing.type.mainType == type && mapping[clothing.id]) {
+			updating.push(clothing.name);
 		}
 	}
 	var names = updating.join(",");
@@ -732,11 +822,14 @@ function goTop() {
 	}, 500);
 }
 
+/** @template T @param {T[]} arr @returns {T[]} */
 function getDistinct(arr){
+	/** @type {T[]} */
 	var newArr=[];
 	for (var i in arr){
-		if(Dom.inArray(arr[i], newArr)<0){
-			newArr.push(arr[i]);
+		const entry = /** @type {T} */ (arr[i]); // for...in visits existing keys only.
+		if(Dom.inArray(entry, newArr)<0){
+			newArr.push(entry);
 		}
 	}
 	return newArr;
@@ -753,26 +846,32 @@ function searchResult(){
 	if (searchTxt){
 		var outSet=[];
 		for (var i in clothes){
-			if(clothes[i].isSuit.indexOf(searchTxt)>=0) {outSet.push(clothes[i].isSuit);}
+			const clothing = clothes[i];
+			if (!clothing) continue;
+			if(clothing.isSuit.indexOf(searchTxt)>=0) {outSet.push(clothing.isSuit);}
 		}
 		if (outSet.length>0) {
 			outSet=getDistinct(outSet);
 			Dom('#searchResultList').append(button_search('套裝：','searchCate'));
-			for (var i in outSet) {Dom('#searchResultList').append(button_search(outSet[i],'','searchResultSet'));}
+			for (const suit of outSet) {Dom('#searchResultList').append(button_search(suit,'','searchResultSet'));}
 			Dom(".searchResultSet").click(function () {
 				invokeSwitchCate(0);
 				var setName=Dom(this).attr('id').replace('search-','');
 				Dom('#searchResultList').append(button_search(setName+'：','searchCate'));
 				for (var i in clothes){
-					if(clothes[i].isSuit==setName) {Dom('#searchResultList').append(clothesNameTd_Search(clothes[i]));}
+					const clothing = clothes[i];
+					if (!clothing) continue;
+					if(clothing.isSuit==setName) {Dom('#searchResultList').append(clothesNameTd_Search(clothing));}
 				}
 			});
 		}
-		for (var h in CATEGORY_HIERARCHY){
+		for (var h in categoryHierarchy){
 			var outCate=[];
 			for (var i in clothes){
-				if (clothes[i].type.mainType==h&&clothes[i].name.indexOf(searchTxt)>=0){
-					outCate.push(clothesNameTd_Search(clothes[i]));
+				const clothing = clothes[i];
+				if (!clothing) continue;
+				if (clothing.type.mainType==h&&clothing.name.indexOf(searchTxt)>=0){
+					outCate.push(clothesNameTd_Search(clothing));
 				}
 			}
 			if (outCate.length>0){
@@ -805,15 +904,19 @@ function autogenLimit(){
 		criteria.bonus = global.additionalBonus;
 	}
 	criteria.levelName = Dom("#theme").val();
+	/** @type {number[]} */
 	var clothesOrigScore=[];
 	for(var i in clothes){
-		clothes[i].calc(criteria);
-		var sum_score=(clothes[i].type.mainType=='飾品') ? Math.round(accSumScore(clothes[i],(uiFilter["acc9"]?9:accCateNum))) : clothes[i].sumScore;
+		const clothing = clothes[i];
+		if (!clothing) continue;
+		clothing.calc(criteria);
+		var sum_score=(clothing.type.mainType=='飾品') ? Math.round(accSumScore(clothing,(uiFilter["acc9"]?9:accCateNum))) : Number(clothing.sumScore);
 		clothesOrigScore[i]=sum_score;
 	}
 
 	//start loop
 	var scoreTotal=0;
+	/** @type {(import('./src/domain/scoring/types.d.ts').FeatureName | undefined)[]} */
 	var boosts=[];
 	var ownCnt=loadFromStorage().size>0 ? 1 : 0;
 	for (var a in FEATURES){
@@ -842,17 +945,22 @@ function autogenLimit(){
 			criteria.levelName = Dom("#theme").val();
 			//calc sumScores
 			shoppingCart.clear();
-			var currScoreByCate=[];
+			/** @type {Record<string, number>} */
+			var currScoreByCate={};
 			for (var i in clothes){
-				if (!clothes[i].own&&ownCnt) continue;
-				var c=clothes[i].type.type;
+				const clothing = clothes[i];
+				if (!clothing) continue;
+				if (!clothing.own&&ownCnt) continue;
+				var c=clothing.type.type;
 				if (Dom.inArray(c, skipCategory)>=0) continue;
 				if (!currScoreByCate[c]) currScoreByCate[c]=0;
-				if (clothesOrigScore[i]*1.778 < currScoreByCate[c]) continue; //short cut, no hope to become the new winner; from ip
-				clothes[i].calc(criteria);
-				var sum_score= (clothes[i].type.mainType=='飾品') ? Math.round(accSumScore(clothes[i],(uiFilter["acc9"]?9:accCateNum))) : clothes[i].sumScore;
-				if (sum_score>currScoreByCate[c]) {
-					shoppingCart.put(clothes[i]);
+				const originalScore = clothesOrigScore[i];
+				const bestScore = currScoreByCate[c] ?? 0;
+				if (originalScore !== undefined && originalScore*1.778 < bestScore) continue; //short cut, no hope to become the new winner; from ip
+				clothing.calc(criteria);
+				var sum_score= (clothing.type.mainType=='飾品') ? Math.round(accSumScore(clothing,(uiFilter["acc9"]?9:accCateNum))) : Number(clothing.sumScore);
+				if (sum_score>bestScore) {
+					shoppingCart.put(clothing);
 					currScoreByCate[c]=sum_score;
 				}
 			}
@@ -1004,6 +1112,7 @@ function initEvent() {
 	});
 }
 
+/** @param {HTMLElement} btn */
 function filterClotherHTML(btn){
 		var clothesDivList = Dom("#clothes .table-body .table-row");
 		var str = "";
@@ -1039,12 +1148,12 @@ function filterClotherHTML(btn){
 			 }
 			var ifhide = true;
 			var strs = str.split(",");
-			for(var j = 0; j < strs.length; j++){
-				if(filterCompare(Dom(clothesDivList[i]), type, cls, strs[j])){
+			for (const part of strs){
+				if(filterCompare(Dom(clothesDivList[i]), type, cls, part)){
 					ifhide = false;
 				}
 				else{
-					ifhide = ifhide && filterLoop(Dom(clothesDivList[i]), type, cls, strs[j]);
+					ifhide = ifhide && filterLoop(Dom(clothesDivList[i]), type, cls, part);
 				}
 			}
 			if(ifhide){
@@ -1053,6 +1162,7 @@ function filterClotherHTML(btn){
 		 }
 }
 
+/** @param {DomCollection} obj @param {number} type @param {string} cls @param {string} str @returns {boolean} */
 function filterLoop(obj, type, cls, str){
 	if(filterCompare(obj, type, ".source:first", "定")
 		|| filterCompare(obj, type, ".source:first", "進")){
@@ -1068,6 +1178,7 @@ function filterLoop(obj, type, cls, str){
 	return true;
 }
 
+/** @param {DomCollection} obj @param {number} type @param {string} cls @param {string} str */
 function filterCompare(obj, type, cls, str){
 	if(str == "定" || str == "進"){
 		if(type != 2 && type != -2){
@@ -1136,9 +1247,10 @@ function saveTextAsFile()
     downloadLink.click();
 }
 
+/** @param {MouseEvent} event */
 function destroyClickedElement(event)
 {
-    document.body.removeChild(event.target);
+    if (event.target instanceof window.Node) document.body.removeChild(event.target);
 }
 
 function loadFileAsText()
