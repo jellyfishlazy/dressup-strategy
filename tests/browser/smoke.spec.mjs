@@ -72,3 +72,26 @@ test('Wardrobe Check boots and renders category navigation', async ({ page }) =>
   await expect(page.locator('#categoryTab li.active')).toHaveCount(1);
   await expectNoFailures(failures);
 });
+
+test('browser can import the Gate 7A ESM domain entries from static hosting', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+
+  const result = await page.evaluate(async () => {
+    const [wardrobe, inventory, biguse] = await Promise.all([
+      import('/src/domain/wardrobe/index.mjs'),
+      import('/src/domain/inventory/index.mjs'),
+      import('/src/domain/biguse/index.mjs'),
+    ]);
+    const row = ['name', '髮型', '001', '5', '', '', '', '', '', '', '', '', '', '', '', '', '', ''];
+    return {
+      wardrobeCount: wardrobe.WARDROBE_FIELD_COUNT,
+      wardrobeId: wardrobe.rowToWardrobeItem(row).id,
+      inventory: inventory.serialize({ 1: ['001'] }),
+      close: biguse.compareScores(100, 100).close,
+    };
+  });
+
+  expect(result).toEqual({ wardrobeCount: 18, wardrobeId: '001', inventory: '1:001|', close: true });
+  await expectNoFailures(failures);
+});

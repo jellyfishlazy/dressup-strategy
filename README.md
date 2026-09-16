@@ -93,6 +93,8 @@ Gate 6D removes Material's remaining jQuery dependency and the unused Knockout l
 
 Gate 7-Prep adds a Playwright browser smoke harness before the ESM migration begins. `tests/browser/smoke.spec.mjs` boots the main matcher, BigUse, Material, and Wardrobe Check through the same static dev server used by local tooling; page errors, console errors, and same-origin HTTP failures fail the smoke gate. Each page also performs one small user-path assertion so a successful HTTP response alone cannot masquerade as a working runtime. The harness caught and fixed a native-DOM compatibility regression where `.attr(name, undefined)` incorrectly broke method chaining. Run it locally with `npm run test:browser`. CI installs Chromium and runs the smoke suite after the existing Node/data quality gate.
 
+Gate 7A adds browser-native ESM domain entries without changing any page runtime yet. `src/domain/wardrobe/index.mjs` re-exports the canonical schema/adapter, while `src/domain/inventory/index.mjs` and `src/domain/biguse/index.mjs` expose ESM versions of the existing domain boundaries. Node parity tests lock their behavior to the temporary classic bridges, including legacy inventory serialization/error behavior and BigUse score/image/autocomplete semantics. The Playwright smoke suite also imports all three entries directly from the static server, proving that GitHub-Pages-style hosting serves the module graph correctly. Classic HTML consumers intentionally remain unchanged until Gate 7B starts migrating entry points.
+
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy
 job checks out a fresh root static site, so npm dependencies are not uploaded.
