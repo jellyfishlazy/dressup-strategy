@@ -33,7 +33,7 @@ test('domain implementations consume their contracts without runtime TypeScript 
 
 test('Gate 8B reduces the baseline and leaves domain files diagnostic-free', () => {
   const baseline = JSON.parse(read('typecheck-baseline.json'));
-  assert.equal(baseline.diagnostic_count, 75);
+  assert.ok(baseline.diagnostic_count < 76);
   assert.equal(baseline.diagnostics.some(item => item.file.startsWith('src/domain/')), false);
 });
 

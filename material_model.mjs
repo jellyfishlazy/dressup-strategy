@@ -13,6 +13,11 @@ const pattern = globalThis.pattern;
 const pattern_extra = globalThis.pattern_extra;
 // Ivan's Workshop
 
+/** @typedef {import('./src/domain/scoring/types.d.ts').FeatureName} FeatureName */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ClothesType} ClothesType */
+/** @typedef {import('./src/domain/scoring/types.d.ts').RatingTuple} RatingTuple */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoreByCategoryState} ScoreByCategoryState */
+/** @type {FeatureName[]} */
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
 var CHINESE_TO_FEATURES = {
 	"簡約":["simple","+"],
@@ -108,14 +113,14 @@ var Clothes = function(csv) {
         }
 		var splits1=ret.split('[');
 		var splits2='';
-		for (var i =1; i<splits1.length; i++){
-			splits2 += splits1[i].split(']')[0];
+		for (let splitIndex = 1; splitIndex < splits1.length; splitIndex++){
+			splits2 += splits1[splitIndex].split(']')[0];
 		}
 		//get text in [] and join tgt
 		var splits = splits2.split(/[^0-9]+/);
 		//split by and keep numbers
 		var depNumAlls = 1;
-		if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);
+		if (splits.length > 1) for (let splitIndex = 0; splitIndex < splits.length; splitIndex++) if(splits[splitIndex]) depNumAlls += Number(splits[splitIndex]);
 		if (this.exDep) {
 			ret = indent + "[織夢]" + this.exDep + "\n" + ret;
 		}
@@ -193,7 +198,7 @@ var Clothes = function(csv) {
             }
           }
         }
-        this.bonusScore = Math.round(1 * total.toFixed(0) * isf);
+        this.bonusScore = Math.round(Number(total.toFixed(0)) * isf);
       }
 
       //螢光之靈
@@ -242,8 +247,10 @@ function clotonum(type,id){
 	else return mainType + '0' + id;
 }
 
+/** @returns {ScoreByCategoryState} */
 function ScoreByCategory() {
-  var initial = {};
+  /** @type {import('./src/domain/scoring/types.d.ts').ScoreMap} */
+  var initial = /** @type {any} */ ({});
   for (var c in FEATURES) {
     initial[FEATURES[c]] = [0, 0];
   }
@@ -362,7 +369,7 @@ var shoppingCart = {
 			if (this.cart[currCate]) {
 				this.cart[currCate].calc(criteria);
 				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(this.cart[currCate], accNum?accNum:accCateNum) : this.cart[currCate].sumScore;
-				if (j>0) sumOthers+=currSumScore;
+				if (Number(j) > 0) sumOthers+=currSumScore;
 				else sumFirst+=currSumScore;
 			}
 		}
@@ -370,7 +377,7 @@ var shoppingCart = {
 			shoppingCart.remove(repelCates[i][0]);
 		}else{
 			for (var j in repelCates[i]){
-				if (j>0) shoppingCart.remove(repelCates[i][j]);
+				if (Number(j) > 0) shoppingCart.remove(repelCates[i][j]);
 			}
 		}
 	}
@@ -473,6 +480,12 @@ function scoreWithBonusTd(score, bonus) {
   return  score +  bonus + "";
 }
 
+/**
+ * @param {string|number} a
+ * @param {string|number} b
+ * @param {ClothesType} type
+ * @returns {RatingTuple}
+ */
 function realRating(a, b, type) {
   var real = a ? a : b;
   var symbol = a ? 1 : -1;
