@@ -25,13 +25,13 @@ function shareWardrobe() {
 			result[type] = "1";
 			continue;
 		}
-		var size = 1 * mine[type][mine[type].length - 1];
+		var size = Number(mine[type][mine[type].length - 1]);
 		var array = [1];
 		for (var i = 0; i < size; i++) {
 			array.push(0);
 		}
 		for (var j in mine[type]) {
-			var id = 1 * mine[type][j];
+			var id = Number(mine[type][j]);
 			array[id] = 1;
 		}
 		var str = array.join('');

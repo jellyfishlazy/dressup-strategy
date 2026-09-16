@@ -1,6 +1,6 @@
 {
   "typescript_version": "7.0.2",
-  "diagnostic_count": 76,
+  "diagnostic_count": 75,
   "summary_by_code": {
     "2322": 10,
     "2339": 10,
@@ -13,7 +13,6 @@
     "2403": 13,
     "2407": 2,
     "2447": 1,
-    "2551": 1,
     "2554": 3
   },
   "diagnostics": [
@@ -448,12 +447,6 @@
       "code": 2407,
       "message": "The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type 'string'.",
       "source": "for (var i in str) {"
-    },
-    {
-      "file": "src/domain/inventory/index.mjs",
-      "code": 2551,
-      "message": "Property 'toGMTString' does not exist on type 'Date'. Did you mean 'toString'?",
-      "source": "doc.cookie = `${name}=${encoder(value)}${expireDays == null ? '' : `; expires=${expires.toGMTString()}`}`;"
     },
     {
       "file": "ui.mjs",

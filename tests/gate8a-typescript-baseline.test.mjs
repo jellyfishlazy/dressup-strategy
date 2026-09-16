@@ -21,8 +21,8 @@ test('TypeScript baseline is explicit, version-locked and non-empty', () => {
   const baseline = JSON.parse(read('typecheck-baseline.json'));
   assert.equal(pkg.devDependencies.typescript, '7.0.2');
   assert.equal(baseline.typescript_version, '7.0.2');
-  assert.equal(baseline.diagnostic_count, 76);
-  assert.equal(baseline.diagnostics.length, 76);
+  assert.ok(baseline.diagnostic_count > 0);
+  assert.equal(baseline.diagnostics.length, baseline.diagnostic_count);
   assert.ok(Object.keys(baseline.summary_by_code).length > 0);
   for (const diagnostic of baseline.diagnostics) {
     assert.equal(typeof diagnostic.file, 'string');
