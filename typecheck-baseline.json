@@ -1,0 +1,477 @@
+{
+  "typescript_version": "7.0.2",
+  "diagnostic_count": 76,
+  "summary_by_code": {
+    "2322": 10,
+    "2339": 10,
+    "2345": 4,
+    "2356": 5,
+    "2362": 2,
+    "2363": 3,
+    "2365": 16,
+    "2367": 6,
+    "2403": 13,
+    "2407": 2,
+    "2447": 1,
+    "2551": 1,
+    "2554": 3
+  },
+  "diagnostics": [
+    {
+      "file": "biguse_ui.mjs",
+      "code": 2554,
+      "message": "Expected 0-2 arguments, but got 3.",
+      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'Date'.",
+      "source": "d = 2 - date.getDay();"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'Date'.",
+      "source": "d = 6 - date.getDay();"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'Date'.",
+      "source": "d = 9 - date.getDay();"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.",
+      "source": "hour = hour < 10 ? \"0\" + hour : hour;"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.",
+      "source": "minutes = minutes < 10 ? \"0\" + minutes : minutes;"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2322,
+      "message": "Type 'string | number' is not assignable to type 'number'.",
+      "source": "seconds = seconds < 10 ? \"0\" + seconds : seconds;"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2345,
+      "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
+      "source": "var hour = parseInt(timeIndex / 3600);"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2345,
+      "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
+      "source": "var minutes = parseInt((timeIndex % 3600) / 60);"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2345,
+      "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
+      "source": "var seconds = parseInt(timeIndex % 60);"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2362,
+      "message": "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "var h = d * 24 - date.getHours() - 1 + 5 - offset;"
+    },
+    {
+      "file": "clock.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'd' must be of type 'Date', but here has type 'any'.",
+      "source": "var d;"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'string'.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2356,
+      "message": "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2356,
+      "message": "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2363,
+      "message": "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "this.bonusScore = Math.round(1 * total.toFixed(0) * isf);"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (j>0) shoppingCart.remove(repelCates[i][j]);"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (j>0) sumOthers+=currSumScore;"
+    },
+    {
+      "file": "material_model.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'i' must be of type 'string', but here has type 'number'.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "if(s<2){"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if(h>0){levelDropNote+='&ensp;/&ensp;';}"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if(h>0){levelDropNote+='&ensp;/&ensp;';}"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if(h>0){levelDropNote+='&ensp;/&ensp;';}"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.",
+      "source": "(s==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0) ){"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.",
+      "source": "if( (s==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0&&srci.indexOf(src[1])<0) ||"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.",
+      "source": "if(s==src.length-1) output += tr(tab('無','colspan=\"3\"'));"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'chapText' must be of type 'string[]', but here has type 'any[]'.",
+      "source": "var chapVal=[]; var chapText=[];"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'chapVal' must be of type 'number[]', but here has type 'any[]'.",
+      "source": "var chapVal=[]; var chapText=[];"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'i' must be of type 'number', but here has type 'string'.",
+      "source": "for (var i in chapVal) chapText.push(chapVal[i]+'星');"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'i' must be of type 'number', but here has type 'string'.",
+      "source": "for (var i in setcategory){"
+    },
+    {
+      "file": "material.mjs",
+      "code": 2407,
+      "message": "The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type 'string'.",
+      "source": "for (var ss in src[s]){"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'string'.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2356,
+      "message": "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2356,
+      "message": "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2363,
+      "message": "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "this.bonusScore = Math.round(1 * total.toFixed(0) * isf);"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "if (splits.length > 1) for (i=0;i<splits.length;i++) if(splits[i]) depNumAlls += Number(splits[i]);"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (j>0) sumOthers+=currSumScore;"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (j>0) this.remove(repelCates[i][j]);"
+    },
+    {
+      "file": "model.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'i' must be of type 'string', but here has type 'number'.",
+      "source": "for (var i =1; i<splits1.length; i++){"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2339,
+      "message": "Property 'files' does not exist on type 'HTMLElement'.",
+      "source": "var fileToLoad = document.getElementById(\"fileToLoad\").files[0];"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2339,
+      "message": "Property 'value' does not exist on type 'HTMLElement'.",
+      "source": "document.getElementById(\"myClothes\").value = textFromFileLoaded;"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2339,
+      "message": "Property 'value' does not exist on type 'HTMLElement'.",
+      "source": "var fileNameToSaveAs = document.getElementById(\"inputFileNameToSaveAs\").value;"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2339,
+      "message": "Property 'value' does not exist on type 'HTMLElement'.",
+      "source": "var textToSave = document.getElementById(\"myClothes\").value;"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2362,
+      "message": "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "if (i > 0 && result[i].type.type != result[i - 1].type.type)"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (i > 0 && result[i].type.type != result[i - 1].type.type)"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'type' must be of type 'any', but here has type 'string'.",
+      "source": "for(var type in clotheslist){"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'type' must be of type 'any', but here has type 'string'.",
+      "source": "for(var type in clotheslist){"
+    },
+    {
+      "file": "nikki.mjs",
+      "code": 2447,
+      "message": "The '&=' operator is not allowed for boolean types. Consider using '&&' instead.",
+      "source": "ifhide &= filterLoop(Dom(clothesDivList[i]), type, cls, strs[j]);"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'string'.",
+      "source": "}else for (k=1; k<repelCates[j].length; k++) {"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2356,
+      "message": "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "}else for (k=1; k<repelCates[j].length; k++) {"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.",
+      "source": "else if (j=='襪子-襪子') tagSet[i]['typeCount'][j] += tagSet[i]['typeCount']['襪子-襪套'];"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.",
+      "source": "if (j=='襪子-襪套') tagSet[i]['typeCount'][j] += tagSet[i]['typeCount']['襪子-襪子'];"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.",
+      "source": "if (k==0) { sumFirst[0]++; sumFirst[1] += score;}"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'j' must be of type 'number', but here has type 'string'.",
+      "source": "for (var j in tags){"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'j' must be of type 'number', but here has type 'string'.",
+      "source": "for (var j in tagSet[i]['typeCount']){"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'type' must be of type 'string', but here has type 'any'.",
+      "source": "var type = cl.type.type;"
+    },
+    {
+      "file": "onekeystrategy_lan.mjs",
+      "code": 2403,
+      "message": "Subsequent variable declarations must have the same type.  Variable 'type' must be of type 'string', but here has type 'any'.",
+      "source": "var type = cl.type.type;"
+    },
+    {
+      "file": "onekeystrategy.mjs",
+      "code": 2339,
+      "message": "Property 'getYear' does not exist on type 'Date'.",
+      "source": "$author_sign.append(p(\"generate in \" + (1900+d.getYear()) + \"-\" + (d.getMonth() + 1) + \"-\" + d.getDate() + \" \" + d.getHours() + \":\" + d.getMinutes(), \"author_sign_name\"));"
+    },
+    {
+      "file": "onekeystrategy.mjs",
+      "code": 2365,
+      "message": "Operator '>' cannot be applied to types 'string' and 'number'.",
+      "source": "if (j>0) {"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2322,
+      "message": "Type 'number' is not assignable to type 'string'.",
+      "source": "i = 1*i+1;"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2339,
+      "message": "Property 'zip' does not exist on type '(num: any) => string'.",
+      "source": "if(!zipNum.zip){"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2339,
+      "message": "Property 'zip' does not exist on type '(num: any) => string'.",
+      "source": "result = zipNum.zip(num.substr(0,i)) + result;"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2339,
+      "message": "Property 'zip' does not exist on type '(num: any) => string'.",
+      "source": "result = zipNum.zip(num.substr(i-6,6)) + result;"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2339,
+      "message": "Property 'zip' does not exist on type '(num: any) => string'.",
+      "source": "zipNum.zip = function(inputNum){"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'number'.",
+      "source": "if (str.charAt(i) == \"1\") {"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2363,
+      "message": "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.",
+      "source": "i = 1*i+1;"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "} else if (i < 100) {"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2365,
+      "message": "Operator '<' cannot be applied to types 'string' and 'number'.",
+      "source": "if (i < 10) {"
+    },
+    {
+      "file": "sharewardrobe.mjs",
+      "code": 2407,
+      "message": "The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type 'string'.",
+      "source": "for (var i in str) {"
+    },
+    {
+      "file": "src/domain/inventory/index.mjs",
+      "code": 2551,
+      "message": "Property 'toGMTString' does not exist on type 'Date'. Did you mean 'toString'?",
+      "source": "doc.cookie = `${name}=${encoder(value)}${expireDays == null ? '' : `; expires=${expires.toGMTString()}`}`;"
+    },
+    {
+      "file": "ui.mjs",
+      "code": 2554,
+      "message": "Expected 0-2 arguments, but got 3.",
+      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
+    },
+    {
+      "file": "ui.mjs",
+      "code": 2554,
+      "message": "Expected 0-2 arguments, but got 3.",
+      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
+    },
+    {
+      "file": "wardrobechk.mjs",
+      "code": 2339,
+      "message": "Property 'value' does not exist on type 'HTMLElement'.",
+      "source": "if (textarea) textarea.value = mine.serialize();"
+    }
+  ]
+}

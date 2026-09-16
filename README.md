@@ -19,6 +19,7 @@ From the repository root:
 ```sh
 npm ci
 npm run lint
+npm run typecheck
 npm test
 npm run validate:data
 npm run check
@@ -81,7 +82,7 @@ Gate 5A originally introduced thin classic wardrobe/inventory compatibility brid
 
 Gate 5B migrates BigUse away from reverse-adapting `Clothes` through `toCsv()` and `clothesSet` lookups. The BigUse domain owns A/B cart selection, the established ±10% score comparison rule, and legacy image-id derivation from named `Clothes` fields. Gate 7A later made `src/domain/biguse/index.mjs` the canonical browser entry and Gate 7E retired the old classic runtime bridge. BigUse buttons/autocomplete pass the actual `Clothes` object into the selected cart, while rendering reads named type/id data.
 
-Gate 5C originally migrated Wardrobe Check and Material tools onto the same wardrobe/inventory boundaries while both were still classic scripts. Those entry points have since moved to direct ESM imports in Gates 7B/7C. Gate 5D consolidates duplicated inventory behavior into the shared inventory domain and centralizes localStorage/cookie fallback in `readBrowser()` / `writeBrowser()`. Later ESM gates consume that shared boundary directly; the original root classic Main scripts remain only as an explicit BigUse compatibility chain until Gate 7E. ESLint covers both modernized runtimes and that compatibility chain so accidental globals fail CI.
+Gate 5C originally migrated Wardrobe Check and Material tools onto the same wardrobe/inventory boundaries while both were still classic scripts. Those entry points have since moved to direct ESM imports in Gates 7B/7C. Gate 5D consolidates duplicated inventory behavior into the shared inventory domain and centralizes localStorage/cookie fallback in `readBrowser()` / `writeBrowser()`. Later ESM gates consume that shared boundary directly, and Gate 7E removes the final BigUse compatibility chain. ESLint covers the modernized runtimes so accidental globals fail CI.
 
 Gate 6A removes the legacy pieces that can be retired without rewriting the application UI. Active HTML entry points no longer use inline event handlers; `src/legacy/page-events.js` owns native DOM event binding and reproduces the Bootstrap 3 button-toggle behavior used by the matcher pages. Bootstrap JavaScript 3.3.5 and inherited Google Analytics are removed, while Bootstrap CSS remains to preserve layout/classes. Wardrobe Check is jQuery-free.
 
@@ -102,6 +103,8 @@ Gate 7C migrates Material's model/UI chain to ESM. `material.html` loads `materi
 Gate 7D migrates the Main Matcher runtime to a single browser-native `main.mjs` entry. The model imports wardrobe/inventory ESM APIs directly, UI/controller/strategy/support files are explicit modules, and the pure `accMul()` helper moves from controller ownership into `model.mjs` to avoid a model-to-controller cycle. Main page events use an explicit `MainActions.register()` registry rather than leaking module functions back onto `window`. At the end of Gate 7D, BigUse temporarily remained on the old classic Main chain because it relied on late-binding function overrides; Gate 7E removes that final compatibility dependency.
 
 Gate 7E migrates BigUse to `biguse.mjs`, `biguse_model.mjs`, `biguse_ui.mjs`, and `biguse_nikki.mjs`. The former load-order overrides for `drawTable`, `chooseAccessories`, and `switchCate` are now explicit runtime hooks configured by the BigUse entry before shared Main initialization. BigUse imports the canonical Main and BigUse ESM APIs directly, while its A/B cart buttons and autocomplete remain behavior-compatible. With all active pages on ESM boundaries, the old root Main/BigUse `.js` compatibility files and `src/domain/{wardrobe,inventory,biguse}/runtime.js` bridges are deleted. Browser smoke asserts BigUse boots with no `WardrobeDomain`, `InventoryDomain`, or `BigUseDomain` globals.
+
+Gate 8A adds TypeScript 7 in check-only mode without converting runtime files to `.ts` or adding a bundler. `tsconfig.json` uses `allowJs`, `checkJs`, and `noEmit` over the active browser ESM application graph with strict mode deliberately deferred. The first baseline contains 76 known diagnostics, primarily string/number reuse, inferred variable-type conflicts, DOM narrowing, and a few legacy API/signature issues. `npm run typecheck` compares current diagnostics against the committed `typecheck-baseline.json`; any new, resolved, or changed diagnostic fails until the baseline change is deliberately reviewed with `npm run typecheck:update`. `npm run typecheck:raw` exposes the underlying `tsc` failures directly. `npm run check` includes the baseline-aware typecheck, so CI enforces that the TypeScript debt cannot silently grow while later Gate 8 batches reduce it.
 
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy
