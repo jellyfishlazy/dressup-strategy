@@ -61,8 +61,7 @@ test('main matcher parses wardrobe rows through WardrobeDomain rather than magic
   const modelSource = readFileSync(new URL('../model.js', import.meta.url), 'utf8');
   assert.match(modelSource, /WardrobeDomain\.rowToWardrobeItem\(csv\)/);
   assert.doesNotMatch(modelSource.slice(modelSource.indexOf('var Clothes'), modelSource.indexOf('function clotonum')), /csv\[\d+\]/);
-  assert.match(modelSource, /InventoryDomain\.serialize/);
-  assert.match(modelSource, /InventoryDomain\.deserialize/);
-  assert.match(modelSource, /InventoryDomain\.read/);
-  assert.match(modelSource, /InventoryDomain\.write/);
+  assert.match(modelSource, /InventoryDomain\.createInventory/);
+  assert.match(modelSource, /InventoryDomain\.readBrowser/);
+  assert.match(modelSource, /InventoryDomain\.writeBrowser/);
 });

@@ -273,50 +273,9 @@ function ScoreByCategory() {
 }
 
 function MyClothes() {
-  return {
-    mine: {},
-    size: 0,
-    filter: function(clothes) {
-      this.mine = {};
-      this.size = 0;
-      for (var i in clothes) {
-        if (clothes[i].own) {
-          var type = clothes[i].type.mainType;
-          if (!this.mine[type]) {
-            this.mine[type] = [];
-          }
-          this.mine[type].push(clothes[i].id);
-          this.size ++;
-        }
-      }
-    },
-    serialize: function() {
-      return InventoryDomain.serialize(this.mine);
-    },
-    deserialize: function(raw) {
-      var decoded = InventoryDomain.deserialize(raw);
-      this.mine = decoded.mine;
-      this.size = decoded.size;
-    },
-    update: function(clothes) {
-      var x = {};
-      for (var type in this.mine) {
-        x[type] = {};
-        for (var i in this.mine[type]) {
-          var id = this.mine[type][i];
-          x[type][id] = true;
-        }
-      }
-      for (var i in clothes) {
-        clothes[i].own = false;
-        var t = clothes[i].type.mainType;
-        var id = clothes[i].id;
-        if (x[t] && x[t][clothes[i].id]) {
-          clothes[i].own = true;
-        }
-      }
-    }
-  };
+  return InventoryDomain.createInventory({
+    typeOf: function (clothing) { return clothing.type.mainType; }
+  });
 }
 
 var clothes = function() {
@@ -553,35 +512,10 @@ function loadNew(myClothes) {
 
 function loadFromStorage() {
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
-  var stored = InventoryDomain.read(storage, getCookie);
-  if (stored.current) {
-    return loadNew(stored.current);
-  } else if (stored.legacy) {
-    return load(stored.legacy);
-  }
+  var stored = InventoryDomain.readBrowser(storage, document);
+  if (stored.current) return loadNew(stored.current);
+  if (stored.legacy) return load(stored.legacy);
   return MyClothes();
-}
-
-function getCookie(c_name) {
-  if (document.cookie.length>0) { 
-    c_start=document.cookie.indexOf(c_name + "=")
-    if (c_start!=-1) { 
-      c_start=c_start + c_name.length+1 
-      c_end=document.cookie.indexOf(";",c_start)
-      if (c_end==-1) {
-        c_end=document.cookie.length
-      }
-      return unescape(document.cookie.substring(c_start,c_end))
-    }
-  }
-  return "";
-}
-
-function setCookie(c_name,value,expiredays) {
-  var exdate=new Date()
-  exdate.setDate(exdate.getDate()+expiredays)
-  document.cookie=c_name+ "=" +escape(value)+
-  ((expiredays==null) ? "" : "; expires="+exdate.toGMTString())
 }
 
 function save(){
@@ -589,6 +523,6 @@ function save(){
   myClothes.filter(clothes);
   var txt = myClothes.serialize();
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
-  InventoryDomain.write(storage, setCookie, txt);
+  InventoryDomain.writeBrowser(storage, document, txt);
   return myClothes;
 }

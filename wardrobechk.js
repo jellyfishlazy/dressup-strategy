@@ -42,63 +42,22 @@ var CATEGORY_HIERARCHY = function () {
 function updateSize(mine) {
 	$("#myClothes").val(mine.serialize());
 	var subcount = {};
-	for (c in mine.mine) {
+	for (var c in mine.mine) {
 		var type = c.split('-')[0];
 		if (!subcount[type]) {
 			subcount[type] = 0;
 		}
 		subcount[type] += mine.mine[type].length;
 	}
-	for (c in subcount) {
+	for (var c in subcount) {
 		$("#" + c + ">a span").text(subcount[c]);
 	}
 }
 
 function MyClothes() {
-  return {
-    mine: {},
-    size: 0,
-    filter: function(clothes) {
-      this.mine = {};
-      this.size = 0;
-      for (var i in clothes) {
-        if (clothes[i].own) {
-          var type = clothes[i].mainType;
-          if (!this.mine[type]) {
-            this.mine[type] = [];
-          }
-          this.mine[type].push(clothes[i].id);
-          this.size ++;
-        }
-      }
-    },
-    serialize: function() {
-      return InventoryDomain.serialize(this.mine);
-    },
-    deserialize: function(raw) {
-      var decoded = InventoryDomain.deserialize(raw);
-      this.mine = decoded.mine;
-      this.size = decoded.size;
-    },
-    update: function(clothes) {
-      var x = {};
-      for (var type in this.mine) {
-        x[type] = {};
-        for (var i in this.mine[type]) {
-          var id = this.mine[type][i];
-          x[type][id] = true;
-        }
-      }
-      for (var i in clothes) {
-        clothes[i].own = false;
-        var t = clothes[i].mainType;
-        var id = clothes[i].id;
-        if (x[t] && x[t][clothes[i].id]) {
-          clothes[i].own = true;
-        }
-      }
-    }
-  };
+  return InventoryDomain.createInventory({
+    typeOf: function (clothing) { return clothing.mainType; }
+  });
 }
 
 function load(myClothes) {
@@ -123,34 +82,16 @@ function loadNew(myClothes) {
 
 function loadFromStorage() {
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
-  var stored = InventoryDomain.read(storage, getCookie);
-  if (stored.current) {
-    return loadNew(stored.current);
-  } else if (stored.legacy) {
-    return load(stored.legacy);
-  }
+  var stored = InventoryDomain.readBrowser(storage, document);
+  if (stored.current) return loadNew(stored.current);
+  if (stored.legacy) return load(stored.legacy);
   return MyClothes();
-}
-
-function getCookie(c_name) {
-  if (document.cookie.length>0) { 
-    c_start=document.cookie.indexOf(c_name + "=")
-    if (c_start!=-1) { 
-      c_start=c_start + c_name.length+1 
-      c_end=document.cookie.indexOf(";",c_start)
-      if (c_end==-1) {
-        c_end=document.cookie.length
-      }
-      return unescape(document.cookie.substring(c_start,c_end))
-    }
-  }
-  return "";
 }
 
 /*check cookie for own clothes - end*/
 
 function drawFilter() {
-	out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
+	var out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
 	for (var c in CATEGORY_HIERARCHY) {
 		out += '<li id="' + c + '"><a href="javascript:void(0)" onClick="switchCate(\'' + c + '\')">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
 	}
