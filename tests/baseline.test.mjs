@@ -12,11 +12,26 @@ function loadScript(file, context = {}) {
   return context;
 }
 
-function loadMatcherModel(context = {}) {
-  const model = context;
-  loadScript('src/domain/wardrobe/runtime.js', model);
-  loadScript('src/domain/inventory/runtime.js', model);
-  return loadScript('model.js', model);
+async function loadMatcherModel(overrides = {}) {
+  const previous = new Map();
+  const globals = {
+    wardrobe: [], category: [], skipCategory: [], typeInfo: {}, Flist: {}, repelCates: [], pattern: [],
+    Dom: { inArray: (value, list) => list.indexOf(value) },
+    ...overrides,
+  };
+  for (const [key, value] of Object.entries(globals)) {
+    previous.set(key, globalThis[key]);
+    globalThis[key] = value;
+  }
+  try {
+    const imported = await import(`../model.mjs?baseline-${Date.now()}-${Math.random()}`);
+    return { ...imported };
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete globalThis[key];
+      else globalThis[key] = value;
+    }
+  }
 }
 
 test('clone copies nested arrays/objects without sharing mutable children', () => {
@@ -30,8 +45,8 @@ test('clone copies nested arrays/objects without sharing mutable children', () =
   `, context), true);
 });
 
-test('accessory scoring preserves thresholds and applies the floor', () => {
-  const model = loadMatcherModel({ wardrobe: [], category: [], skipCategory: [] });
+test('accessory scoring preserves thresholds and applies the floor', async () => {
+  const model = await loadMatcherModel();
   assert.equal(model.accScore(100, 3), 100);
   assert.equal(model.accScore(100, 4), 95);
   assert.equal(model.accScore(100, 16), 40);
@@ -39,8 +54,8 @@ test('accessory scoring preserves thresholds and applies the floor', () => {
   assert.equal(model.accSumScore({ tmpScore: 100, bonusScore: 20 }, 4), 115);
 });
 
-test('domain IDs retain category prefixes and leading zeroes', () => {
-  const model = loadMatcherModel({ wardrobe: [], category: [], skipCategory: [] });
+test('domain IDs retain category prefixes and leading zeroes', async () => {
+  const model = await loadMatcherModel();
   assert.equal(model.clotonum('髮型', '001'), '10001');
   assert.equal(model.clotonum('飾品-手持·右', '1234'), '81234');
   assert.equal(model.clotonum('螢光之靈', '081'), 'A0081');
@@ -80,8 +95,8 @@ test('duplicate exceptions are exact and stale exceptions fail', () => {
   assert.match(validateRows([row()], 'fixture', known)[0], /stale/);
 });
 
-function cartModel(options = {}) {
-  return loadMatcherModel({ wardrobe: [], category: [], skipCategory: [], repelCates: [], ...options });
+async function cartModel(options = {}) {
+  return loadMatcherModel(options);
 }
 
 function scoredPiece(model, type, score, bonus = 0) {
@@ -95,8 +110,8 @@ function scoredPiece(model, type, score, bonus = 0) {
   return piece;
 }
 
-test('fresh carts and BigUse carts isolate membership and total score state', () => {
-  const model = cartModel();
+test('fresh carts and BigUse carts isolate membership and total score state', async () => {
+  const model = await cartModel();
   loadScript('biguse_model.js', model);
   const carts = [model.shoppingCart, model.shoppingCart1, model.shoppingCart2, model.createShoppingCart(), model.createShoppingCart()];
   assert.equal(new Set(carts.map(c => c.cart)).size, carts.length);
@@ -116,9 +131,9 @@ test('fresh carts and BigUse carts isolate membership and total score state', ()
   assert.equal(carts[0].contains(piece), true);
 });
 
-test('validation removes only from its receiver for both repel branches and accessory limits', () => {
+test('validation removes only from its receiver for both repel branches and accessory limits', async () => {
   for (const [first, others, expected] of [[100, 60, ['上衣', '下著']], [120, 60, ['連身裙']], [150, 60, ['連身裙']]]) {
-    const model = cartModel({ repelCates: [['連身裙', '上衣', '下著']] });
+    const model = await cartModel({ repelCates: [['連身裙', '上衣', '下著']] });
     const cart = model.createShoppingCart();
     const pieces = [scoredPiece(model, '連身裙', first), scoredPiece(model, '上衣', others), scoredPiece(model, '下著', others)];
     cart.putAll(pieces);
@@ -129,7 +144,7 @@ test('validation removes only from its receiver for both repel branches and acce
     assert.equal(Object.hasOwn(model, 'currCate'), false);
   }
   const category = ['飾品-頭飾', '飾品-耳飾', '飾品-頸飾'];
-  const model = cartModel({ category });
+  const model = await cartModel({ category });
   const cart = model.createShoppingCart();
   const pieces = category.map((type, i) => scoredPiece(model, type, 100 - i * 10));
   cart.putAll(pieces);
@@ -139,8 +154,8 @@ test('validation removes only from its receiver for both repel branches and acce
   assert.equal(Object.keys(model.shoppingCart.cart).length, 3);
 });
 
-test('cart totals preserve accessory discount, bonuses, rounding and category output', () => {
-  const model = cartModel();
+test('cart totals preserve accessory discount, bonuses, rounding and category output', async () => {
+  const model = await cartModel();
   const cart = model.createShoppingCart();
   cart.put(scoredPiece(model, '髮型', 51));
   for (let i = 0; i < 4; i++) cart.put(scoredPiece(model, `飾品-${i}`, 101, 20));
@@ -149,21 +164,29 @@ test('cart totals preserve accessory discount, bonuses, rounding and category ou
   assert.equal(cart.totalScore.toCsv()[3], '515');
 });
 
-test('rating and Clothes CSV conversion preserve values without overwriting globals', () => {
-  const type = { type: '髮型', score: { S: 100 }, deviation: { S: 2, 3: 1 } };
-  const model = cartModel({ typeInfo: { '髮型': type } });
+test('rating and Clothes CSV conversion preserve values without overwriting globals', async () => {
+  const type = { type: '髮型', mainType: '髮型', score: { S: 100 }, deviation: { S: 2, 3: 1 } };
   const names = ['name', 'type', 'id', 'stars', 'simple', 'cute', 'active', 'pure', 'cool', 'extra', 'source', 'isSuit', 'version', 'real', 'symbol', 'score', 'dev'];
-  for (const name of names) model[name] = 'sentinel';
+  const previous = new Map(names.map(name => [name, globalThis[name]]));
+  for (const name of names) globalThis[name] = 'sentinel';
+  const model = await cartModel({ typeInfo: { '髮型': type } });
   assert.deepEqual(Array.from(model.realRating('', 'S', type)), ['', 'S', -100, 2]);
   assert.deepEqual(Array.from(model.realRating('3', '', type)), ['3', '', 45, 1]);
   const piece = model.Clothes(['name', '髮型', '001', '5', '', 'S', '', 'S', '', 'S', '', 'S', 'S', '', 'POP/小動物', '抽·店', 'suit', 'v1']);
   assert.deepEqual(Array.from(piece.toCsv()), ['髮型', '001', '5', 'S', '', 'S', '', 'S', '', 'S', '', 'S', '', 'POP/小動物', '店', 'suit', 'v1']);
-  for (const name of names) assert.equal(model[name], 'sentinel', name);
+  for (const name of names) assert.equal(globalThis[name], 'sentinel', name);
+  for (const [name, value] of previous) {
+    if (value === undefined) delete globalThis[name];
+    else globalThis[name] = value;
+  }
 });
 
-test('BigUse uses numeric model totals without DOM score reads, preserving boundaries and ties', () => {
+test('BigUse uses numeric model totals without DOM score reads, preserving boundaries and ties', async () => {
   let advice;
-  const model = cartModel({ document: {}, criteria: {}, byCategoryAndScore: () => 0 });
+  const model = await cartModel();
+  model.document = {};
+  model.criteria = {};
+  model.byCategoryAndScore = () => 0;
   model.Dom = selector => {
     if (selector === model.document) return { ready() {} };
     assert.equal(selector, '#advise', 'only advice output may access the DOM');

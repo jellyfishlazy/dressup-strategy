@@ -30,11 +30,8 @@ test('Material delegated actions use an explicit module registry', () => {
   assert.doesNotMatch(bridge, /\beval\s*\(|new Function/);
 });
 
-test('classic wardrobe and inventory bridges now remain only for the main matcher chain', () => {
-  const model = read('model.js');
-  assert.match(model, /WardrobeDomain\.rowToWardrobeItem/);
-  assert.match(model, /InventoryDomain\./);
-  for (const file of ['material_model.mjs', 'material.mjs', 'wardrobechk.mjs']) {
+test('Material remains bridge-free after the main matcher migration', () => {
+  for (const file of ['model.mjs', 'material_model.mjs', 'material.mjs', 'wardrobechk.mjs']) {
     assert.doesNotMatch(read(file), /WardrobeDomain|InventoryDomain/, file);
   }
 });

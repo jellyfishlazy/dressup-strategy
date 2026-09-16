@@ -57,11 +57,11 @@ test('inventory storage boundary preserves current/local and legacy/cookie prece
   assert.deepEqual(cookieWrite, ['mine2', '3:003|', 3650]);
 });
 
-test('main matcher parses wardrobe rows through WardrobeDomain rather than magic indexes', () => {
-  const modelSource = readFileSync(new URL('../model.js', import.meta.url), 'utf8');
-  assert.match(modelSource, /WardrobeDomain\.rowToWardrobeItem\(csv\)/);
+test('main matcher parses wardrobe rows through direct ESM domain imports rather than magic indexes', () => {
+  const modelSource = readFileSync(new URL('../model.mjs', import.meta.url), 'utf8');
+  assert.match(modelSource, /from '\.\/src\/domain\/wardrobe\/index\.mjs'/);
+  assert.match(modelSource, /from '\.\/src\/domain\/inventory\/index\.mjs'/);
+  assert.match(modelSource, /rowToWardrobeItem\(csv\)/);
   assert.doesNotMatch(modelSource.slice(modelSource.indexOf('var Clothes'), modelSource.indexOf('function clotonum')), /csv\[\d+\]/);
-  assert.match(modelSource, /InventoryDomain\.createInventory/);
-  assert.match(modelSource, /InventoryDomain\.readBrowser/);
-  assert.match(modelSource, /InventoryDomain\.writeBrowser/);
+  assert.doesNotMatch(modelSource, /WardrobeDomain|InventoryDomain/);
 });

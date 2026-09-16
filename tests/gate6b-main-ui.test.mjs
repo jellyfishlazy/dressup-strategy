@@ -6,8 +6,8 @@ import vm from 'node:vm';
 const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
 const MAIN_RUNTIME = [
-  'model.js', 'ui.js', 'nikki.js', 'onekeystrategy_lan.js',
-  'onekeystrategy.js', 'clock.js', 'sharewardrobe.js',
+  'main.mjs', 'model.mjs', 'ui.mjs', 'nikki.mjs', 'onekeystrategy_lan.mjs',
+  'onekeystrategy.mjs', 'clock.mjs', 'sharewardrobe.mjs',
 ];
 
 test('main matcher no longer loads jQuery or freezeheader', () => {
@@ -16,8 +16,9 @@ test('main matcher no longer loads jQuery or freezeheader', () => {
   assert.doesNotMatch(html, /jquery\.freezeheader\.js/i);
   assert.match(html, /src=['"]src\/legacy\/native-dom\.js['"]/);
   const nativePos = html.indexOf('src/legacy/native-dom.js');
-  const modelPos = html.indexOf('model.js');
-  assert.ok(nativePos >= 0 && modelPos > nativePos, 'native DOM facade must load before model/runtime consumers');
+  const mainPos = html.indexOf('main.mjs');
+  assert.ok(nativePos >= 0 && mainPos > nativePos, 'native DOM facade must load before main module entry');
+  assert.match(html, /src=['"]src\/legacy\/main-actions\.js['"]/);
   assert.equal(existsSync(new URL('../jquery.freezeheader.js', import.meta.url)), false);
 });
 
@@ -66,7 +67,7 @@ test('native DOM facade exposes required collection/static and sticky-header API
 
 test('main runtime is included in repository lint gate', () => {
   const pkg = JSON.parse(read('package.json'));
-  for (const file of ['ui.js', 'nikki.js', 'onekeystrategy.js', 'onekeystrategy_lan.js', 'clock.js', 'sharewardrobe.js']) {
+  for (const file of ['main.mjs', 'model.mjs', 'ui.mjs', 'nikki.mjs', 'onekeystrategy.mjs', 'onekeystrategy_lan.mjs', 'clock.mjs', 'sharewardrobe.mjs']) {
     assert.match(pkg.scripts.lint, new RegExp(file.replace('.', '\\.')));
   }
 });

@@ -30,6 +30,13 @@ test('main matcher boots and renders its primary controls', async ({ page }) => 
   const firstTab = page.locator('#categoryTab li a').first();
   await firstTab.click();
   await expect(page.locator('#categoryTab li.active')).toHaveCount(1);
+  const moduleState = await page.evaluate(() => ({
+    wardrobe: typeof globalThis.WardrobeDomain,
+    inventory: typeof globalThis.InventoryDomain,
+    modelApi: typeof globalThis.createShoppingCart,
+    actions: typeof globalThis.MainActions?.run,
+  }));
+  expect(moduleState).toEqual({ wardrobe: 'undefined', inventory: 'undefined', modelApi: 'undefined', actions: 'function' });
   await expectNoFailures(failures);
 });
 

@@ -26,13 +26,10 @@ test('Wardrobe Check module does not regenerate inline category handlers', () =>
   assert.doesNotMatch(source, /javascript:void\(0\)/i);
 });
 
-test('Wardrobe Check remains in lint while classic bridge consumers keep shrinking', () => {
+test('Wardrobe Check remains in lint while active bridge consumers reach zero', () => {
   const pkg = JSON.parse(read('package.json'));
   assert.match(pkg.scripts.lint, /wardrobechk\.mjs/);
   assert.doesNotMatch(pkg.scripts.lint, /wardrobechk\.js/);
-
-  const model = read('model.js');
-  assert.match(model, /WardrobeDomain\.rowToWardrobeItem/);
-  assert.match(model, /InventoryDomain\./);
   assert.doesNotMatch(read('wardrobechk.mjs'), /WardrobeDomain|InventoryDomain/);
+  assert.doesNotMatch(read('model.mjs'), /WardrobeDomain|InventoryDomain/);
 });

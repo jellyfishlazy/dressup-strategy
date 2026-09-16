@@ -46,7 +46,7 @@ test('active entry points no longer load jQuery', () => {
 test('obsolete analytics and BigUse compatibility stub are removed', () => {
   assert.doesNotMatch(read('index.html'), /googletagmanager|UA-122120666-2|\bgtag\s*\(/);
   assert.doesNotMatch(read('biguse_nikki.js'), /function\s+menuFixed\s*\(/);
-  const nikki = read('nikki.js');
+  const nikki = read('nikki.mjs');
   assert.match(nikki, /typeof menuFixed === 'function'/);
   assert.match(read('biguse_ui.js'), /https:\/\/seal100x\.github\.io\/nikkiup2u3_img\//);
 });

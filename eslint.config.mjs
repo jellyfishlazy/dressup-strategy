@@ -44,8 +44,8 @@ export default [
     rules: safetyRules,
   },
   {
-    files: ['model.js'],
-    languageOptions: { sourceType: 'script', globals: commonLegacy },
+    files: ['main.mjs', 'model.mjs', 'ui.mjs', 'nikki.mjs', 'onekeystrategy.mjs', 'onekeystrategy_lan.mjs', 'sharewardrobe.mjs', 'clock.mjs'],
+    languageOptions: { globals: browser },
     rules: safetyRules,
   },
   {
@@ -54,13 +54,18 @@ export default [
     rules: safetyRules,
   },
   {
-    files: ['wardrobechk.mjs'],
-    languageOptions: { globals: { ...browser, CSS: 'readonly' } },
+    files: ['model.js'],
+    languageOptions: { sourceType: 'script', globals: commonLegacy },
     rules: safetyRules,
   },
   {
     files: ['ui.js', 'nikki.js', 'onekeystrategy.js', 'onekeystrategy_lan.js', 'clock.js', 'sharewardrobe.js'],
     languageOptions: { sourceType: 'script', globals: mainRuntimeGlobals },
+    rules: safetyRules,
+  },
+  {
+    files: ['wardrobechk.mjs'],
+    languageOptions: { globals: { ...browser, CSS: 'readonly' } },
     rules: safetyRules,
   },
   {

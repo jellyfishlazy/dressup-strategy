@@ -42,12 +42,11 @@ test('Material delegated actions parse simple legacy call arguments without eval
   assert.doesNotMatch(read('src/legacy/material-actions.js'), /\beval\s*\(|new Function/);
 });
 
-test('classic wardrobe/inventory compatibility is contained to the remaining main model consumer', () => {
-  const model = read('model.js');
-  assert.match(model, /WardrobeDomain\.rowToWardrobeItem/);
-  assert.match(model, /InventoryDomain\./);
-  for (const file of ['ui.js', 'nikki.js', 'biguse_ui.js', 'biguse_nikki.js', 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
+test('active runtimes no longer consume classic wardrobe/inventory compatibility bridges', () => {
+  for (const file of ['model.mjs', 'ui.mjs', 'nikki.mjs', 'biguse_ui.js', 'biguse_nikki.js', 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
     const source = read(file);
     assert.doesNotMatch(source, /WardrobeDomain|InventoryDomain/, file);
   }
+  const html = read('index.html');
+  assert.doesNotMatch(html, /src\/domain\/(?:wardrobe|inventory)\/runtime\.js/);
 });

@@ -57,20 +57,14 @@ test('browser storage helpers preserve localStorage precedence and cookie fallba
 });
 
 test('inventory consumers delegate to shared boundaries and are lint-covered', () => {
-  const model = readFileSync(new URL('../model.js', import.meta.url), 'utf8');
-  assert.match(model, /InventoryDomain\.createInventory\(/);
-  assert.match(model, /InventoryDomain\.readBrowser\(/);
-  assert.match(model, /InventoryDomain\.writeBrowser\(/);
-  assert.doesNotMatch(model, /function (?:getCookie|setCookie)\(/);
-
-  for (const file of ['material_model.mjs', 'wardrobechk.mjs']) {
+  for (const file of ['model.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
     assert.match(source, /from '\.\/src\/domain\/inventory\/index\.mjs'/, file);
     assert.doesNotMatch(source, /InventoryDomain|function (?:getCookie|setCookie)\(/, file);
   }
 
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  for (const file of ['model.js', 'biguse_model.js', 'biguse_ui.js', 'material_model.mjs', 'material.mjs', 'wardrobechk.mjs']) {
+  for (const file of ['model.mjs', 'main.mjs', 'biguse_model.js', 'biguse_ui.js', 'material_model.mjs', 'material.mjs', 'wardrobechk.mjs']) {
     assert.match(pkg.scripts.lint, new RegExp(file.replace('.', '\\.')));
   }
 });
