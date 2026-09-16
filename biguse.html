@@ -16,7 +16,6 @@
 		<link rel="stylesheet" href="biguse.css">
 		<script type='text/javascript' charset="UTF-8" src='data/notice.js'></script>
 		<script type='text/javascript' charset="UTF-8" src='jquery.js'></script>
-		<script type='text/javascript' charset="UTF-8" src="bootstrap/bootstrap.min.js"></script>
 		<script type='text/javascript' charset="UTF-8" src="jquery.autocomplete.min.js"></script>		
 		<script type='text/javascript' charset="UTF-8" src="tool.js"></script>
 		<script type='text/javascript' charset="UTF-8" src='data/wardrobe.js'></script>
@@ -65,8 +64,8 @@
 				圖片資料來自amy_翡翠&米桃@QQ群 V2.2.1<br/>
 			</div><!-- announcement -->	
 			<div>
-				<select id="theme-fliter" onChange="reDrawTheme()" class="btn btn-default"></select>
-				<select id="theme" onChange="changeTheme()" class="btn btn-default"></select>
+				<select id="theme-fliter" class="btn btn-default"></select>
+				<select id="theme" class="btn btn-default"></select>
 				
 							<fieldset >
 								<legend>篩選</legend>
@@ -74,7 +73,7 @@
 								<button  type="button" class="btn btn-xs btn-default front_filter_option_biguse" >-</button>
 								</div>
 							</fieldset>
-			<div style="display:none" id="imgModel" onerror="noimg()">
+			<div style="display:none" id="imgModel">
 			<div id="imgInfo" style="font-size: 18px"></div>
 			</div>
 				
@@ -92,7 +91,7 @@
 							<div class="weightContainer" role="group" data-toggle="buttons">
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="simple" value="1"/> 簡約</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="simple" value="-1"/> 華麗</label>
-								<input class="btn-sm" placeholder="權重" type="text" id="simpleWeight" name="simpleWeight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="權重" type="text" id="simpleWeight" name="simpleWeight" value="1" />
 								<span class="highscore-link btn-sm 1d778" id="simple1d778">*1.778</span>
 								<span class="highscore-link btn-sm 1d27" id="simple1d27">*1.27</span>
 								<span class="highscore-rank btn-sm" id="simplerank"></span>
@@ -100,7 +99,7 @@
 							<div class="weightContainer" role="group" data-toggle="buttons">
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="cute" value="1"/> 可愛</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="cute" value="-1"/> 成熟</label>
-								<input class="btn-sm" placeholder="權重" type="text" id="cuteWeight" name="cuteWeight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="權重" type="text" id="cuteWeight" name="cuteWeight" value="1" />
 								<span class="highscore-link btn-sm 1d778" id="cute1d778">*1.778</span>
 								<span class="highscore-link btn-sm 1d27" id="cute1d27">*1.27</span>
 								<span class="highscore-rank btn-sm" id="cuterank"></span>
@@ -108,7 +107,7 @@
 							<div class="weightContainer" role="group" data-toggle="buttons">
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="active" value="1"/> 活潑</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="active" value="-1"/> 優雅</label>
-								<input class="btn-sm" placeholder="權重" type="text" id="activeWeight" name="activeWeight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="權重" type="text" id="activeWeight" name="activeWeight" value="1" />
 								<span class="highscore-link btn-sm 1d778" id="active1d778">*1.778</span>
 								<span class="highscore-link btn-sm 1d27" id="active1d27">*1.27</span>
 								<span class="highscore-rank btn-sm" id="activerank"></span>
@@ -116,7 +115,7 @@
 							<div class="weightContainer" role="group" data-toggle="buttons">
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="pure" value="1"/> 清純</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="pure" value="-1"/> 性感</label>
-								<input class="btn-sm" placeholder="權重" type="text" id="pureWeight" name="pureWeight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="權重" type="text" id="pureWeight" name="pureWeight" value="1" />
 								<span class="highscore-link btn-sm 1d778" id="pure1d778">*1.778</span>
 								<span class="highscore-link btn-sm 1d27" id="pure1d27">*1.27</span>
 								<span class="highscore-rank btn-sm" id="purerank"></span>
@@ -124,36 +123,36 @@
 							<div class="weightContainer" role="group" data-toggle="buttons">
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="cool" value="1"/> 清涼</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="cool" value="-1"/> 保暖</label>
-								<input class="btn-sm" placeholder="權重" type="text" id="coolWeight" name="coolWeight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="權重" type="text" id="coolWeight" name="coolWeight" value="1" />
 								<span class="highscore-link btn-sm 1d778" id="cool1d778">*1.778</span>
 								<span class="highscore-link btn-sm 1d27" id="cool1d27">*1.27</span>
 								<span class="highscore-rank btn-sm" id="coolrank"></span>
 							</div>
 							<div class='weightContainer' id = "tag1Container" role="group" data-toggle="buttons">
-								<input class="btn-sm" placeholder="tag1" type="text" id="tag1" name="tag1" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="tag1" type="text" id="tag1" name="tag1" />
 								<label class="btn btn-sm btn-default active"><input class="filter-radio" type="radio" name="tag1method" value="add" checked/> 加分</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="tag1method" value="replace"/> 替換</label>
-								<select class="btn-sm" id="tag1base" onChange="changeFilter()">
+								<select class="btn-sm" id="tag1base">
 									<option>SS</option>
 									<option>S</option>
 									<option>A</option>
 									<option>B</option>
 									<option>C</option>
 								</select>
-								<input class="btn-sm" type="text" id="tag1weight" name="tag1weight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" type="text" id="tag1weight" name="tag1weight" value="1" />
 							</div>
 							<div class='weightContainer' id = "tag2Container" role="group" data-toggle="buttons">
-								<input class="btn-sm" placeholder="tag2" type="text" id="tag2" name="tag2" onChange="changeFilter()" />
+								<input class="btn-sm" placeholder="tag2" type="text" id="tag2" name="tag2" />
 								<label class="btn btn-sm btn-default active"><input class="filter-radio" type="radio" name="tag2method" value="add" checked/> 加分</label>
 								<label class="btn btn-sm btn-default"><input class="filter-radio" type="radio" name="tag2method" value="replace"/> 替換</label>
-								<select class="btn-sm" id="tag2base" onChange="changeFilter()">
+								<select class="btn-sm" id="tag2base">
 									<option>SS</option>
 									<option>S</option>
 									<option>A</option>
 									<option>B</option>
 									<option>C</option>
 								</select>
-								<input class="btn-sm" type="text" id="tag2weight" name="tag2weight" value="1" onChange="changeFilter()" />
+								<input class="btn-sm" type="text" id="tag2weight" name="tag2weight" value="1" />
 							</div>
 						</div><!-- facet -->
 						<div class="fliter_option clear">
@@ -171,12 +170,12 @@
 		</div><!-- top -->
 		<hr>
 		<div id = 'shoppingCartContainer' style="width:45%; float:left">
-		  搭配A  <button class="btn btn-default" style="float:right" onclick="clearShoppingCart()">清空A</button>
+		  搭配A  <button class="btn btn-default" id="btn-clear-cart-a" style="float:right">清空A</button>
 		  <input id="autocomplete1" class="" type="text" style="width:70%" placeholder="請輸入服裝名稱"/>
 		  <div id='shoppingCart1' class="table"></div>
 		</div>
 		<div id = 'shoppingCartContainer' style="width:45%; float:right">
-		  搭配B  <button class="btn btn-default" style="float:right" onclick="clearShoppingCart()">清空B</button>
+		  搭配B  <button class="btn btn-default" id="btn-clear-cart-b" style="float:right">清空B</button>
 		  <input id="autocomplete2" type="text" style="width:70%" placeholder="請輸入服裝名稱"/>
 		  <div id='shoppingCart2' class="table"></div>
 		</div>
@@ -192,9 +191,9 @@
 		<hr>
 		導入批量衣服，請先選擇要導入的類別，然後在文字方塊內輸入編號，用空格、逗號或者換行隔開。不知道編號在哪兒的請點<a href="http://tieba.baidu.com/p/3808711082" target="_blank">這裡</a>
 		<div id = "import">
-		  <select id="importCate" onChange="clearImport()" ></select><br/>
+		  <select id="importCate"></select><br/>
 		  <textarea id="importData" rows=5 style="width:60%" ></textarea>
-		  <button onClick="doImport()">導入</button>
+		  <button id="btn-import">導入</button>
 		</div>
 		<hr>
 		<p>我擁有的服裝 （複製衣櫥文字方塊內容以備份衣櫥）</p>
@@ -202,9 +201,10 @@
 		<p style="width:60%; display:none">衣櫃數量記錄 （複製衣櫥文字方塊內容以備份衣櫥）</p>
 		<textarea id="myClothesNum" rows=10 style="width:60%; display:none"></textarea>
 		<br/>
-		<button onClick="loadCustomInventory()">恢復備份</button>
+		<button id="btn-load-custom-inventory">恢復備份</button>
 		<br/>
 		<hr>
 </div>
-	</body>
+	<script type='text/javascript' charset="UTF-8" src='src/legacy/page-events.js'></script>
+</body>
 </html>

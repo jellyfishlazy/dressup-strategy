@@ -1,4 +1,4 @@
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function () {
 	var mine = loadFromStorage();
 	drawFilter();
 	switchCate(0);
@@ -40,7 +40,8 @@ var CATEGORY_HIERARCHY = function () {
 /*check cookie for own clothes - start*/
 
 function updateSize(mine) {
-	$("#myClothes").val(mine.serialize());
+	var textarea = document.getElementById('myClothes');
+	if (textarea) textarea.value = mine.serialize();
 	var subcount = {};
 	for (var c in mine.mine) {
 		var type = c.split('-')[0];
@@ -50,7 +51,8 @@ function updateSize(mine) {
 		subcount[type] += mine.mine[type].length;
 	}
 	for (var c in subcount) {
-		$("#" + c + ">a span").text(subcount[c]);
+		var badge = document.querySelector('#' + c + '>a span');
+		if (badge) badge.textContent = subcount[c];
 	}
 }
 
@@ -96,16 +98,20 @@ function drawFilter() {
 		out += '<li id="' + c + '"><a href="javascript:void(0)" onClick="switchCate(\'' + c + '\')">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
 	}
 	out += "</ul>";
-	$('#category_container').html(out);
+	var container = document.getElementById('category_container');
+	if (container) container.innerHTML = out;
 }
 
 function switchCate(c) {
-	$("#searchResultList").html('');
+	var searchList = document.getElementById('searchResultList');
+	if (searchList) searchList.innerHTML = '';
 	var currentCategory = c;
-	$("ul#categoryTab li").removeClass("active");
-	$("#category_container div").removeClass("active");
-	$("#" + c).addClass("active");
-	$("#category-" + c).addClass("active");
+	var active = document.querySelectorAll('ul#categoryTab li.active, #category_container div.active');
+	for (var i = 0; i < active.length; i++) active[i].classList.remove('active');
+	var tab = document.getElementById(String(c));
+	var categoryPanel = document.getElementById('category-' + c);
+	if (tab) tab.classList.add('active');
+	if (categoryPanel) categoryPanel.classList.add('active');
 	rebuildCate(currentCategory);
 	return false;
 }
@@ -127,6 +133,8 @@ function rebuildCate(currentCategory){
 		if (i%2>0) check_container_right += tmp;
 		else check_container_left += tmp;
 	}
-	$("#check_container_left").html(check_container_left);
-	$("#check_container_right").html(check_container_right);
+	var left = document.getElementById('check_container_left');
+	var right = document.getElementById('check_container_right');
+	if (left) left.innerHTML = check_container_left;
+	if (right) right.innerHTML = check_container_right;
 }

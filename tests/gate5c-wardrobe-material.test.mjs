@@ -21,12 +21,11 @@ const wardrobeRow = () => [
 ];
 
 test('Wardrobe Check parses rows through WardrobeDomain and preserves inventory format', () => {
-  const document = {};
+  const document = { addEventListener() {} };
   const context = loadBridges({
     document,
     wardrobe: [wardrobeRow()],
     category: ['髮型'],
-    $: selector => selector === document ? { ready() {} } : {},
   });
   loadScript('wardrobechk.js', context);
   const piece = context.clothes[0];

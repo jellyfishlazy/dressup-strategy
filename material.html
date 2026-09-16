@@ -45,39 +45,7 @@
 		<script type="text/javascript" charset="UTF-8" src="data/material_merchant.js"></script>
 		<script type="text/javascript" charset="UTF-8" src="data/material_setcategory.js"></script>
 		<script type="text/javascript" charset="UTF-8" src="material.js"></script>
-		<script type="text/javascript" charset="UTF-8">
-			$(document).ready(function () {
-				$('#lastupd').html(wardrobe_lastupd.replace("/","-").replace("/","-"));
-				
-				//hide the intro in custInv
-				var elts = document.getElementsByTagName('a');
-				for (var i = elts.length - 1; i >= 0; --i) {
-					if(elts[i].getAttribute('tooltip')) {elts[i].style.display="none";}
-				}
-				
-				//cookies
-				if (typeof(Storage) !== "undefined"&&localStorage.getItem("nikki_ZHCX_hideIntro")){
-					if(localStorage.getItem("nikki_ZHCX_hideIntro")>0) {showIntro();};
-				}
-			});
-			function tab(text,attr){
-				return '<td'+(attr? ' '+attr : '')+' style="text-align:left">'+text+'</td>';
-			}
-			function showIntro(){
-				if (document.getElementById('intro').style.display=="none"){
-					document.getElementById('intro').style.display="inline";
-					document.getElementById('aIntro').innerHTML="<收起>";
-					var hideIntro=0;
-				}else{
-					document.getElementById('intro').style.display="none";
-					document.getElementById('aIntro').innerHTML="<展開>";
-					var hideIntro=1;
-				}
-				if (typeof(Storage) !== "undefined") {
-					localStorage.setItem("nikki_ZHCX_hideIntro", hideIntro);
-				}
-			}
-		</script>
+		<script type="text/javascript" charset="UTF-8" src="src/legacy/page-events.js"></script>
 	</head>
 	<body>
 	<div class="myframe">
@@ -89,7 +57,7 @@
 
 		</p>
 		<p class="normal">
-			<span class="title3">使用說明：</span><a href="" onclick="showIntro();return false;" id="aIntro">&lt;展開&gt;</a>
+			<span class="title3">使用說明：</span><a href="" id="aIntro">&lt;展開&gt;</a>
 			<span id="intro" style="display:none;"><br>
 			可查詢一個部件的<b>製作材料</b>、該部件是<b>哪些衣服的材料及所需數量</b>。<br>
 			支持按關卡、按套裝、按星級、按部件-自訂查詢以及特殊屬性(tag)搜索。<br>

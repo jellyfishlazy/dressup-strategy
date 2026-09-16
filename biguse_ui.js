@@ -96,7 +96,7 @@ function rowBiguse(piece, isShoppingCart, index) {
 	var $imagetd = td("點擊查看", 'image');
 	$imagetd.click(function(){
 		$("#imgModel").show();
-		$("#imgModel").css("background-image", "url(http://seal100x.github.io/nikkiup2u3_img/" +  longid + ".png)");
+		$("#imgModel").css("background-image", "url(https://seal100x.github.io/nikkiup2u3_img/" +  longid + ".png)");
 		$("#imgInfo").text(piece.name);
 	});
 	$lineTop.append($imagetd);

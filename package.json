@@ -9,7 +9,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "lint": "eslint eslint.config.mjs src/domain \"scripts/*.mjs\" tests cn-search/scripts cn-search/src tool.js model.js biguse_model.js biguse_ui.js material_model.js wardrobechk.js --max-warnings 0",
+    "lint": "eslint eslint.config.mjs src/domain src/legacy \"scripts/*.mjs\" tests cn-search/scripts cn-search/src tool.js model.js biguse_model.js biguse_ui.js material_model.js wardrobechk.js --max-warnings 0",
     "test": "node --test tests/*.test.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "check": "npm run lint && npm test && npm run validate:data",

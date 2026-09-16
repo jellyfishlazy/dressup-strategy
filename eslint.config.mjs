@@ -2,6 +2,7 @@
 const browser = {
   console: 'readonly', document: 'readonly', localStorage: 'readonly', alert: 'readonly',
   unescape: 'readonly', escape: 'readonly', setTimeout: 'readonly', URL: 'readonly', Blob: 'readonly',
+  Storage: 'readonly', globalThis: 'readonly',
 };
 const commonLegacy = {
   ...browser, $: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly',
@@ -22,6 +23,11 @@ export default [
   },
   { files: ['tool.js', 'src/domain/**/*.js'], languageOptions: { sourceType: 'script' } },
   {
+    files: ['src/legacy/**/*.js'],
+    languageOptions: { sourceType: 'script', globals: browser },
+    rules: safetyRules,
+  },
+  {
     files: ['model.js'],
     languageOptions: { sourceType: 'script', globals: commonLegacy },
     rules: safetyRules,
@@ -33,7 +39,7 @@ export default [
   },
   {
     files: ['wardrobechk.js'],
-    languageOptions: { sourceType: 'script', globals: { ...browser, $: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly', wardrobe: 'readonly', category: 'readonly' } },
+    languageOptions: { sourceType: 'script', globals: { ...browser, WardrobeDomain: 'readonly', InventoryDomain: 'readonly', wardrobe: 'readonly', category: 'readonly' } },
     rules: safetyRules,
   },
   {

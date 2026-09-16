@@ -866,7 +866,7 @@ function initEvent() {
 			$(obj[1]).text("↑ 收起衣櫃 ↑");
 		}
 		onChangeUiFilter();
-		menuFixed("clothes");
+		if (typeof menuFixed === 'function') menuFixed("clothes");
 		return false;
 	});
 	$("#searchResultMode").click(function(){
@@ -1040,7 +1040,7 @@ function init() {
 $(document).ready(function () {
 	initNotice();
 	init();
-	menuFixed("clothes");
+	if (typeof menuFixed === 'function') menuFixed("clothes");
 });
 
 function exportCustomInventory() {
