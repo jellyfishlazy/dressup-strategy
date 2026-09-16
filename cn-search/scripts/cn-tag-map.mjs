@@ -4,7 +4,7 @@
  * - scripts/sync-wardrobe-tags-from-cn.mjs (reference tags)
  *
  * Keys in CN_TAG_OVERRIDE are simplified Chinese tokens as they appear in
- * nikkiup2u3 `code2tag` / decoded wardrobe [14].
+ * reference `code2tag` / decoded wardrobe tags field.
  */
 
 export const CN2TW_CATEGORY = Object.assign(Object.create(null), {

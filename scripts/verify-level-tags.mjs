@@ -5,6 +5,7 @@
 // Run: node scripts/verify-level-tags.mjs
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { WARDROBE_FIELD_INDEX as FIELD } from '../src/domain/wardrobe/schema.mjs';
 
 const lines = [];
 const log = (...args) => lines.push(args.join(' '));
@@ -16,13 +17,13 @@ const fctx = load('data/flist.js');
 const SPLIT_RE = /[\/,，]/;
 
 function tagsOf(row) {
-	return String(row[14] || '').split(SPLIT_RE).map(s => s.trim()).filter(Boolean);
+	return String(row[FIELD.tags] || '').split(SPLIT_RE).map(s => s.trim()).filter(Boolean);
 }
 
 function rowsByType() {
 	const map = {};
 	for (const r of w.wardrobe) {
-		const t = r[1];
+		const t = r[FIELD.type];
 		if (!map[t]) map[t] = [];
 		map[t].push(r);
 	}
@@ -56,14 +57,14 @@ const allWardrobeTags = new Set();
 for (const r of w.wardrobe) for (const t of tagsOf(r)) allWardrobeTags.add(t);
 const unreachable = [...bonusTagSet].filter(t => !allWardrobeTags.has(t));
 log('  bonus tag strings (unique): ' + bonusTagSet.size);
-log('  unreachable (not in any wardrobe [14] token): ' + unreachable.length);
+log('  unreachable (not in any wardrobe tags token): ' + unreachable.length);
 if (unreachable.length) log('    -> ' + unreachable.join(', '));
 
 // --- (3) split sanity check ---
 log('\n=== Split sanity check (POP/小動物 etc.) ===');
-const samples = w.wardrobe.filter(r => /[\/]/.test(r[14] || '')).slice(0, 5);
+const samples = w.wardrobe.filter(r => /[\/]/.test(r[FIELD.tags] || '')).slice(0, 5);
 for (const r of samples) {
-	log('  [' + r[0] + '] [14]="' + r[14] + '" -> tokens=' + JSON.stringify(tagsOf(r)));
+	log('  [' + r[FIELD.name] + '] tags="' + r[FIELD.tags] + '" -> tokens=' + JSON.stringify(tagsOf(r)));
 }
 
 // --- (4) regression: which levels changed ---

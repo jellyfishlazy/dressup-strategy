@@ -34,7 +34,7 @@ accessory scoring / identity formatting, CN tag mappings, repository OpenCC
 resolution, and validator rejection cases. They do not assert known legacy bugs
 as desired application behavior or claim browser/UI coverage.
 
-Lint covers `tool.js`, `cn-search/scripts/*.mjs`, the validator, tests and ESLint
+Lint covers `tool.js`, `cn-search/scripts/*.mjs`, `src/domain/wardrobe/*.mjs`, `scripts/*.mjs`, tests and ESLint
 configuration. Rules catch undefined identifiers, accidental global assignments,
 duplicate arguments/keys, unreachable code and invalid typeof comparisons.
 Excluded at Gate 1: all other root browser scripts (including model/scoring/UI,
@@ -57,6 +57,18 @@ reports them on every run and rejects new/changed duplicate groups and stale
 exceptions. Fix duplicates upstream in a separate data ticket, then remove the
 corresponding baseline entry; do not regenerate this baseline to hide failures.
 No generated wardrobe data is changed by checks.
+
+Gate 3 adds the ESM boundary in `src/domain/wardrobe/`: `schema.mjs` defines
+the ordered fields, named indexes and row width; `adapter.mjs` exports
+`rowToWardrobeItem` / `wardrobeItemToRow`. Items expose named properties with
+the ten raw grades grouped under `ratings`. Tags, source, suit, version and
+string IDs (including leading zeroes) pass through unchanged, without scoring,
+splitting or normalization. The adapter checks row width and non-empty string
+identities, sharing those checks with the validator; other values remain opaque.
+The validator and maintained CN tooling use the shared schema. Raw persisted
+and generated rows still have exactly the same 18 fields. Classic browser
+scripts retain their existing model and behavior. Regression tests cover the
+schema and exact round-trips of all four repository wardrobe arrays.
 
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy

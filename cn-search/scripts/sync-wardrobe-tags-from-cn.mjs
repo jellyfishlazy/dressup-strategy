@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Compare TW data/wardrobe.js [14] to tags derived from nikkiup2u3 wardrobe (CN decoded),
+// Compare TW data/wardrobe.js tags to tags derived from the reference wardrobe,
 // mapping each CN token → canonical TW via scripts/cn-tag-map.mjs (+ OpenCC + TW_TAG_NORMALIZE).
 //
 // Usage:
@@ -18,6 +18,7 @@ import {
   splitPreserveSeg,
 } from './cn-tag-map.mjs';
 import { importOpencc } from './shared-deps.mjs';
+import { WARDROBE_FIELD_INDEX as FIELD } from '../../src/domain/wardrobe/schema.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GLOW = /^(簡約|華麗|可愛|成熟|活潑|優雅|清純|性感|清涼|保暖)\+\d+$/;
@@ -92,7 +93,7 @@ function joinSlash(tokens) {
 }
 
 function rowKey(r) {
-  return (r[1] || '') + '|' + String(r[2] || '');
+  return (r[FIELD.type] || '') + '|' + String(r[FIELD.id] || '');
 }
 
 function escapeJsString(s) {
@@ -155,9 +156,9 @@ for (const v of Object.values(CN_TAG_OVERRIDE)) {
   if (v) allowlist.add(v);
 }
 for (const r of twWardrobe) {
-  const typ = r[1] || '';
+  const typ = r[FIELD.type] || '';
   if (typ === '螢光之靈') continue;
-  for (const t of tokensFromTwField(r[14])) {
+  for (const t of tokensFromTwField(r[FIELD.tags])) {
     if (!GLOW.test(t)) allowlist.add(t);
   }
 }
@@ -174,9 +175,9 @@ if (fs.existsSync(exceptPath)) {
 
 const cnByKey = new Map();
 for (const r of cnWardrobe) {
-  const catCn = r[1] || '';
+  const catCn = r[FIELD.type] || '';
   const typeTw = CN2TW_CATEGORY[catCn] || catCn;
-  const key = typeTw + '|' + String(r[2] || '');
+  const key = typeTw + '|' + String(r[FIELD.id] || '');
   cnByKey.set(key, r);
 }
 
@@ -193,7 +194,7 @@ const report = {
 
 for (let i = 0; i < twWardrobe.length; i++) {
   const r = twWardrobe[i];
-  const type = r[1] || '';
+  const type = r[FIELD.type] || '';
   if (type === '螢光之靈') {
     report.skipped.glow++;
     continue;
@@ -208,7 +209,7 @@ for (let i = 0; i < twWardrobe.length; i++) {
     report.skipped.noCnRef++;
     continue;
   }
-  const tagsCn = cnRow[14] || '';
+  const tagsCn = cnRow[FIELD.tags] || '';
   if (!String(tagsCn).trim()) {
     report.skipped.emptyCnTags++;
     continue;
@@ -219,16 +220,16 @@ for (let i = 0; i < twWardrobe.length; i++) {
   if (unknown.length) {
     report.needsReview.push({
       key,
-      name: r[0],
+      name: r[FIELD.name],
       tagsCn: String(tagsCn),
       expected,
       unknownTokens: [...new Set(unknown)],
-      current: String(r[14] || ''),
+      current: String(r[FIELD.tags] || ''),
     });
     continue;
   }
 
-  const cur = tokensFromTwField(r[14]);
+  const cur = tokensFromTwField(r[FIELD.tags]);
   if (sortKey(cur) === sortKey(expected)) {
     report.unchanged++;
     continue;
@@ -237,11 +238,11 @@ for (let i = 0; i < twWardrobe.length; i++) {
   const to = joinSlash(expected);
   report.changes.push({
     key,
-    name: r[0],
-    from: String(r[14] || ''),
+    name: r[FIELD.name],
+    from: String(r[FIELD.tags] || ''),
     to,
   });
-  if (apply) r[14] = to;
+  if (apply) r[FIELD.tags] = to;
 }
 
 fs.mkdirSync(dirname(reportPath), { recursive: true });

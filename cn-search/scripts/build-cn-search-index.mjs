@@ -21,6 +21,7 @@ import {
   splitPreserveSeg,
 } from './cn-tag-map.mjs';
 import { importOpencc } from './shared-deps.mjs';
+import { WARDROBE_FIELD_INDEX as FIELD } from '../../src/domain/wardrobe/schema.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(here, '..');
@@ -58,10 +59,10 @@ function buildTwTagByKey(twRows) {
   const map = Object.create(null);
   for (let i = 0; i < twRows.length; i++) {
     const r = twRows[i];
-    if (!r || r.length < 15) continue;
-    const typeTw = r[1];
-    const id = String(r[2]);
-    map[typeTw + '|' + id] = r[14] == null ? '' : String(r[14]);
+    if (!r || r.length <= FIELD.tags) continue;
+    const typeTw = r[FIELD.type];
+    const id = String(r[FIELD.id]);
+    map[typeTw + '|' + id] = r[FIELD.tags] == null ? '' : String(r[FIELD.tags]);
   }
   return map;
 }
@@ -134,11 +135,11 @@ let twMatchedCount = 0;
 
 // Column layout (matches model.js Clothes for both CN and TW data):
 const rows = cnWardrobe.map((r) => {
-  const id = String(r[2]);
-  const categoryCn = r[1] || '';
+  const id = String(r[FIELD.id]);
+  const categoryCn = r[FIELD.type] || '';
   const typeTw = CN2TW_CATEGORY[categoryCn] || categoryCn;
   const key = typeTw + '|' + id;
-  const tagsCn = r[14] || '';
+  const tagsCn = r[FIELD.tags] || '';
 
   let tagsTw;
   if (Object.prototype.hasOwnProperty.call(twTagByKey, key)) {
@@ -156,11 +157,11 @@ const rows = cnWardrobe.map((r) => {
   return {
     id,
     categoryCn,
-    nameCn: r[0] || '',
+    nameCn: r[FIELD.name] || '',
     tagsCn,
-    sourceCn: r[15] || '',
-    suitCn: r[16] || '',
-    version: r[17] || '',
+    sourceCn: r[FIELD.source] || '',
+    suitCn: r[FIELD.suit] || '',
+    version: r[FIELD.version] || '',
     fullRow: Array.from(r),
     tagsTw,
   };

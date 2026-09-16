@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { WARDROBE_FIELD_COUNT, WARDROBE_FIELD_INDEX as FIELD } from '../src/domain/wardrobe/schema.mjs';
+import { wardrobeRowErrors } from '../src/domain/wardrobe/adapter.mjs';
 
 const root = new URL('../', import.meta.url);
 export const sources = ['wardrobe.js', 'data/wardrobe.js', 'data/biguse_wardrobe.js', 'data/material_wardrobe.js'];
@@ -18,18 +20,13 @@ export function validateRows(rows, file, knownDuplicates = []) {
   const groups = new Map();
   rows.forEach((row, index) => {
     const label = `${file}: row ${index + 1}`;
-    if (!Array.isArray(row) || row.length !== 18) {
-      errors.push(`${label}: expected 18 fields, got ${Array.isArray(row) ? row.length : typeof row}`);
-      return;
-    }
-    for (const [column, name] of [[0, 'name'], [1, 'type'], [2, 'id']]) {
-      if (typeof row[column] !== 'string' || !row[column].trim()) errors.push(`${label}: required ${name} (column ${column}) must be a non-empty string`);
-    }
-    const key = JSON.stringify([row[1], row[2]]);
+    errors.push(...wardrobeRowErrors(row).map(error => `${label}: ${error}`));
+    if (!Array.isArray(row) || row.length !== WARDROBE_FIELD_COUNT) return;
+    const key = JSON.stringify([row[FIELD.type], row[FIELD.id]]);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push({ row, index: index + 1 });
   });
-  const expected = new Map(knownDuplicates.map(group => [JSON.stringify([group[0][1], group[0][2]]), group]));
+  const expected = new Map(knownDuplicates.map(group => [JSON.stringify([group[0][FIELD.type], group[0][FIELD.id]]), group]));
   for (const [key, group] of groups) {
     if (group.length < 2) continue;
     if (JSON.stringify(group.map(entry => entry.row)) !== JSON.stringify(expected.get(key))) {
