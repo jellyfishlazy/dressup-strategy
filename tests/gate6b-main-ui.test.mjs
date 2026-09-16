@@ -44,7 +44,18 @@ test('native DOM facade exposes required collection/static and sticky-header API
   assert.equal(typeof context.globalThis.ReDrawcloneHeaderRow, 'function');
 
   let listener;
-  const fakeNode = { nodeType: 1, addEventListener(name, fn) { assert.equal(name, 'click'); listener = fn; } };
+  const fakeNode = {
+    nodeType: 1,
+    attrs: {},
+    addEventListener(name, fn) { assert.equal(name, 'click'); listener = fn; },
+    setAttribute(name, value) { this.attrs[name] = String(value); },
+    removeAttribute(name) { delete this.attrs[name]; },
+    getAttribute(name) { return Object.hasOwn(this.attrs, name) ? this.attrs[name] : null; },
+  };
+  const chained = Dom(fakeNode).attr('before-text', undefined);
+  assert.equal(chained.length, 1, 'explicit undefined attribute setter must preserve chainability');
+  assert.equal(fakeNode.getAttribute('before-text'), null);
+
   Dom(fakeNode).click(() => false);
   let prevented = false;
   let stopped = false;

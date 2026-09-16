@@ -113,8 +113,11 @@
       var attrs = name;
       return this.each(function () { for (var key in attrs) this.setAttribute(key, attrs[key]); });
     }
-    if (value === undefined) return this.nodes[0] ? this.nodes[0].getAttribute(name) : undefined;
-    return this.each(function () { this.setAttribute(name, value); });
+    if (arguments.length === 1) return this.nodes[0] ? this.nodes[0].getAttribute(name) : undefined;
+    return this.each(function () {
+      if (value === undefined || value === null) this.removeAttribute(name);
+      else this.setAttribute(name, value);
+    });
   };
   NativeDomCollection.prototype.prop = function (name, value) {
     if (value === undefined) return this.nodes[0] ? this.nodes[0][name] : undefined;
