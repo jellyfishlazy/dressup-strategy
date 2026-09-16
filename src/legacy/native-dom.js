@@ -211,6 +211,7 @@
   Dom.merge = function (first, second) { Array.prototype.push.apply(first, second); return first; };
   Dom.unique = function (array) { return Array.from(new Set(array)); };
   Dom.isEmptyObject = function (object) { return Object.keys(object).length === 0; };
+  Dom.trim = function (value) { return value == null ? '' : String(value).trim(); };
 
   function syncFixedHeaderWidths(sourceHeader, fixedRoot) {
     if (!sourceHeader || !fixedRoot) return;

@@ -1,4 +1,4 @@
-﻿$(document).ready(function () {
+﻿Dom(document).ready(function () {
 	calcDependencies();
 	get_convertlist();
 	get_maxc();
@@ -38,7 +38,7 @@ var highlight_parts = function(){
 		for (var c in clothes){//search for dye once only
 			if (clothes[c].source.indexOf('定')==0){
 				var cl = clothes[c].type.mainType+clothes[c].source.replace('定','');
-				if ($.inArray(cl,highlight_id[setName])>=0) ret[setName].push(clothes[c].name);
+				if (Dom.inArray(cl,highlight_id[setName])>=0) ret[setName].push(clothes[c].name);
 			}
 		}
 	}
@@ -46,21 +46,21 @@ var highlight_parts = function(){
 }();
 
 function show_scope(){
-	$("#chooseSub2").html('');
+	Dom("#chooseSub2").html('');
 	var chooseScope='';
 	chooseScope+=selectBox("selectScope","chgScope()",[1,2,3,4],['按關卡','按套裝','按部件','按星級']);
 	chooseScope+='&ensp;-&ensp;'
-	$("#chooseScope").html(chooseScope);
+	Dom("#chooseScope").html(chooseScope);
 	chgScope();
 }
 
 function chgScope(){
-	$("#levelDropInfo").html('');
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('');
+	Dom("#levelDropInfo").html('');
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html('');
 	
 	var chooseLevel='';
-	switch($("#selectScope").val()){
+	switch(Dom("#selectScope").val()){
 		case '1':
 			chooseLevel+=selectBox("degree_level","showLevelDropInfo()",['公','少'],['公主','少女']);
 			chooseLevel+='&ensp;-&ensp;';
@@ -75,59 +75,59 @@ function chgScope(){
 			}
 			chooseLevel+=selectBox("level_select","showLevelDropInfo()",chapVal,chapText);
 			chooseLevel+=ahref('&#x1f50d;','showLevelDropInfo()','search');
-			$("#chooseLevel").html(chooseLevel);
-			$("#chooseSub").html('');
+			Dom("#chooseLevel").html(chooseLevel);
+			Dom("#chooseSub").html('');
 			break;
 		case '2':
 			var catelist=[];
 			allSetInCate=[];
 			for (var i in setcategory){
-				if($.inArray(setcategory[i][0], catelist)<0){
+				if(Dom.inArray(setcategory[i][0], catelist)<0){
 					catelist.push(setcategory[i][0]);
 				}
 				allSetInCate.push(setcategory[i][1]);
 			}
 			for (var c in clothes){//add any set not listed to undefined
-				if(clothes[c].set&&$.inArray(clothes[c].set, allSetInCate)<0){
+				if(clothes[c].set&&Dom.inArray(clothes[c].set, allSetInCate)<0){
 					catelist.push('-未分類-'); break;
 				}
 			}
 			catelist.unshift('自訂');
 			chooseLevel+=selectBox("degree_level","chooseSet()",catelist,catelist);
-			$("#chooseLevel").html(chooseLevel);
+			Dom("#chooseLevel").html(chooseLevel);
 			chooseSet();
 			break;
 		case '3': 
 			//20160304: move 3-setSearch into chgScope-'2'
 			var chapVal=[0,4,1,2];var chapText=['自訂','特殊屬性','設計圖','進化'];
 			chooseLevel+=selectBox("degree_level","chgScopeSub()",chapVal,chapText);
-			$("#chooseLevel").html(chooseLevel);
+			Dom("#chooseLevel").html(chooseLevel);
 			chgScopeSub();
 			break;
 		case '4': 
 			var chapVal=[]; var chapText=[];
 			for (var c in clothes){
-				if($.inArray(clothes[c].stars, chapVal)<0){
+				if(Dom.inArray(clothes[c].stars, chapVal)<0){
 					chapVal.push(clothes[c].stars);
 				}
 			}
 			chapVal.sort(function(a,b){return b - a});
 			for (var i in chapVal) chapText.push(chapVal[i]+'星');
 			chooseLevel+=selectBox("degree_level","chgStars()",chapVal,chapText);
-			$("#chooseLevel").html(chooseLevel);
+			Dom("#chooseLevel").html(chooseLevel);
 			chgStars();
 			break;
 	}
 }
 
 function chooseSet(){
-	var cate=$("#degree_level").val();
+	var cate=Dom("#degree_level").val();
 	var setlist=[];
 	var chooseSub = '&ensp;-&ensp;';
 	if(cate=='自訂'){
 		chooseSub += '<input type="text" style="line-height:100%;" id="searchById" placeholder="輸入套裝名搜索" />';
 		chooseSub += ahref('&#x1f50d;','searchBySetId()','search');
-		$("#chooseSub").html(chooseSub);
+		Dom("#chooseSub").html(chooseSub);
 		enterKey();
 	}else {
 		if(cate.substr(0,1)!='-'){
@@ -138,7 +138,7 @@ function chooseSet(){
 			}
 		}else{
 			for (var c in clothes){//any set not listed
-				if(clothes[c].set&&$.inArray(clothes[c].set, allSetInCate)<0){
+				if(clothes[c].set&&Dom.inArray(clothes[c].set, allSetInCate)<0){
 					setlist.push(clothes[c].set);
 				}
 			}
@@ -149,24 +149,25 @@ function chooseSet(){
 		//var chooseSub='&ensp;-&ensp;';
 		chooseSub+=selectBox('searchSetMain','searchSetMain()',setlist,setlist);
 		chooseSub+=ahref('&#x1f50d;','searchSetMain()','search');
-		$("#chooseSub").html(chooseSub);
+		Dom("#chooseSub").html(chooseSub);
 		searchSetMain();
 	}
 }
 
 function searchSetMain(){
-	var setName=$("#searchSetMain").val();
+	var setName=Dom("#searchSetMain").val();
 	chgScopeSub2(3,setName);
 }
 
 function searchBySetId(){
-	var searchById = $.trim($("#searchById").val());
+	var levelDropNote = '';
+	var searchById = Dom.trim(Dom("#searchById").val());
 	var searchBySetName = [];
 	if(searchById){
 		var levelDropInfo = '查找：'+searchById;
 		levelDropNote = table()+tr(tab('套裝')+tab('分類'),'style="font-weight:bold;"');
 		for (var c in clothes){
-			if(clothes[c].set && clothes[c].set.indexOf(searchById)>=0 && $.inArray(clothes[c].set, searchBySetName)<0){
+			if(clothes[c].set && clothes[c].set.indexOf(searchById)>=0 && Dom.inArray(clothes[c].set, searchBySetName)<0){
 				searchBySetName.push(clothes[c].set);
 			}
 		}
@@ -177,27 +178,27 @@ function searchBySetId(){
 			}
 		}
 		for (var j in searchBySetName){
-			if ($.inArray(searchBySetName[j], allSetInCate)<0)
+			if (Dom.inArray(searchBySetName[j], allSetInCate)<0)
 				levelDropNote += tr(tab(ahref(searchBySetName[j],"chgScopeSub2(3,'"+searchBySetName[j]+"')"))+tab('(未分類)'));
 		}
 		levelDropNote += table(1);
-		$("#levelDropInfo").html(levelDropInfo);
-		if(searchBySetName) $("#levelDropNote").html(levelDropNote);
-		else $("#levelDropNote").html('沒有找到相關資料');
+		Dom("#levelDropInfo").html(levelDropInfo);
+		if(searchBySetName) Dom("#levelDropNote").html(levelDropNote);
+		else Dom("#levelDropNote").html('沒有找到相關資料');
 	}
 }
 
 function chgScopeSub(){
-	$("#levelDropInfo").html('');
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('');
+	Dom("#levelDropInfo").html('');
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html('');
 
-	var j=$("#degree_level").val();
+	var j=Dom("#degree_level").val();
 	var chooseSub='&ensp;-&ensp;';
 	if(j==0){
 		chooseSub+='<input type="text" style="line-height:100%;" id="searchById" placeholder="輸入名字或編號搜索" />';
 		chooseSub+=ahref('&#x1f50d;','searchById()','search');
-		$("#chooseSub").html(chooseSub);
+		Dom("#chooseSub").html(chooseSub);
 		enterKey();
 	}
 	else{
@@ -231,7 +232,7 @@ function chgScopeSub(){
 			selectArr.sort();
 			tmpArr1=[];
 			for(var c in clothes){
-				if(clothes[c].set&&$.inArray(clothes[c].set, selectArr)<0){
+				if(clothes[c].set&&Dom.inArray(clothes[c].set, selectArr)<0){
 					tmpArr1.push(clothes[c].set);
 				}
 			}
@@ -253,14 +254,14 @@ function chgScopeSub(){
 		selectArr.unshift('請選擇');
 		chooseSub+=selectBox('chooseCate','chgScopeSub2()',selectArr,selectArr);
 		chooseSub+=ahref('&#x1f50d;','chgScopeSub2()','search');
-		$("#chooseSub").html(chooseSub);
+		Dom("#chooseSub").html(chooseSub);
 		chgScopeSub2();
 	}
 }
 
 function chgScopeSub2(j,k,l){
-	if(!j) j = $("#degree_level").val();
-	if(!k) k = $("#chooseCate").val();
+	if(!j) j = Dom("#degree_level").val();
+	if(!k) k = Dom("#chooseCate").val();
 
 	var valArr=[];
 	if (j==1){
@@ -313,7 +314,7 @@ function chgScopeSub2(j,k,l){
 	}
 	
 	if (valArr.length>0){
-		var j_txt=(j<=2) ? $("#degree_level option[value='"+j+"']").text()+'&ensp;-&ensp;' : '';//given now j<=2 only invoked by selectbox
+		var j_txt=(j<=2) ? Dom("#degree_level option[value='"+j+"']").text()+'&ensp;-&ensp;' : '';//given now j<=2 only invoked by selectbox
 		var set_link=(j==3&&!l)? (hvConvert(k)?ahref('[染色]',"chgScopeSub2(3,'"+k+"',1)"):'')+'　'+ahref('套裝材料總覽',"searchSet('"+k+"')") : '';
 		var cart_button='&ensp;'+cartButton("addCartList('"+valArr.join('/')+"')");
 		var levelDropInfo='查找：'+j_txt+k+set_link+cart_button;
@@ -321,7 +322,7 @@ function chgScopeSub2(j,k,l){
 		for (var c in category){//sort by category
 			if(j<=2&&category[c]!=k) continue;//if j<=2 skip other categories
 			for (var i in clothes){
-				if($.inArray(i,valArr)>-1&&clothes[i].type.type==category[c]){
+				if(Dom.inArray(i,valArr)>-1&&clothes[i].type.type==category[c]){
 					var line=tab(ahref(clothes[i].name,'genFactor('+i+')'));
 						line+=tab(clothes[i].type.type);
 						line+=tab(clothes[i].id);
@@ -336,17 +337,17 @@ function chgScopeSub2(j,k,l){
 	}else{
 		if(k.indexOf('請選擇')<0) var levelDropNote = '沒有找到相關資料';
 	}
-	$("#levelDropInfo").html(levelDropInfo? levelDropInfo:'');
-	$("#levelDropNote").html(levelDropNote? levelDropNote:'');
-	$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+	Dom("#levelDropInfo").html(levelDropInfo? levelDropInfo:'');
+	Dom("#levelDropNote").html(levelDropNote? levelDropNote:'');
+	Dom("#downloadimage").html(imageButton());
 }
 
 function chgStars(){
-	$("#levelDropInfo").html('');
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('');
+	Dom("#levelDropInfo").html('');
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html('');
 
-	var j=$("#degree_level").val();
+	var j=Dom("#degree_level").val();
 	var chooseSub='&ensp;-&ensp;';
 	
 	var selectArr=[];
@@ -364,23 +365,24 @@ function chgStars(){
 		}
 	}
 	selectArr=getDistinct(selectArr);
-	selectArr.sort(function(a,b){return $.inArray(a,src_desc) - $.inArray(b,src_desc)});
+	selectArr.sort(function(a,b){return Dom.inArray(a,src_desc) - Dom.inArray(b,src_desc)});
 	selectArr.unshift('請選擇');
 	chooseSub+=selectBox('chooseCate','chgStars2()',selectArr,selectArr);
 	chooseSub+=ahref('&#x1f50d;','chgStars2()','search');
-	$("#chooseSub").html(chooseSub);
+	Dom("#chooseSub").html(chooseSub);
 	chgStars2();
 }
 
 function chgStars2(){
-	$("#levelDropInfo").html('');
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('');
+	var j, k, l, l1;
+	Dom("#levelDropInfo").html('');
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html('');
 	
-	j=$("#degree_level").val();
-	k=$("#chooseCate").val();
+	j=Dom("#degree_level").val();
+	k=Dom("#chooseCate").val();
 	
-	var kp=$.inArray(k,src_desc);
+	var kp=Dom.inArray(k,src_desc);
 	if(kp>-1){
 		var srcs=src[kp].split(',');
 		var outStars2=[];
@@ -414,9 +416,9 @@ function chgStars2(){
 			var outStars2=outStars2tmp;
 		}else{
 			//first by source position, then by source, last by clothes type
-			if (k=='兌換') outStars2.sort(function(a,b){return $.inArray(a[1],srcs)==$.inArray(b[1],srcs) ? ( a[0].source==b[0].source ? $.inArray(a[0].type.type,category)-$.inArray(b[0].type.type,category) : compareStr(a[0].source,b[0].source) ) : $.inArray(a[1],srcs)-$.inArray(b[1],srcs)})
+			if (k=='兌換') outStars2.sort(function(a,b){return Dom.inArray(a[1],srcs)==Dom.inArray(b[1],srcs) ? ( a[0].source==b[0].source ? Dom.inArray(a[0].type.type,category)-Dom.inArray(b[0].type.type,category) : compareStr(a[0].source,b[0].source) ) : Dom.inArray(a[1],srcs)-Dom.inArray(b[1],srcs)})
 			//first by source position, then by clothes type
-			else outStars2.sort(function(a,b){return $.inArray(a[1],srcs)==$.inArray(b[1],srcs) ? $.inArray(a[0].type.type,category)-$.inArray(b[0].type.type,category) : $.inArray(a[1],srcs)-$.inArray(b[1],srcs)})
+			else outStars2.sort(function(a,b){return Dom.inArray(a[1],srcs)==Dom.inArray(b[1],srcs) ? Dom.inArray(a[0].type.type,category)-Dom.inArray(b[0].type.type,category) : Dom.inArray(a[1],srcs)-Dom.inArray(b[1],srcs)})
 		}
 		if(outStars2.length>0){
 			var levelDropInfo=table()+tr(tab('名稱')+tab('來源')+tab('部位')+tab('材料需求統計'),'style="font-weight:bold;"');
@@ -437,9 +439,9 @@ function chgStars2(){
 			if(h>0){levelDropNote+='&ensp;/&ensp;';}
 			levelDropNote+=span(highlight[h]+'材料',highlight_style[h]);
 		}
-		$("#levelDropInfo").html(levelDropInfo);
-		$("#levelDropNote").html(levelDropNote);
-		$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+		Dom("#levelDropInfo").html(levelDropInfo);
+		Dom("#levelDropNote").html(levelDropNote);
+		Dom("#downloadimage").html(imageButton());
 
 	}
 }
@@ -451,11 +453,11 @@ function compareStr(str1,str2){
 }
 
 function showFactorInfo(){
-	var t=$("#chooseItem").val();
+	var t=Dom("#chooseItem").val();
 	if(t=='na'){
-		$("#levelDropInfo").html('');
-		$("#levelDropNote").html('');
-		$("#downloadimage").html('');
+		Dom("#levelDropInfo").html('');
+		Dom("#levelDropNote").html('');
+		Dom("#downloadimage").html('');
 	}
 	else genFactor(t);
 }
@@ -495,8 +497,9 @@ function getLastIndexHL(txt,setName){
 }
 
 function showLevelDropInfo(){
-	var j=$("#level_select").val();
-	var degree=$("#degree_level").val();
+	var l;
+	var j=Dom("#level_select").val();
+	var degree=Dom("#degree_level").val();
 	var levelDropInfo='';
 	var levelDropNote='';
 	if (j==-1){//material to get
@@ -556,12 +559,13 @@ function showLevelDropInfo(){
 			levelDropNote+=span(highlight[h]+'材料',highlight_style[h]);
 		}
 	}
-	$("#levelDropInfo").html(levelDropInfo);
-	$("#levelDropNote").html(levelDropNote);
-	$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+	Dom("#levelDropInfo").html(levelDropInfo);
+	Dom("#levelDropNote").html(levelDropNote);
+	Dom("#downloadimage").html(imageButton());
 }
 
 function matchClothesLevels(i,level){
+	var k;
 	var src_sp=clothes[i].source.split("/");
 	for (k=0;k<src_sp.length;k++){
 		if(src_sp[k]==level){
@@ -664,9 +668,9 @@ function genFactor(id,showConstructInd,showConsumeInd){
 	}
 	output+=table(1);
 	
-	$("#levelDropInfo").html(output);
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+	Dom("#levelDropInfo").html(output);
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html(imageButton());
 }
 
 function genFactor2(cloth,num){
@@ -690,7 +694,7 @@ function genFactor2(cloth,num){
 				genFactor2(clothesSet[pattern[i][2]][pattern[i][3]],pattern[i][4]*num);
 				for (var c in convert){//add dye count
 					if(cloth==clothesSet[convert[c][0]][convert[c][1]]){
-						convertlistCnt[$.inArray(convert[c][2],convertlist)]+=convert[c][4]*num;
+						convertlistCnt[Dom.inArray(convert[c][2],convertlist)]+=convert[c][4]*num;
 						break;
 					}
 				}
@@ -722,7 +726,8 @@ function addreqCnt(cloth,num){//add num in reqCnt[]
 }
 
 function searchById(){
-	var searchById=$.trim($("#searchById").val());
+	var levelDropNote = '';
+	var searchById=Dom.trim(Dom("#searchById").val());
 	var searchById_match=0;
 	if(searchById){
 		var levelDropInfo='查找：'+searchById;
@@ -743,10 +748,10 @@ function searchById(){
 			}
 		}
 		levelDropNote+=table(1);
-		$("#levelDropInfo").html(levelDropInfo);
-		if(searchById_match) $("#levelDropNote").html(levelDropNote);
-		else $("#levelDropNote").html('沒有找到相關資料');
-		$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+		Dom("#levelDropInfo").html(levelDropInfo);
+		if(searchById_match) Dom("#levelDropNote").html(levelDropNote);
+		else Dom("#levelDropNote").html('沒有找到相關資料');
+		Dom("#downloadimage").html(imageButton());
 	}
 }
 
@@ -793,12 +798,13 @@ function searchSet(setName,showConstructInd,showConsumeInd){//showConsumeInd is 
 	output+=genBasicMaterial(1,setName,showConstructInd,showConsumeInd);
 	output+=table(1);
 	
-	$("#levelDropInfo").html(output);
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+	Dom("#levelDropInfo").html(output);
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html(imageButton());
 }
 
 function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
+	var l, l1;
 	if(!showConstructInd){showConstructInd=0; var constxt='查看重構材料'; var oppoConstructInd=1;}
 	else{var constxt='查看部件材料'; var oppoConstructInd=0;}
 	if(!showConsumeInd){showConsumeInd=0; var reqtxt='需求數量'; var oppoConsumeInd=1;}
@@ -843,7 +849,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 				for (var con in construct) {
 					if (clothesSet[construct[con][0]][construct[con][1]]==clothes[i]){
 						shownFactor[i]=1;
-						for (var m in constructMaterialName){ if($.trim(construct[con][2])==constructMaterialName[m]) {
+						for (var m in constructMaterialName){ if(Dom.trim(construct[con][2])==constructMaterialName[m]) {
 							constructMaterial[m]+=(construct[con][3]-1)*reqCnt[i];
 							break;
 						}}
@@ -974,7 +980,7 @@ function getPatternPrice(id){
 function getDistinct(arr){
 	var newArr=[];
 	for (var i in arr){
-		if($.inArray(arr[i], newArr)<0){
+		if(Dom.inArray(arr[i], newArr)<0){
 			newArr.push(arr[i]);
 		}
 	}
@@ -995,7 +1001,7 @@ function get_maxc(){
 			for (var s in srcs){
 				if ((srcs[s].indexOf('公')>0||srcs[s].indexOf('少')>0)&&srcs[s].indexOf('-')>0){
 					var chapter = srcs[s].substr(0,srcs[s].lastIndexOf('-'));
-					if ($.inArray(chapter,chapList)<0) chapList.push(chapter);
+					if (Dom.inArray(chapter,chapList)<0) chapList.push(chapter);
 				}
 			}
 		}
@@ -1022,8 +1028,20 @@ function span(text,cls){
 	return '<span'+(cls? ' class="'+cls+'"' : '')+'>'+text+'</span>';
 }
 
-function ahref(text,onclick,cls){
-	return '<a href="" onclick="'+onclick+';return false;" '+(cls? 'class="'+cls+'" ' : '')+'>'+text+'</a>';
+function materialActionAttr(action){
+	return 'data-material-action="'+encodeURIComponent(action || '')+'"';
+}
+
+function materialChangeAttr(action){
+	return 'data-material-change="'+encodeURIComponent(action || '')+'"';
+}
+
+function ahref(text,action,cls){
+	return '<a href="#" '+materialActionAttr(action)+' '+(cls? 'class="'+cls+'" ' : '')+'>'+text+'</a>';
+}
+
+function imageButton(){
+	return '<button '+materialActionAttr('toimage()')+' class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>';
 }
 
 function table(ind){
@@ -1031,7 +1049,7 @@ function table(ind){
 }
 
 function selectBox(id,onchange,valArr,textArr){
-	var ret='<select id="'+id+'" onchange='+onchange+'>';
+	var ret='<select id="'+id+'" '+materialChangeAttr(onchange)+'>';
 	if(!textArr) textArr = valArr;
 	for (var i in valArr){
 		ret+='<option value="'+valArr[i]+'">'+textArr[i]+'</option>';
@@ -1041,10 +1059,10 @@ function selectBox(id,onchange,valArr,textArr){
 }
 
 function enterKey() {
-	$('#searchById').keydown(function(e) {
+	Dom('#searchById').keydown(function(e) {
 		if (e.keyCode==13) {
-			$(this).blur();
-			$('.search').click();
+			Dom(this).blur();
+			Dom('.search').click();
 		}
 	});
 }
@@ -1052,35 +1070,35 @@ function enterKey() {
 //below for custom inventory/cart
 
 function show_inv(){
-	$('#invopts').html(ahref('<em>↑</em>展開衣櫃<em>↑</em>',' ','showInv')+'&emsp;'+ahref('<em>↑</em>展開購物車<em>↑</em>',' ','showCart'));
-	$('#custInv').html('<button onclick="loadCustomInventory()">更新</button><button onclick="clearCustomInventory()">清空</button>');
-	$('#custInv').append('&emsp;<a href="" onclick="return false;" tooltip="計算部件作為材料所需數量時會扣除已有成品的所需數量；計算基礎材料數量時不會扣除已有材料。">說明</a>');
-	$('#custInv').append('<br><textarea id="myClothes" rows="5"></textarea><hr>');
-	$('#custCart').html('<button onclick="calcCart()">計算</button><button onclick="clearCart()">清空</button>&ensp;<span id="cartCont"></span><hr>');
-	$('.showInv').click(function(){
-		if($('#custInv').css('display')=='none'){
-			$('#custInv').show();
-			$('.showInv').html('↑收起衣櫃↑');
+	Dom('#invopts').html(ahref('<em>↑</em>展開衣櫃<em>↑</em>',' ','showInv')+'&emsp;'+ahref('<em>↑</em>展開購物車<em>↑</em>',' ','showCart'));
+	Dom('#custInv').html('<button '+materialActionAttr('loadCustomInventory()')+'>更新</button><button '+materialActionAttr('clearCustomInventory()')+'>清空</button>');
+	Dom('#custInv').append('&emsp;<a href="#" tooltip="計算部件作為材料所需數量時會扣除已有成品的所需數量；計算基礎材料數量時不會扣除已有材料。">說明</a>');
+	Dom('#custInv').append('<br><textarea id="myClothes" rows="5"></textarea><hr>');
+	Dom('#custCart').html('<button '+materialActionAttr('calcCart()')+'>計算</button><button '+materialActionAttr('clearCart()')+'>清空</button>&ensp;<span id="cartCont"></span><hr>');
+	Dom('.showInv').click(function(){
+		if(Dom('#custInv').css('display')=='none'){
+			Dom('#custInv').show();
+			Dom('.showInv').html('↑收起衣櫃↑');
 		}else{
-			$('#custInv').hide();
-			$('.showInv').html('<em>↑</em>展開衣櫃<em>↑</em>');
+			Dom('#custInv').hide();
+			Dom('.showInv').html('<em>↑</em>展開衣櫃<em>↑</em>');
 		}
 	});
-	$('.showCart').click(function(){
-		if($('#custCart').css('display')=='none'){
-			$('#custCart').show();
-			$('.showCart').html('↑收起購物車↑');
+	Dom('.showCart').click(function(){
+		if(Dom('#custCart').css('display')=='none'){
+			Dom('#custCart').show();
+			Dom('.showCart').html('↑收起購物車↑');
 		}else{
-			$('#custCart').hide();
-			$('.showCart').html('<em>↑</em>展開購物車<em>↑</em>');
+			Dom('#custCart').hide();
+			Dom('.showCart').html('<em>↑</em>展開購物車<em>↑</em>');
 		}
 	});
-	$('button').addClass('btn btn-default');
-	$('button').css('line-height','100%');
+	Dom('button').addClass('btn btn-default');
+	Dom('button').css('line-height','100%');
 }
 
 function clearCustomInventory(){
-	$("#myClothes").val('');
+	Dom("#myClothes").val('');
 	loadCustomInventory();
 }
 
@@ -1119,9 +1137,9 @@ function calcCart(showConstructInd,showConsumeInd){
 	output+=genBasicMaterial(2,'',showConstructInd,showConsumeInd);
 	output+=table(1);
 	
-	$("#levelDropInfo").html(output);
-	$("#levelDropNote").html('');
-	$("#downloadimage").html('<button onclick="toimage()" class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>');
+	Dom("#levelDropInfo").html(output);
+	Dom("#levelDropNote").html('');
+	Dom("#downloadimage").html(imageButton());
 }
 
 function addCart(i){
@@ -1147,11 +1165,11 @@ function addCartList(val){
 }
 
 function refreshCart(){
-	$('#cartCont').html('');
+	Dom('#cartCont').html('');
 	cartCont=getDistinct(cartCont);
-	if(cartCont.length>0) $('#cartCont').append('<br>');
+	if(cartCont.length>0) Dom('#cartCont').append('<br>');
 	for (var i in cartCont){
-		$('#cartCont').append('<button class="btn btn-xs btn-default">'+ahref(clothes[cartCont[i]].name,"genFactor("+cartCont[i]+")","search")+ahref('[×]','delCart('+cartCont[i]+')')+'</button>&ensp;');
+		Dom('#cartCont').append('<button class="btn btn-xs btn-default">'+ahref(clothes[cartCont[i]].name,"genFactor("+cartCont[i]+")","search")+ahref('[×]','delCart('+cartCont[i]+')')+'</button>&ensp;');
 	}
 }
 
@@ -1160,23 +1178,23 @@ function clearCart(){
 	refreshCart();
 }
 
-function cartButton(onclick){
-	return '<button class="glyphicon glyphicon-shopping-cart btn btn-xs btn-default" onclick="'+onclick+'"></button>'
+function cartButton(action){
+	return '<button class="glyphicon glyphicon-shopping-cart btn btn-xs btn-default" '+materialActionAttr(action)+'></button>'
 }
 
 //below are modified from nikki.js, for custom inventory
 
-$(document).ready(function () {
+Dom(document).ready(function () {
 	var mine = loadFromStorage();
 	updateSize(mine);
 });
 
 function updateSize(mine) {
-	$("#myClothes").val(mine.serialize());
+	Dom("#myClothes").val(mine.serialize());
 }
 
 function loadCustomInventory() {
-	var myClothes = $("#myClothes").val().replace(/上衣/g,'上衣');
+	var myClothes = Dom("#myClothes").val().replace(/上衣/g,'上衣');
 	if (myClothes.indexOf('|') > 0) {
 		loadNew(myClothes);
 	} else {
@@ -1191,11 +1209,11 @@ function saveAndUpdate() {
 }
 
 function toimage() {
-	html2canvas($("#levelDropInfo").html($("table")), {
+	html2canvas(document.getElementById("levelDropInfo"), {
         	onrendered: function(canvas) {
-                    $("#auto").attr('href', canvas.toDataURL("image/png"));
-                    $("#auto").attr('download','download.png');
-                    lnk = document.getElementById("auto");
+                    Dom("#auto").attr('href', canvas.toDataURL("image/png"));
+                    Dom("#auto").attr('download','download.png');
+                    var lnk = document.getElementById("auto");
                     lnk.click();
         	}
       	});

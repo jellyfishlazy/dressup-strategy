@@ -6,7 +6,7 @@ const browser = {
   setInterval: 'readonly', FileReader: 'readonly', location: 'readonly',
 };
 const commonLegacy = {
-  ...browser, $: 'readonly', Dom: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly',
+  ...browser, Dom: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly',
   wardrobe: 'readonly', category: 'readonly', skipCategory: 'readonly', typeInfo: 'readonly',
   Flist: 'readonly', repelCates: 'readonly', pattern: 'readonly', accMul: 'readonly',
 };
@@ -51,6 +51,16 @@ export default [
   {
     files: ['material_model.js'],
     languageOptions: { sourceType: 'script', globals: { ...commonLegacy, pattern_extra: 'readonly', manualScoring: 'readonly' } },
+    rules: safetyRules,
+  },
+  {
+    files: ['material.js'],
+    languageOptions: { sourceType: 'script', globals: {
+      ...browser, Dom: 'readonly', clothes: 'readonly', clothesSet: 'readonly', category: 'readonly', pattern: 'readonly',
+      setcategory: 'readonly', convert: 'readonly', construct: 'readonly', merchant: 'readonly', material_scoring: 'readonly',
+      convertPrice: 'readonly', constructMaterialName: 'readonly', patternPrice: 'readonly', html2canvas: 'readonly',
+      calcDependencies: 'readonly', loadFromStorage: 'readonly', loadNew: 'readonly', load: 'readonly', save: 'readonly',
+    } },
     rules: safetyRules,
   },
   {
