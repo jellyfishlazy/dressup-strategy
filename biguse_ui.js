@@ -56,7 +56,7 @@ function theadBiguse(isShoppingCart) {
 	$thead.append(td("搜索用顏色", "color2"));
 	$thead.append(td("類別", "category"));
 	$thead.append(td("編號", "th_number"));
-	$td_nbsp = td("", "");
+	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
 		$td_nbsp = td("回到頂部", "th_gotop");
 		$td_nbsp.addClass("gogogo-top");
@@ -189,7 +189,7 @@ function clothesNameTd(piece) {
 }
 
 function shoppingCartButton(type, id, index) {
-	$shoppingCartButton = $("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
+	var $shoppingCartButton = $("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
 	var tShoppingCart = index == 1 ? shoppingCart1 : shoppingCart2;
 	$shoppingCartButton.click(function () {
 		tShoppingCart.put(clothesSet[type][id]);
@@ -199,7 +199,7 @@ function shoppingCartButton(type, id, index) {
 }
 
 function removeShoppingCartButton(detailedType, index) {
-	$removeShoppingCartButton = $("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
+	var $removeShoppingCartButton = $("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
 	var tShoppingCart = index == 1 ? shoppingCart1 : shoppingCart2;
 	$removeShoppingCartButton.click(function () {
 		tShoppingCart.remove(detailedType);
@@ -213,13 +213,13 @@ function refreshShoppingCartBiguse() {
 	shoppingCart2.calc(criteria);
 	drawTable(shoppingCart1.toList(byCategoryAndScore), "shoppingCart1", true, 1);
 	drawTable(shoppingCart2.toList(byCategoryAndScore), "shoppingCart2", true, 2);
-	var socreA = 1 * $("#shoppingCart1 .table-row:first .score").text();
-	var scoreB = 1 * $("#shoppingCart2 .table-row:first .score").text();
-	if(socreA >= scoreB * 0.9 && socreA <= scoreB * 1.1){
+	var scoreA = shoppingCart1.totalScore.sumScore;
+	var scoreB = shoppingCart2.totalScore.sumScore;
+	if(scoreA >= scoreB * 0.9 && scoreA <= scoreB * 1.1){
 		$("#advise").text("當前兩種搭配分值過於接近, 建議去詢問群裡的小夥伴後再選擇");
 	}
 	else{
-		var info = "搭配A:" + socreA + "分, 搭配B: " + scoreB + "分, 當前搭配情況下選擇   [" + (socreA > scoreB ? "A" : "B") + "]    ";
+		var info = "搭配A:" + scoreA + "分, 搭配B: " + scoreB + "分, 當前搭配情況下選擇   [" + (scoreA > scoreB ? "A" : "B") + "]    ";
 		$("#advise").text(info);
 	}
 }

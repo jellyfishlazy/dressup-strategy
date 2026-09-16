@@ -22,7 +22,7 @@ var global = {
 // parses a csv row into object
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm，extra
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14
-Clothes = function(csv) {
+var Clothes = function(csv) {
   var theType = typeInfo[csv[1]];
   if(!theType)
 	  console.log(csv);
@@ -47,19 +47,19 @@ Clothes = function(csv) {
 	version: csv[17],
     deps: [],
     toCsv: function() {
-      name = this.name;
-      type = this.type;
-      id = this.id;
-      stars = this.stars;
-      simple = this.simple;
-      cute = this.cute;
-      active = this.active;
-      pure = this.pure;
-      cool = this.cool;
-      extra = this.tagsRaw != null ? this.tagsRaw : this.tags.join(',');
-      source = this.source;
-	  isSuit = this.isSuit;
-	  version = this.version;
+      var name = this.name;
+      var type = this.type;
+      var id = this.id;
+      var stars = this.stars;
+      var simple = this.simple;
+      var cute = this.cute;
+      var active = this.active;
+      var pure = this.pure;
+      var cool = this.cool;
+      var extra = this.tagsRaw != null ? this.tagsRaw : this.tags.join(',');
+      var source = this.source;
+	  var isSuit = this.isSuit;
+	  var version = this.version;
       return [type.type, id, stars, simple[0], simple[1], cute[0], cute[1],
           active[0], active[1], pure[0], pure[1], cool[0],
           cool[1], extra, source, isSuit, version];
@@ -352,9 +352,11 @@ var clothesSet = function() {
   return ret;
 }();
 
-var shoppingCart = {
-  cart: {},
-  totalScore: fakeClothes(this.cart),
+function createShoppingCart() {
+  var cart = {};
+  return {
+  cart: cart,
+  totalScore: fakeClothes(cart),
   clear: function() {
     this.cart = {};
   },
@@ -391,7 +393,7 @@ var shoppingCart = {
 		var sumFirst = 0;
 		var sumOthers = 0;
 		for (var j in repelCates[i]){
-			currCate=repelCates[i][j];
+			var currCate=repelCates[i][j];
 			if (this.cart[currCate]) {
 				this.cart[currCate].calc(criteria);
 				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(this.cart[currCate], accNum?accNum:accCateNum) : this.cart[currCate].sumScore;
@@ -400,10 +402,10 @@ var shoppingCart = {
 			}
 		}
 		if (sumOthers > sumFirst) {
-			shoppingCart.remove(repelCates[i][0]);
+			this.remove(repelCates[i][0]);
 		}else{
 			for (var j in repelCates[i]){
-				if (j>0) shoppingCart.remove(repelCates[i][j]);
+				if (j>0) this.remove(repelCates[i][j]);
 			}
 		}
 	}
@@ -418,11 +420,15 @@ var shoppingCart = {
 		if (sortCates.length > accNum) {
 			sortCates.sort(function(a,b){return b[1] - a[1]});
 			sortCates = sortCates.slice(accNum);
-			for (var i in sortCates) shoppingCart.remove(sortCates[i][0]);
+			for (var i in sortCates) this.remove(sortCates[i][0]);
 		}
 	}
   }
 };
+
+}
+
+var shoppingCart = createShoppingCart();
 
 function accScore(total, items) {
   if (items < ACCRATIO.length) {
@@ -505,13 +511,14 @@ function scoreWithBonusTd(score, bonus) {
 }
 
 function realRating(a, b, type) {
-  real = a ? a : b;
-  symbol = a ? 1 : -1;
+  var real = a ? a : b;
+  var symbol = a ? 1 : -1;
+  var score;
   if(isNaN(real))
 	score = symbol * type.score[real];
   else
 	score = symbol * real * 15;
-  dev = type.deviation[real];
+  var dev = type.deviation[real];
   return [a, b, score, dev];
 }
 

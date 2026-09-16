@@ -1,4 +1,2 @@
-var shoppingCart1 =  clone(shoppingCart);
-var shoppingCart2 =  clone(shoppingCart);
-shoppingCart1.clear();
-shoppingCart2.clear();
+var shoppingCart1 = createShoppingCart();
+var shoppingCart2 = createShoppingCart();
