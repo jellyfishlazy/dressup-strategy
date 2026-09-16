@@ -1,6 +1,6 @@
 ﻿function copyNameText($row) {
 	// 清除所有其他行的highlight
-	$('.table-row.highlighted').removeClass('highlighted');
+	Dom('.table-row.highlighted').removeClass('highlighted');
 	
 	// 只複製名稱欄位的文字（第三個 table-td，因為第一個是複製按鈕欄位，第二個是分數）
 	var $nameTd = $row.find('.table-td').eq(2);
@@ -27,7 +27,7 @@
 }
 
 function copyButton() {
-	return $('<button>')
+	return Dom('<button>')
 		.addClass('copy-btn')
 		.addClass('btn')
 		.addClass('btn-sm')
@@ -40,13 +40,13 @@ function copyButton() {
 			'display': 'block'
 		})
 		.click(function() {
-			var $row = $(this).closest('.table-row');
+			var $row = Dom(this).closest('.table-row');
 			copyNameText($row);
 		});
 }
 
 function theadBiguse(isShoppingCart) {
-	var $thead = $("<div>").addClass("table-head");
+	var $thead = Dom("<div>").addClass("table-head");
 	$thead.append(td("", "copy-header"));
 	$thead.append(td("分數", "score"));
 	$thead.append(td("名稱", "name"));
@@ -71,9 +71,9 @@ function theadBiguse(isShoppingCart) {
 }
 
 function rowBiguse(piece, isShoppingCart, index) {
-	var $row = $("<div>").addClass("table-row");
+	var $row = Dom("<div>").addClass("table-row");
 	var $lineTop = $row;
-	//var $lineTop = $("<div>").addClass("table-line");
+	//var $lineTop = Dom("<div>").addClass("table-line");
 	
 	// 第一個 table-td：複製按鈕欄位
 	var $copyTd = td("", "copy-cell");
@@ -95,9 +95,9 @@ function rowBiguse(piece, isShoppingCart, index) {
 
 	var $imagetd = td("點擊查看", 'image');
 	$imagetd.click(function(){
-		$("#imgModel").show();
-		$("#imgModel").css("background-image", "url(https://seal100x.github.io/nikkiup2u3_img/" +  longid + ".png)");
-		$("#imgInfo").text(piece.name);
+		Dom("#imgModel").show();
+		Dom("#imgModel").css("background-image", "url(https://seal100x.github.io/nikkiup2u3_img/" +  longid + ".png)");
+		Dom("#imgInfo").text(piece.name);
 	});
 	$lineTop.append($imagetd);
 	if(wardrobe2[longid]){
@@ -132,7 +132,7 @@ function rowBiguse(piece, isShoppingCart, index) {
 }
 
 function listBiguse(datas, isShoppingCart, index) {
-	var $list = $("<div>").addClass("table-body");
+	var $list = Dom("<div>").addClass("table-body");
 	if (isShoppingCart) {
 		$list.append(rowBiguse(BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2).totalScore, isShoppingCart, index));
 	}
@@ -163,7 +163,7 @@ function clothesNameTd(piece) {
 	}
 	cls += piece.own ? ' own' : '';
 
-	var $clothesNameA = $("<a>").attr("href", "#").addClass("button");
+	var $clothesNameA = Dom("<a>").attr("href", "#").addClass("button");
 	$clothesNameA.text(piece.name);
 	if(tooltip != ''){
 		$clothesNameA.attr("tooltip",tooltip);
@@ -173,7 +173,7 @@ function clothesNameTd(piece) {
 		toggleInventory(piece.type.mainType, piece.id, this);
 		return false;
 	});
-	var $clothesNameTd = $("<div>");
+	var $clothesNameTd = Dom("<div>");
 	$clothesNameTd.attr("id", "clickable-" + (piece.type.mainType + piece.id));
 	$clothesNameTd.addClass(cls);
 	$clothesNameTd.append($clothesNameA);
@@ -181,7 +181,7 @@ function clothesNameTd(piece) {
 }
 
 function shoppingCartButton(piece, index) {
-	var $shoppingCartButton = $("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
+	var $shoppingCartButton = Dom("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$shoppingCartButton.click(function () {
 		tShoppingCart.put(piece);
@@ -191,7 +191,7 @@ function shoppingCartButton(piece, index) {
 }
 
 function removeShoppingCartButton(detailedType, index) {
-	var $removeShoppingCartButton = $("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$removeShoppingCartButton.click(function () {
 		tShoppingCart.remove(detailedType);
@@ -207,27 +207,27 @@ function refreshShoppingCartBiguse() {
 	drawTable(shoppingCart2.toList(byCategoryAndScore), "shoppingCart2", true, 2);
 	var comparison = BigUseDomain.compareScores(shoppingCart1.totalScore.sumScore, shoppingCart2.totalScore.sumScore);
 	if(comparison.close){
-		$("#advise").text("當前兩種搭配分值過於接近, 建議去詢問群裡的小夥伴後再選擇");
+		Dom("#advise").text("當前兩種搭配分值過於接近, 建議去詢問群裡的小夥伴後再選擇");
 	}
 	else{
 		var info = "搭配A:" + comparison.scoreA + "分, 搭配B: " + comparison.scoreB + "分, 當前搭配情況下選擇   [" + comparison.winner + "]    ";
-		$("#advise").text(info);
+		Dom("#advise").text(info);
 	}
 }
 
 function drawTable(data, divId, isShoppingCart, index) {
 	if(divId != "shoppingCart"){
-		var $table = $('#' + divId);
+		var $table = Dom('#' + divId);
 		$table.empty();
 		$table.append(theadBiguse(isShoppingCart));
 		$table.append(listBiguse(data, isShoppingCart, index));
 		return;
 	}
-	var $table = $('#' + divId + "1");
+	var $table = Dom('#' + divId + "1");
 	$table.empty();
 	$table.append(theadBiguse(isShoppingCart));
 	$table.append(listBiguse([], isShoppingCart, 1));
-	var $table2 = $('#' + divId + "2");
+	var $table2 = Dom('#' + divId + "2");
 	$table2.empty();
 	$table2.append(theadBiguse(isShoppingCart));
 	$table2.append(listBiguse([], isShoppingCart, 2));		
@@ -235,36 +235,28 @@ function drawTable(data, divId, isShoppingCart, index) {
 
 
 function initAutoComplete(){
-var match = function(query, done){
-			var result = {
-				suggestions : []
-			};
-			for (var i in clothes) {
-				if (clothes[i].name.indexOf(query) >= 0) {
-					result.suggestions.push({"value" : clothes[i].name , "data" : clothes[i]});
-				}
-			}
-			done(result);
-		} 
-	$('#autocomplete1').autocomplete({
+	var match = function(query){
+		return BigUseDomain.autocompleteSuggestions(clothes, query);
+	};
+	NativeAutocomplete.attach(document.getElementById('autocomplete1'), {
 		lookup: match,
 		onSelect: function (suggestion) {
 			shoppingCart1.put(suggestion.data);
 			refreshShoppingCartBiguse();
 		}
 	});
-	$('#autocomplete2').autocomplete({
+	NativeAutocomplete.attach(document.getElementById('autocomplete2'), {
 		lookup: match,
 		onSelect: function (suggestion) {
 			shoppingCart2.put(suggestion.data);
 			refreshShoppingCartBiguse();
 		}
 	});
-	$('#imgInfo').click(function () {
-		$("#imgModel").hide();
+	Dom('#imgInfo').click(function () {
+		Dom("#imgModel").hide();
 	});
 }
 
-$(document).ready(function () {
+Dom(document).ready(function () {
 	initAutoComplete();
 });

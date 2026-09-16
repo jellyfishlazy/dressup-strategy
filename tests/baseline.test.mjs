@@ -164,7 +164,7 @@ test('rating and Clothes CSV conversion preserve values without overwriting glob
 test('BigUse uses numeric model totals without DOM score reads, preserving boundaries and ties', () => {
   let advice;
   const model = cartModel({ document: {}, criteria: {}, byCategoryAndScore: () => 0 });
-  model.$ = selector => {
+  model.Dom = selector => {
     if (selector === model.document) return { ready() {} };
     assert.equal(selector, '#advise', 'only advice output may access the DOM');
     return { text(value) { assert.equal(typeof value, 'string'); advice = value; } };

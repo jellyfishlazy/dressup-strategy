@@ -71,9 +71,17 @@ export default [
   {
     files: ['biguse_ui.js'],
     languageOptions: { sourceType: 'script', globals: {
-      ...browser, $: 'readonly', BigUseDomain: 'readonly', shoppingCart1: 'readonly', shoppingCart2: 'readonly',
+      ...browser, Dom: 'readonly', NativeAutocomplete: 'readonly', BigUseDomain: 'readonly', shoppingCart1: 'readonly', shoppingCart2: 'readonly',
       wardrobe2: 'readonly', color: 'readonly', render: 'readonly', td: 'readonly', goTop: 'readonly',
       criteria: 'readonly', byCategoryAndScore: 'readonly', clothes: 'readonly', toggleInventory: 'readonly',
+    } },
+    rules: safetyRules,
+  },
+  {
+    files: ['biguse_nikki.js'],
+    languageOptions: { sourceType: 'script', globals: {
+      ...browser, Dom: 'readonly', currentCategory: 'writable', onChangeUiFilter: 'readonly',
+      refreshShoppingCartBiguse: 'readonly', color: 'readonly',
     } },
     rules: safetyRules,
   },

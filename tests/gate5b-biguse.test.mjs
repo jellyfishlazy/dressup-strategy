@@ -36,6 +36,18 @@ test('BigUse score comparison preserves the existing ±10 percent rule and tie b
   }
 });
 
+test('BigUse autocomplete suggestions preserve substring matching and Clothes identity', () => {
+  const ctx = loadScript('src/domain/biguse/runtime.js', {});
+  const first = { name: 'Alpha Dress', id: '001' };
+  const second = { name: 'Beta Alpha', id: '002' };
+  const third = { name: 'Gamma', id: '003' };
+  const results = ctx.BigUseDomain.autocompleteSuggestions([first, second, third], 'Alpha');
+  assert.deepEqual(Array.from(results, item => item.value), ['Alpha Dress', 'Beta Alpha']);
+  assert.equal(results[0].data, first);
+  assert.equal(results[1].data, second);
+  assert.equal(ctx.BigUseDomain.autocompleteSuggestions([first], '').length, 0);
+});
+
 test('BigUse image identity uses named Clothes fields and preserves legacy image ids', () => {
   const ctx = loadScript('src/domain/biguse/runtime.js', {});
   const piece = (type, id) => ({ type: { type }, id });
@@ -55,4 +67,6 @@ test('BigUse UI no longer reverse-adapts Clothes through CSV or clothesSet looku
   assert.match(source, /BigUseDomain\.pieceIdentity\(piece\)/);
   assert.match(source, /BigUseDomain\.imageLongId\(piece\)/);
   assert.match(source, /\.put\(suggestion\.data\)/);
+  assert.match(source, /NativeAutocomplete\.attach/);
+  assert.match(source, /BigUseDomain\.autocompleteSuggestions\(clothes, query\)/);
 });

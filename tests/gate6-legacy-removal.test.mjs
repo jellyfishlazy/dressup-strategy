@@ -36,10 +36,10 @@ test('Wardrobe Check no longer depends on jQuery', () => {
   assert.match(read('wardrobechk.js'), /DOMContentLoaded/);
 });
 
-test('remaining jQuery dependency is explicitly limited to BigUse and Material', () => {
+test('remaining jQuery dependency is explicitly limited to Material', () => {
   const files = ['index.html', 'biguse.html', 'material.html', 'wardrobechk.html', 'cn-search/index.html'];
   const users = files.filter(file => /src=['"]jquery(?:\.js|\.min\.js)['"]/.test(read(file)));
-  assert.deepEqual(users, ['biguse.html', 'material.html']);
+  assert.deepEqual(users, ['material.html']);
 });
 
 test('obsolete analytics and BigUse compatibility stub are removed', () => {

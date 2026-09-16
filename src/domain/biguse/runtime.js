@@ -35,10 +35,22 @@
     return (id.length > 3 ? prefix.replace('0', '') : prefix) + id;
   }
 
+  function autocompleteSuggestions(items, query) {
+    if (!query) return [];
+    var out = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i] && typeof items[i].name === 'string' && items[i].name.indexOf(query) >= 0) {
+        out.push({ value: items[i].name, data: items[i] });
+      }
+    }
+    return out;
+  }
+
   root.BigUseDomain = Object.freeze({
     cartForIndex: cartForIndex,
     compareScores: compareScores,
     pieceIdentity: pieceIdentity,
-    imageLongId: imageLongId
+    imageLongId: imageLongId,
+    autocompleteSuggestions: autocompleteSuggestions
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);
