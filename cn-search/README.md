@@ -58,7 +58,13 @@
 
 | 路徑 | 說明 |
 |------|------|
-| `index.html` / `cn-search.js` | 搜尋頁面 |
+| `index.html` / `cn-search.js` | 搜尋頁面與 DOM/event orchestration；主程式以原生 ES Module 載入 |
+| `src/category-map.mjs` | 陸服類別 → 台服類別對照 |
+| `src/normalization.mjs` | 簡繁語料對齊、lexicon 與分隔符處理 |
+| `src/search.mjs` | 台服 lookup、CN/TW merge 與條件篩選 |
+| `src/staging.mjs` | 18 欄暫存列轉換與 wardrobe 片段序列化 |
+| `src/manual-entry.mjs` | 手動輸入的 tag/category 選項與屬性規則 |
+| `src/ui.mjs` | 搜尋結果與暫存區的純 HTML render helper |
 | `開啟陸服搜尋.bat` | 一鍵啟動本機 HTTP 並開啟搜尋頁 |
 | `重建搜尋索引.bat` | 一鍵重建 `data/cn_search_index.json` |
 | `data/cn_search_index.json` | 陸服索引（由 build 腳本產生） |

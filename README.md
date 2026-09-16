@@ -70,6 +70,13 @@ and generated rows still have exactly the same 18 fields. Classic browser
 scripts retain their existing model and behavior. Regression tests cover the
 schema and exact round-trips of all four repository wardrobe arrays.
 
+Gate 4 modularizes the CN search page with native browser ES Modules under
+`cn-search/src/`. Category mapping, lexicon/normalization, search merge/filter,
+staging serialization, and manual-entry data rules are separated from the DOM
+orchestration in `cn-search/cn-search.js`. No bundler or runtime server is added;
+the same static GitHub Pages deployment remains valid. CN-search domain modules
+are covered by Node regression tests and share Gate 3's wardrobe schema.
+
 CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
 successful quality job **and** `refs/heads/main` (never a pull request). The deploy
 job checks out a fresh root static site, so npm dependencies are not uploaded.
