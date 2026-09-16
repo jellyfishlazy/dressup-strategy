@@ -12,6 +12,13 @@ function loadScript(file, context = {}) {
   return context;
 }
 
+function loadMatcherModel(context = {}) {
+  const model = context;
+  loadScript('src/domain/wardrobe/runtime.js', model);
+  loadScript('src/domain/inventory/runtime.js', model);
+  return loadScript('model.js', model);
+}
+
 test('clone copies nested arrays/objects without sharing mutable children', () => {
   const context = loadScript('tool.js');
   assert.equal(vm.runInContext(`
@@ -24,7 +31,7 @@ test('clone copies nested arrays/objects without sharing mutable children', () =
 });
 
 test('accessory scoring preserves thresholds and applies the floor', () => {
-  const model = loadScript('model.js', { wardrobe: [], category: [], skipCategory: [] });
+  const model = loadMatcherModel({ wardrobe: [], category: [], skipCategory: [] });
   assert.equal(model.accScore(100, 3), 100);
   assert.equal(model.accScore(100, 4), 95);
   assert.equal(model.accScore(100, 16), 40);
@@ -33,7 +40,7 @@ test('accessory scoring preserves thresholds and applies the floor', () => {
 });
 
 test('domain IDs retain category prefixes and leading zeroes', () => {
-  const model = loadScript('model.js', { wardrobe: [], category: [], skipCategory: [] });
+  const model = loadMatcherModel({ wardrobe: [], category: [], skipCategory: [] });
   assert.equal(model.clotonum('髮型', '001'), '10001');
   assert.equal(model.clotonum('飾品-手持·右', '1234'), '81234');
   assert.equal(model.clotonum('螢光之靈', '081'), 'A0081');
@@ -74,7 +81,7 @@ test('duplicate exceptions are exact and stale exceptions fail', () => {
 });
 
 function cartModel(options = {}) {
-  return loadScript('model.js', { wardrobe: [], category: [], skipCategory: [], repelCates: [], ...options });
+  return loadMatcherModel({ wardrobe: [], category: [], skipCategory: [], repelCates: [], ...options });
 }
 
 function scoredPiece(model, type, score, bonus = 0) {
