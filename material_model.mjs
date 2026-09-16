@@ -1,4 +1,17 @@
-﻿// Ivan's Workshop
+﻿import { rowToWardrobeItem } from './src/domain/wardrobe/index.mjs';
+import { createInventory, readBrowser, writeBrowser } from './src/domain/inventory/index.mjs';
+
+const Dom = globalThis.Dom;
+const wardrobe = globalThis.wardrobe;
+const category = globalThis.category;
+const skipCategory = globalThis.skipCategory;
+const repelCates = globalThis.repelCates;
+const typeInfo = globalThis.typeInfo;
+const Flist = globalThis.Flist;
+const manualScoring = globalThis.manualScoring;
+const pattern = globalThis.pattern;
+const pattern_extra = globalThis.pattern_extra;
+// Ivan's Workshop
 
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
 var CHINESE_TO_FEATURES = {
@@ -24,7 +37,7 @@ var global = {
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm, extra, source, set
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14     15      16
 var Clothes = function(csv) {
-  var item = WardrobeDomain.rowToWardrobeItem(csv);
+  var item = rowToWardrobeItem(csv);
   var theType = typeInfo[item.type];
   if(!theType)
 	  console.log(csv);
@@ -274,7 +287,7 @@ function ScoreByCategory() {
 }
 
 function MyClothes() {
-  return InventoryDomain.createInventory({
+  return createInventory({
     typeOf: function (clothing) { return clothing.type.mainType; }
   });
 }
@@ -302,7 +315,7 @@ var clothesSet = function() {
 
 var shoppingCart = {
   cart: {},
-  totalScore: fakeClothes(this.cart),
+  totalScore: null,
   clear: function() {
     this.cart = {};
   },
@@ -345,7 +358,7 @@ var shoppingCart = {
 		var sumFirst = 0;
 		var sumOthers = 0;
 		for (var j in repelCates[i]){
-			currCate=repelCates[i][j];
+			var currCate=repelCates[i][j];
 			if (this.cart[currCate]) {
 				this.cart[currCate].calc(criteria);
 				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(this.cart[currCate], accNum?accNum:accCateNum) : this.cart[currCate].sumScore;
@@ -377,6 +390,8 @@ var shoppingCart = {
 	}
   }
 };
+
+shoppingCart.totalScore = fakeClothes(shoppingCart.cart);
 
 function accScore(total, items) {
   if (items < ACCRATIO.length) {
@@ -517,7 +532,7 @@ function loadNew(myClothes) {
 
 function loadFromStorage() {
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
-  var stored = InventoryDomain.readBrowser(storage, document);
+  var stored = readBrowser(storage, document);
   if (stored.current) return loadNew(stored.current);
   if (stored.legacy) return load(stored.legacy);
   return MyClothes();
@@ -528,6 +543,8 @@ function save(){
   myClothes.filter(clothes);
   var txt = myClothes.serialize();
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
-  InventoryDomain.writeBrowser(storage, document, txt);
+  writeBrowser(storage, document, txt);
   return myClothes;
 }
+
+export { Clothes, MyClothes, clothes, clothesSet, calcDependencies, loadFromStorage, loadNew, load, save, ScoreByCategory, fakeClothes, clotonum, realRating, accScore, accSumScore };

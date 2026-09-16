@@ -36,12 +36,21 @@
     return text;
   }
 
+  var registry = Object.create(null);
+
+  function register(actions) {
+    for (var name in actions) {
+      if (typeof actions[name] !== 'function') throw new TypeError('Material action must be a function: ' + name);
+      registry[name] = actions[name];
+    }
+  }
+
   function run(encoded) {
     var action = decodeURIComponent(String(encoded || '')).trim();
     if (!action) return;
     var match = /^([A-Za-z_$][\w$]*)\s*\((.*)\)\s*$/.exec(action);
     if (!match) throw new Error('Invalid material action: ' + action);
-    var fn = root[match[1]];
+    var fn = registry[match[1]] || root[match[1]];
     if (typeof fn !== 'function') throw new Error('Unknown material action: ' + match[1]);
     return fn.apply(root, parseArgs(match[2]));
   }
@@ -60,7 +69,7 @@
     });
   }
 
-  root.MaterialActions = Object.freeze({ run: run, parseArgs: parseArgs });
+  root.MaterialActions = Object.freeze({ run: run, parseArgs: parseArgs, register: register });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
   else bind();
 })(typeof globalThis !== 'undefined' ? globalThis : this);

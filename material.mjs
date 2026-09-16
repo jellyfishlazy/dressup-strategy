@@ -1,11 +1,17 @@
-﻿Dom(document).ready(function () {
-	calcDependencies();
-	get_convertlist();
-	get_maxc();
-	show_scope();
-	show_inv();
-});
+﻿import { clothes, clothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
 
+const Dom = globalThis.Dom;
+const MaterialActions = globalThis.MaterialActions;
+const html2canvas = globalThis.html2canvas;
+const category = globalThis.category;
+const pattern = globalThis.pattern;
+const setcategory = globalThis.setcategory;
+const convert = globalThis.convert;
+const construct = globalThis.construct;
+const merchant = globalThis.merchant;
+const convertPrice = globalThis.convertPrice;
+const constructMaterialName = globalThis.constructMaterialName;
+const patternPrice = globalThis.patternPrice;
 var highlight=['星之海','韶顏傾城','格萊斯','冰風戰歌','白櫻戀歌'];
 var highlight_style=['xzh','syqc','gls','bfzg','bylg'];
 
@@ -1218,3 +1224,68 @@ function toimage() {
         	}
       	});
 }
+MaterialActions.register({
+  show_scope,
+  chgScope,
+  chooseSet,
+  searchSetMain,
+  searchBySetId,
+  chgScopeSub,
+  chgScopeSub2,
+  chgStars,
+  chgStars2,
+  compareStr,
+  showFactorInfo,
+  addhighlightdeps,
+  getLastIndexHL,
+  showLevelDropInfo,
+  matchClothesLevels,
+  genFactor_main,
+  genFactor,
+  genFactor2,
+  clearCnt,
+  addreqCnt,
+  searchById,
+  searchSet,
+  genBasicMaterial,
+  add_genFac,
+  retFactor,
+  hvConvert,
+  conv_source,
+  getMerc,
+  getPatternPrice,
+  getDistinct,
+  get_convertlist,
+  get_maxc,
+  tab,
+  tr,
+  span,
+  materialActionAttr,
+  materialChangeAttr,
+  ahref,
+  imageButton,
+  table,
+  selectBox,
+  enterKey,
+  show_inv,
+  clearCustomInventory,
+  calcCart,
+  addCart,
+  delCart,
+  addCartList,
+  refreshCart,
+  clearCart,
+  cartButton,
+  updateSize,
+  loadCustomInventory,
+  saveAndUpdate,
+  toimage
+});
+
+Dom(document).ready(function () {
+	calcDependencies();
+	get_convertlist();
+	get_maxc();
+	show_scope();
+	show_inv();
+});

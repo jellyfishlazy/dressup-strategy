@@ -49,18 +49,8 @@ export default [
     rules: safetyRules,
   },
   {
-    files: ['material_model.js'],
-    languageOptions: { sourceType: 'script', globals: { ...commonLegacy, pattern_extra: 'readonly', manualScoring: 'readonly' } },
-    rules: safetyRules,
-  },
-  {
-    files: ['material.js'],
-    languageOptions: { sourceType: 'script', globals: {
-      ...browser, Dom: 'readonly', clothes: 'readonly', clothesSet: 'readonly', category: 'readonly', pattern: 'readonly',
-      setcategory: 'readonly', convert: 'readonly', construct: 'readonly', merchant: 'readonly', material_scoring: 'readonly',
-      convertPrice: 'readonly', constructMaterialName: 'readonly', patternPrice: 'readonly', html2canvas: 'readonly',
-      calcDependencies: 'readonly', loadFromStorage: 'readonly', loadNew: 'readonly', load: 'readonly', save: 'readonly',
-    } },
+    files: ['material_model.mjs', 'material.mjs'],
+    languageOptions: { globals: browser },
     rules: safetyRules,
   },
   {

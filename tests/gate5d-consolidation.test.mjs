@@ -56,24 +56,21 @@ test('browser storage helpers preserve localStorage precedence and cookie fallba
   assert.match(outDoc.cookie, /^mine2=1%3A001%7C; expires=/);
 });
 
-test('migrated legacy entry points delegate inventory behavior and are lint-covered', () => {
-  for (const file of ['model.js', 'material_model.js']) {
+test('inventory consumers delegate to shared boundaries and are lint-covered', () => {
+  const model = readFileSync(new URL('../model.js', import.meta.url), 'utf8');
+  assert.match(model, /InventoryDomain\.createInventory\(/);
+  assert.match(model, /InventoryDomain\.readBrowser\(/);
+  assert.match(model, /InventoryDomain\.writeBrowser\(/);
+  assert.doesNotMatch(model, /function (?:getCookie|setCookie)\(/);
+
+  for (const file of ['material_model.mjs', 'wardrobechk.mjs']) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-    assert.match(source, /InventoryDomain\.createInventory\(/, file);
-    assert.match(source, /InventoryDomain\.readBrowser\(/, file);
-    assert.doesNotMatch(source, /function getCookie\(/, file);
+    assert.match(source, /from '\.\/src\/domain\/inventory\/index\.mjs'/, file);
+    assert.doesNotMatch(source, /InventoryDomain|function (?:getCookie|setCookie)\(/, file);
   }
-  const wardrobeCheck = readFileSync(new URL('../wardrobechk.mjs', import.meta.url), 'utf8');
-  assert.match(wardrobeCheck, /createInventory\(/);
-  assert.match(wardrobeCheck, /readBrowser\(/);
-  assert.doesNotMatch(wardrobeCheck, /InventoryDomain|function getCookie\(/);
-  for (const file of ['model.js', 'material_model.js']) {
-    const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
-    assert.match(source, /InventoryDomain\.writeBrowser\(/, file);
-    assert.doesNotMatch(source, /function setCookie\(/, file);
-  }
+
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  for (const file of ['model.js', 'biguse_model.js', 'biguse_ui.js', 'material_model.js', 'wardrobechk.mjs']) {
+  for (const file of ['model.js', 'biguse_model.js', 'biguse_ui.js', 'material_model.mjs', 'material.mjs', 'wardrobechk.mjs']) {
     assert.match(pkg.scripts.lint, new RegExp(file.replace('.', '\\.')));
   }
 });

@@ -57,6 +57,11 @@ test('Material boots and builds its dynamic scope controls', async ({ page }) =>
   await expect(page.locator('#degree_level')).toBeVisible();
   await page.locator('#selectScope').selectOption('2');
   await expect(page.locator('#degree_level')).toBeVisible();
+  const legacyGlobals = await page.evaluate(() => ({
+    wardrobe: typeof globalThis.WardrobeDomain,
+    inventory: typeof globalThis.InventoryDomain,
+  }));
+  expect(legacyGlobals).toEqual({ wardrobe: 'undefined', inventory: 'undefined' });
   await expectNoFailures(failures);
 });
 
