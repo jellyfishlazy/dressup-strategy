@@ -106,7 +106,7 @@ async function makeS2tw() {
     console.warn(
       '[cn-index] opencc-js not available (' +
         (e && e.message ? e.message : e) +
-        '). Run `npm install` in ../../my-projects. Unmapped CN-only tag tokens will stay as-is.'
+        '). Run `npm ci` in the repository root. Unmapped CN-only tag tokens will stay as-is.'
     );
     return (s) => String(s);
   }

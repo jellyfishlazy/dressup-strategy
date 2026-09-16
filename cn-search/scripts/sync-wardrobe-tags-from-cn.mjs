@@ -113,7 +113,7 @@ async function makeS2tw() {
     console.warn(
       '[sync-tags] opencc-js unavailable (' +
         (e && e.message ? e.message : e) +
-        '); run npm install in ../../my-projects. Unmapped simplified tokens may stay wrong.'
+        '); run npm ci in the repository root. Unmapped simplified tokens may stay wrong.'
     );
     return (s) => String(s);
   }
