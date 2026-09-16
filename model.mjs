@@ -14,6 +14,9 @@ const pattern = globalThis.pattern;
 /** @typedef {import('./src/domain/scoring/types.d.ts').ClothesType} ClothesType */
 /** @typedef {import('./src/domain/scoring/types.d.ts').RatingTuple} RatingTuple */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoreByCategoryState} ScoreByCategoryState */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<ScoringClothing>} ClothesInventory */
+/** @typedef {import('./src/domain/shopping-cart/types.d.ts').MatcherShoppingCart<ScoringClothing>} MatcherCart */
 /** @type {FeatureName[]} */
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
 var CHINESE_TO_FEATURES = {
@@ -303,6 +306,7 @@ function ScoreByCategory() {
   };
 }
 
+/** @returns {ClothesInventory} */
 function MyClothes() {
   return createInventory({
     typeOf: function (clothing) { return clothing.type.mainType; }
@@ -330,7 +334,9 @@ var clothesSet = function() {
   return ret;
 }();
 
+/** @returns {MatcherCart} */
 function createShoppingCart() {
+  /** @type {Record<string, ScoringClothing>} */
   var cart = {};
   return {
   cart: cart,

@@ -71,7 +71,12 @@ function clearShoppingCart() {
 	refreshShoppingCart();
 }
 
-function toggleInventory(type, id) {
+/**
+ * @param {string} type
+ * @param {string} id
+ * @param {HTMLElement | null} [_triggerElement]
+ */
+function toggleInventory(type, id, _triggerElement) {
 	var checked = !clothesSet[type][id].own;
 	checked ? Dom('#clickable-' + type + id).addClass('own') : Dom('#clickable-' + type + id).removeClass("own");
 	clothesSet[type][id].own = checked;

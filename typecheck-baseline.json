@@ -1,6 +1,6 @@
 {
   "typescript_version": "7.0.2",
-  "diagnostic_count": 57,
+  "diagnostic_count": 54,
   "summary_by_code": {
     "2322": 8,
     "2339": 10,
@@ -12,16 +12,9 @@
     "2367": 6,
     "2403": 11,
     "2407": 2,
-    "2447": 1,
-    "2554": 3
+    "2447": 1
   },
   "diagnostics": [
-    {
-      "file": "biguse_ui.mjs",
-      "code": 2554,
-      "message": "Expected 0-2 arguments, but got 3.",
-      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
-    },
     {
       "file": "clock.mjs",
       "code": 2322,
@@ -339,18 +332,6 @@
       "code": 2407,
       "message": "The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type 'string'.",
       "source": "for (var i in str) {"
-    },
-    {
-      "file": "ui.mjs",
-      "code": 2554,
-      "message": "Expected 0-2 arguments, but got 3.",
-      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
-    },
-    {
-      "file": "ui.mjs",
-      "code": 2554,
-      "message": "Expected 0-2 arguments, but got 3.",
-      "source": "toggleInventory(piece.type.mainType, piece.id, this);"
     },
     {
       "file": "wardrobechk.mjs",

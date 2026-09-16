@@ -1,6 +1,9 @@
 import { rowToWardrobeItem } from './src/domain/wardrobe/index.mjs';
 import { createInventory, readBrowser } from './src/domain/inventory/index.mjs';
 
+/** @typedef {{ own: boolean, name: string, type: string, mainType: string, id: string }} WardrobeInventoryClothing */
+/** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<WardrobeInventoryClothing>} WardrobeInventory */
+
 const wardrobeRows = globalThis.wardrobe;
 const category = globalThis.category;
 
@@ -20,6 +23,7 @@ const CATEGORY_HIERARCHY = (() => {
   return ret;
 })();
 
+/** @returns {WardrobeInventoryClothing} */
 function retClothes(csv) {
   const item = rowToWardrobeItem(csv);
   return {
@@ -31,6 +35,7 @@ function retClothes(csv) {
   };
 }
 
+/** @returns {WardrobeInventory} */
 function createWardrobeInventory() {
   return createInventory({
     typeOf: clothing => clothing.mainType,
@@ -62,6 +67,7 @@ function loadFromStorage() {
   return createWardrobeInventory();
 }
 
+/** @param {WardrobeInventory} mine */
 function updateSize(mine) {
   const textarea = document.getElementById('myClothes');
   if (textarea) textarea.value = mine.serialize();
