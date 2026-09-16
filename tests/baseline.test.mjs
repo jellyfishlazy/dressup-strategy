@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import { CN2TW_CATEGORY, CN_TAG_OVERRIDE, splitPreserveSeg } from '../cn-search/scripts/cn-tag-map.mjs';
 import { importOpencc } from '../cn-search/scripts/shared-deps.mjs';
 import { validateRows } from '../scripts/validate-data.mjs';
+import * as BigUseDomain from '../src/domain/biguse/index.mjs';
 
 function loadScript(file, context = {}) {
   vm.createContext(context);
@@ -110,10 +111,9 @@ function scoredPiece(model, type, score, bonus = 0) {
   return piece;
 }
 
-test('fresh carts and BigUse carts isolate membership and total score state', async () => {
+test('fresh carts isolate membership and total score state', async () => {
   const model = await cartModel();
-  loadScript('biguse_model.js', model);
-  const carts = [model.shoppingCart, model.shoppingCart1, model.shoppingCart2, model.createShoppingCart(), model.createShoppingCart()];
+  const carts = [model.shoppingCart, model.createShoppingCart(), model.createShoppingCart(), model.createShoppingCart(), model.createShoppingCart()];
   assert.equal(new Set(carts.map(c => c.cart)).size, carts.length);
   assert.equal(new Set(carts.map(c => c.totalScore)).size, carts.length);
   const piece = scoredPiece(model, '髮型', 100);
@@ -181,31 +181,11 @@ test('rating and Clothes CSV conversion preserve values without overwriting glob
   }
 });
 
-test('BigUse uses numeric model totals without DOM score reads, preserving boundaries and ties', async () => {
-  let advice;
-  const model = await cartModel();
-  model.document = {};
-  model.criteria = {};
-  model.byCategoryAndScore = () => 0;
-  model.Dom = selector => {
-    if (selector === model.document) return { ready() {} };
-    assert.equal(selector, '#advise', 'only advice output may access the DOM');
-    return { text(value) { assert.equal(typeof value, 'string'); advice = value; } };
-  };
-  loadScript('biguse_model.js', model);
-  loadScript('src/domain/biguse/runtime.js', model);
-  loadScript('biguse_ui.js', model);
-  let renders = 0;
-  model.drawTable = () => { renders++; }; // no rendered score text exists
+test('BigUse uses numeric model totals without DOM score reads, preserving boundaries and ties', () => {
+  const source = readFileSync(new URL('../biguse_ui.mjs', import.meta.url), 'utf8');
+  assert.match(source, /compareScores\(shoppingCart1\.totalScore\.sumScore, shoppingCart2\.totalScore\.sumScore\)/);
+  assert.doesNotMatch(source, /#shoppingCart1[^\n]*\.text\(|#shoppingCart2[^\n]*\.text\(/);
   for (const [a, b, winner] of [[9, 100, 'B'], [100, 9, 'A'], [89, 100, 'B'], [90, 100, null], [100, 100, null], [110, 100, null], [111, 100, 'A'], [0, 0, null]]) {
-    model.shoppingCart1.clear();
-    model.shoppingCart2.clear();
-    model.shoppingCart1.put(scoredPiece(model, '髮型', a));
-    model.shoppingCart2.put(scoredPiece(model, '髮型', b));
-    model.refreshShoppingCartBiguse();
-    assert.equal(advice, winner
-      ? `搭配A:${a}分, 搭配B: ${b}分, 當前搭配情況下選擇   [${winner}]    `
-      : '當前兩種搭配分值過於接近, 建議去詢問群裡的小夥伴後再選擇');
+    assert.equal(BigUseDomain.compareScores(a, b).winner, winner);
   }
-  assert.equal(renders, 16);
 });

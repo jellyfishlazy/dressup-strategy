@@ -22,12 +22,14 @@ test('Bootstrap JavaScript is retired while CSS remains available', () => {
 test('native event bridge replaces inline handlers and Bootstrap button data API', () => {
   const source = read('src/legacy/page-events.js');
   assert.match(source, /querySelectorAll\('\[data-toggle="buttons"\]'\)/);
-  for (const id of ['theme-fliter', 'theme', 'importCate', 'btn-import', 'btn-load-custom-inventory', 'btn-clear-cart-a', 'btn-clear-cart-b', 'aIntro']) {
+  for (const id of ['theme-fliter', 'theme', 'importCate', 'btn-import', 'btn-load-custom-inventory', 'aIntro']) {
     assert.match(source, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(read('index.html'), /src\/legacy\/page-events\.js/);
   assert.match(read('biguse.html'), /src\/legacy\/page-events\.js/);
   assert.match(read('material.html'), /src\/legacy\/page-events\.js/);
+  assert.match(read('biguse.mjs'), /btn-clear-cart-a/);
+  assert.match(read('biguse.mjs'), /btn-clear-cart-b/);
 });
 
 test('Wardrobe Check no longer depends on jQuery', () => {
@@ -45,8 +47,8 @@ test('active entry points no longer load jQuery', () => {
 
 test('obsolete analytics and BigUse compatibility stub are removed', () => {
   assert.doesNotMatch(read('index.html'), /googletagmanager|UA-122120666-2|\bgtag\s*\(/);
-  assert.doesNotMatch(read('biguse_nikki.js'), /function\s+menuFixed\s*\(/);
+  assert.doesNotMatch(read('biguse_nikki.mjs'), /function\s+menuFixed\s*\(/);
   const nikki = read('nikki.mjs');
   assert.match(nikki, /typeof menuFixed === 'function'/);
-  assert.match(read('biguse_ui.js'), /https:\/\/seal100x\.github\.io\/nikkiup2u3_img\//);
+  assert.match(read('biguse_ui.mjs'), /https:\/\/seal100x\.github\.io\/nikkiup2u3_img\//);
 });

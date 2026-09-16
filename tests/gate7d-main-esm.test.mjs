@@ -15,7 +15,7 @@ test('Main Matcher entry point is a single ESM graph with direct domain imports'
   assert.match(html, /src=['"]src\/legacy\/main-actions\.js['"]/);
   assert.doesNotMatch(html, /src\/domain\/(?:wardrobe|inventory)\/runtime\.js/);
   for (const old of ['model.js', 'ui.js', 'nikki.js', 'onekeystrategy.js', 'onekeystrategy_lan.js', 'sharewardrobe.js', 'clock.js']) {
-    assert.equal(existsSync(new URL(`../${old}`, import.meta.url)), true, old);
+    assert.equal(existsSync(new URL(`../${old}`, import.meta.url)), false, old);
     assert.doesNotMatch(html, new RegExp(`src=['\"]${old.replace('.', '\\.')}['\"]`), old);
   }
 
@@ -64,18 +64,12 @@ test('MainActions registry bridges legacy page events without eval or window lea
   assert.equal(context.globalThis.MainActions.run('missing'), undefined);
 });
 
-test('modernized entry chains are bridge-free while classic compatibility is isolated to BigUse', () => {
-  for (const html of ['index.html', 'material.html', 'wardrobechk.html']) {
-    assert.doesNotMatch(read(html), /src\/domain\/(?:wardrobe|inventory)\/runtime\.js/, html);
+test('all modernized entry chains are bridge-free after compatibility retirement', () => {
+  for (const html of ['index.html', 'biguse.html', 'material.html', 'wardrobechk.html']) {
+    assert.doesNotMatch(read(html), /src\/domain\/(?:wardrobe|inventory|biguse)\/runtime\.js/, html);
   }
-  for (const file of [...MAIN_MODULES, 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
-    assert.doesNotMatch(read(file), /WardrobeDomain|InventoryDomain/, file);
+  for (const file of [...MAIN_MODULES, 'biguse.mjs', 'biguse_model.mjs', 'biguse_ui.mjs', 'biguse_nikki.mjs', 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
+    assert.doesNotMatch(read(file), /WardrobeDomain|InventoryDomain|BigUseDomain\s*=\s*globalThis/, file);
   }
-
-  const biguse = read('biguse.html');
-  assert.match(biguse, /src\/domain\/wardrobe\/runtime\.js/);
-  assert.match(biguse, /src\/domain\/inventory\/runtime\.js/);
-  for (const file of ['model.js', 'ui.js', 'nikki.js', 'onekeystrategy.js', 'clock.js', 'sharewardrobe.js']) {
-    assert.match(biguse, new RegExp(`src=['\"]${file.replace('.', '\\.')}['\"]`), file);
-  }
+  assert.match(read('biguse.html'), /<script type=['"]module['"] src=['"]biguse\.mjs['"]><\/script>/);
 });

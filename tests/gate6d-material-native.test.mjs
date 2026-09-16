@@ -43,7 +43,7 @@ test('Material delegated actions parse simple legacy call arguments without eval
 });
 
 test('active runtimes no longer consume classic wardrobe/inventory compatibility bridges', () => {
-  for (const file of ['model.mjs', 'ui.mjs', 'nikki.mjs', 'biguse_ui.js', 'biguse_nikki.js', 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
+  for (const file of ['model.mjs', 'ui.mjs', 'nikki.mjs', 'biguse_ui.mjs', 'biguse_nikki.mjs', 'material.mjs', 'material_model.mjs', 'wardrobechk.mjs']) {
     const source = read(file);
     assert.doesNotMatch(source, /WardrobeDomain|InventoryDomain/, file);
   }

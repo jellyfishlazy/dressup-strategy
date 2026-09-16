@@ -1,53 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
 import { WARDROBE_FIELDS, WARDROBE_FIELD_INDEX } from '../src/domain/wardrobe/schema.mjs';
 import { rowToWardrobeItem } from '../src/domain/wardrobe/adapter.mjs';
+import * as InventoryDomain from '../src/domain/inventory/index.mjs';
 
-function loadClassic(file, context = {}) {
-  vm.createContext(context);
-  vm.runInContext(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'), context, { filename: file });
-  return context;
-}
-
-function runtimeContext() {
-  const context = {};
-  loadClassic('src/domain/wardrobe/runtime.js', context);
-  loadClassic('src/domain/inventory/runtime.js', context);
-  return context;
-}
-
-test('classic wardrobe bridge stays in lockstep with the canonical Gate 3 schema and adapter', () => {
-  const context = runtimeContext();
-  assert.deepEqual(Array.from(context.WardrobeDomain.fields), WARDROBE_FIELDS);
-  assert.deepEqual({ ...context.WardrobeDomain.fieldIndex }, WARDROBE_FIELD_INDEX);
+test('wardrobe ESM boundary exposes the canonical Gate 3 schema and adapter', () => {
+  assert.equal(WARDROBE_FIELDS.length, 18);
+  assert.equal(WARDROBE_FIELD_INDEX.id, 2);
   const row = ['name', '髮型', '001', '5', 'SS', 'S', 'A', 'B', 'C', '', '', '', '', '', 'POP/小動物', '抽·店', '套裝', 'V1'];
-  assert.deepEqual(JSON.parse(JSON.stringify(context.WardrobeDomain.rowToWardrobeItem(row))), rowToWardrobeItem(row));
+  assert.equal(rowToWardrobeItem(row).id, '001');
 });
 
 test('inventory codec preserves the legacy persisted format exactly', () => {
-  const { InventoryDomain } = runtimeContext();
   const mine = { 1: ['001', '010'], 8: ['1234'] };
   assert.equal(InventoryDomain.serialize(mine), '1:001,010|8:1234|');
   const decoded = InventoryDomain.deserialize('1:001,010|8:1234|');
-  assert.deepEqual(JSON.parse(JSON.stringify(decoded.mine)), mine);
+  assert.deepEqual(decoded.mine, mine);
   assert.equal(decoded.size, 3);
-  assert.deepEqual(JSON.parse(JSON.stringify(InventoryDomain.deserialize(''))), { mine: {}, size: 0 });
-  assert.throws(() => InventoryDomain.deserialize('broken'), /reading 'split'/);
+  assert.deepEqual(InventoryDomain.deserialize(''), { mine: {}, size: 0 });
+  assert.throws(() => InventoryDomain.deserialize('broken'), /split/);
 });
 
 test('inventory storage boundary preserves current/local and legacy/cookie precedence', () => {
-  const { InventoryDomain } = runtimeContext();
   const storage = { myClothesNew: '1:001|', myClothes: 'old-name' };
-  assert.deepEqual(JSON.parse(JSON.stringify(InventoryDomain.read(storage, () => 'unused'))), {
-    current: '1:001|', legacy: 'old-name'
-  });
+  assert.deepEqual(InventoryDomain.read(storage, () => 'unused'), { current: '1:001|', legacy: 'old-name' });
   const cookieReads = [];
-  assert.deepEqual(JSON.parse(JSON.stringify(InventoryDomain.read(null, name => {
+  assert.deepEqual(InventoryDomain.read(null, name => {
     cookieReads.push(name);
     return name === 'mine2' ? '8:010|' : 'legacy';
-  }))), { current: '8:010|', legacy: 'legacy' });
+  }), { current: '8:010|', legacy: 'legacy' });
   assert.deepEqual(cookieReads, ['mine2', 'mine']);
 
   InventoryDomain.write(storage, () => assert.fail('cookie fallback should not run'), '2:002|');

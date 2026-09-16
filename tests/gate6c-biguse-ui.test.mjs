@@ -14,7 +14,7 @@ test('BigUse no longer loads jQuery or the retired autocomplete plugin', () => {
 });
 
 test('BigUse runtime contains no jQuery API references', () => {
-  for (const file of ['biguse_ui.js', 'biguse_nikki.js', 'biguse_model.js']) {
+  for (const file of ['biguse_ui.mjs', 'biguse_nikki.mjs', 'biguse_model.mjs', 'biguse.mjs']) {
     assert.doesNotMatch(read(file), /\$\s*\(|\$\s*\.|\bjQuery\b|\.autocomplete\s*\(/, file);
   }
 });
@@ -27,12 +27,12 @@ test('native BigUse autocomplete keeps local selection and keyboard behavior exp
   assert.match(source, /event\.key === 'Enter'/);
   assert.match(source, /event\.key === 'Escape'/);
   assert.match(source, /options\.onSelect/);
-  assert.match(read('biguse_ui.js'), /NativeAutocomplete\.attach/);
+  assert.match(read('biguse_ui.mjs'), /NativeAutocomplete\.attach/);
 });
 
 test('BigUse UI and category runtime are covered by repository lint', () => {
   const lint = JSON.parse(read('package.json')).scripts.lint;
-  assert.match(lint, /biguse_ui\.js/);
-  assert.match(lint, /biguse_nikki\.js/);
+  assert.match(lint, /biguse_ui\.mjs/);
+  assert.match(lint, /biguse_nikki\.mjs/);
   assert.match(lint, /src\/legacy/);
 });

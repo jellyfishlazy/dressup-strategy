@@ -1,10 +1,15 @@
+import { setCurrentCategory, onChangeUiFilter } from './nikki.mjs';
+import { refreshShoppingCartBiguse } from './biguse_ui.mjs';
+
+const Dom = globalThis.Dom;
+const color = globalThis.color;
 function chooseAccessories() {
 	refreshShoppingCartBiguse();
 }
 
 
 function switchCate(c) {
-	currentCategory = c;
+	setCurrentCategory(c);
 	Dom("ul#categoryTab li").removeClass("active");
 	Dom("#category_container div").removeClass("active");
 	Dom("#" + c).addClass("active");
@@ -23,15 +28,15 @@ function changeFrontFilterDiv(c){
 			Dom("#front_filter_div").append($btn);
 		}
 	}
-	
+
 	//前台篩選
 	Dom(".front_filter_option_biguse").click(function(){
 		filterClotherHTMLBiguse(this);
 		 return false;
 	});
 }
-	
-	
+
+
 function filterClotherHTMLBiguse(btn){
 	var clothesDivList = Dom("#clothes .table-body .table-row");
 	var str = Dom(btn).text();
@@ -45,6 +50,5 @@ function filterClotherHTMLBiguse(btn){
 	 }
 }
 
-Dom(document).ready(function () {
-	switchCate('妝容');
-});
+
+export { chooseAccessories, switchCate, changeFrontFilterDiv, filterClotherHTMLBiguse };

@@ -19,6 +19,28 @@ const clothesNotice = globalThis.clothesNotice;
 const levelNotice = globalThis.levelNotice;
 const lastVersion = globalThis.lastVersion;
 const menuFixed = globalThis.menuFixed;
+const runtimeHooks = { drawTable: null, chooseAccessories: null, switchCate: null };
+
+function configureRuntimeHooks(hooks = {}) {
+	for (const name of ['drawTable', 'chooseAccessories', 'switchCate']) {
+		if (Object.hasOwn(hooks, name)) {
+			if (hooks[name] !== null && typeof hooks[name] !== 'function') throw new TypeError(`Invalid runtime hook: ${name}`);
+			runtimeHooks[name] = hooks[name];
+		}
+	}
+}
+
+function invokeDrawTable(...args) {
+	return (runtimeHooks.drawTable || drawTable)(...args);
+}
+
+function invokeChooseAccessories(...args) {
+	return (runtimeHooks.chooseAccessories || chooseAccessories)(...args);
+}
+
+function invokeSwitchCate(...args) {
+	return (runtimeHooks.switchCate || switchCate)(...args);
+}
 // Ivan's Workshop
 
 var CATEGORY_HIERARCHY = function () {
@@ -83,7 +105,7 @@ function onChangeCriteria() {
 		criteria.bonus = global.additionalBonus;
 	}
 	criteria.levelName = Dom("#theme").val();
-	chooseAccessories(criteria);
+	invokeChooseAccessories(criteria);
 	drawLevelInfo();
 	refreshTable();
 	if(uiFilter["highscore"]){
@@ -183,7 +205,7 @@ function onChangeUiFilter() {
 }
 
 function refreshTable() {
-	drawTable(filtering(criteria, uiFilter), "clothes", false);
+	invokeDrawTable(filtering(criteria, uiFilter), "clothes", false);
 }
 
 function chooseAccessories(accfilters) {
@@ -196,7 +218,7 @@ function chooseAccessories(accfilters) {
 
 function refreshShoppingCart() {
 	shoppingCart.calc(criteria);
-	drawTable(shoppingCart.toList(byCategoryAndScore), "shoppingCart", true);
+	invokeDrawTable(shoppingCart.toList(byCategoryAndScore), "shoppingCart", true);
 }
 
 function drawLevelInfo() {
@@ -487,7 +509,7 @@ function drawFilter() {//refactor me
 	Dom('#category_container').html(out);
 	Dom('#categoryTab a[data-switch-cate]').click(function (event) {
 		event.preventDefault();
-		switchCate(this.getAttribute('data-switch-cate'));
+		invokeSwitchCate(this.getAttribute('data-switch-cate'));
 	});
 	Dom('input[data-toggle-all]').change(function () {
 		toggleAll(this.getAttribute('data-toggle-all'));
@@ -496,6 +518,9 @@ function drawFilter() {//refactor me
 }
 
 var currentCategory;
+function setCurrentCategory(value) {
+	currentCategory = value;
+}
 function switchCate(c) {
 	Dom("#searchResultList").html('');
 	currentCategory = c;
@@ -704,7 +729,7 @@ function toggleSearchResult(){
 }
 
 function searchResult(){
-	switchCate(0);
+	invokeSwitchCate(0);
 	var searchTxt=Dom('#searchResultInput').val();
 	if (searchTxt){
 		var outSet=[];
@@ -716,7 +741,7 @@ function searchResult(){
 			Dom('#searchResultList').append(button_search('套裝：','searchCate'));
 			for (var i in outSet) {Dom('#searchResultList').append(button_search(outSet[i],'','searchResultSet'));}
 			Dom(".searchResultSet").click(function () {
-				switchCate(0);
+				invokeSwitchCate(0);
 				var setName=Dom(this).attr('id').replace('search-','');
 				Dom('#searchResultList').append(button_search(setName+'：','searchCate'));
 				for (var i in clothes){
@@ -1047,7 +1072,7 @@ function init() {
 	drawFilter();
 	drawTheme();
 	drawImport();
-	switchCate(category[0]);
+	invokeSwitchCate(category[0]);
 	updateSize(mine);
 	refreshShoppingCart();
 	initEvent();
@@ -1116,5 +1141,5 @@ export {
   drawImport, clearImport, saveAndUpdate, updateSize, doImport, goTop, getDistinct,
   toggleSearchResult, searchResult, autogenLimit, initEvent, filterClotherHTML,
   filterLoop, filterCompare, initNotice, init, exportCustomInventory, saveTextAsFile,
-  destroyClickedElement, loadFileAsText, bootMainMatcher
+  destroyClickedElement, loadFileAsText, bootMainMatcher, configureRuntimeHooks, setCurrentCategory
 };

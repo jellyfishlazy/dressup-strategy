@@ -49,8 +49,18 @@ test('BigUse boots with both carts and native autocomplete', async ({ page }) =>
   await expect(page.locator('#shoppingCart1 .table-head')).toBeVisible();
   await expect(page.locator('#shoppingCart2 .table-head')).toBeVisible();
 
-  const query = await page.evaluate(() => (globalThis.clothes?.[0]?.name || '').slice(0, 2));
-  expect(query.length).toBeGreaterThan(0);
+  const moduleState = await page.evaluate(async () => {
+    const { clothes } = await import('/model.mjs');
+    return {
+      query: (clothes[0]?.name || '').slice(0, 2),
+      wardrobe: typeof globalThis.WardrobeDomain,
+      inventory: typeof globalThis.InventoryDomain,
+      biguse: typeof globalThis.BigUseDomain,
+    };
+  });
+  expect(moduleState.query.length).toBeGreaterThan(0);
+  expect(moduleState).toMatchObject({ wardrobe: 'undefined', inventory: 'undefined', biguse: 'undefined' });
+  const query = moduleState.query;
   await page.locator('#autocomplete1').fill(query);
   await expect(page.locator('.native-autocomplete-suggestions .autocomplete-suggestion').first()).toBeVisible();
   await expectNoFailures(failures);

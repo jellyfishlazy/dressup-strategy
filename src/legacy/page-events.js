@@ -53,16 +53,6 @@
     bind('btn-save-text', 'click', call('saveTextAsFile'));
     bind('btn-load-file', 'click', call('loadFileAsText'));
   }
-  function bindBigUseEvents() {
-    bind('btn-clear-cart-a', 'click', function () {
-      if (root.shoppingCart1) root.shoppingCart1.clear();
-      if (typeof root.refreshShoppingCartBiguse === 'function') root.refreshShoppingCartBiguse();
-    });
-    bind('btn-clear-cart-b', 'click', function () {
-      if (root.shoppingCart2) root.shoppingCart2.clear();
-      if (typeof root.refreshShoppingCartBiguse === 'function') root.refreshShoppingCartBiguse();
-    });
-  }
   function toggleMaterialIntro() {
     var intro = byId('intro');
     var link = byId('aIntro');
@@ -89,7 +79,6 @@
     bindFilterEvents();
     bindInventoryEvents();
     bindMainEvents();
-    bindBigUseEvents();
     bindMaterialEvents();
   }
 
