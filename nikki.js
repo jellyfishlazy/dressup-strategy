@@ -30,7 +30,7 @@ function clearShoppingCart() {
 
 function toggleInventory(type, id) {
 	var checked = !clothesSet[type][id].own;
-	checked ? $('#clickable-' + type + id).addClass('own') : $('#clickable-' + type + id).removeClass("own");
+	checked ? Dom('#clickable-' + type + id).addClass('own') : Dom('#clickable-' + type + id).removeClass("own");
 	clothesSet[type][id].own = checked;
 	saveAndUpdate();
 }
@@ -40,18 +40,18 @@ function onChangeCriteria() {
 	criteria = {};
 	for (var i in FEATURES) {
 		var f = FEATURES[i];
-		var weight = parseFloat($('#' + f + "Weight").val());
+		var weight = parseFloat(Dom('#' + f + "Weight").val());
 		if (!weight) {
 			weight = 1;
 		}
 		if (uiFilter["highscore"]) {
-			var highscore2 = $('#' + f + "1d778.active").length ? 1.778 : 1;
-			var highscore1 = $('#' + f + "1d27.active").length ? 1.27 : 1;
+			var highscore2 = Dom('#' + f + "1d778.active").length ? 1.778 : 1;
+			var highscore1 = Dom('#' + f + "1d27.active").length ? 1.27 : 1;
 			weight = accMul(accMul(weight, highscore1), highscore2);
 			if (highscore1>1) criteria.highscore1=f;
 			if (highscore2>1) criteria.highscore2=f;
 		}
-		var checked = $('input[name=' + f + ']:radio:checked');
+		var checked = Dom('input[name=' + f + ']:radio:checked');
 		if (checked.length) {
 			criteria[f] = parseInt(checked.val()) * weight;
 		}
@@ -61,7 +61,7 @@ function onChangeCriteria() {
 	if (global.additionalBonus && global.additionalBonus.length > 0) {
 		criteria.bonus = global.additionalBonus;
 	}
-	criteria.levelName = $("#theme").val();
+	criteria.levelName = Dom("#theme").val();
 	chooseAccessories(criteria);
 	drawLevelInfo();
 	refreshTable();
@@ -78,7 +78,7 @@ function onChangeCriteria() {
 		});
 		var numstr = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ"];
 		for(var r  in rank){
-			$("#" + rank[r][0]).text(numstr[r]);
+			Dom("#" + rank[r][0]).text(numstr[r]);
 		}
 	}
 }
@@ -97,12 +97,12 @@ function accMul(arg1, arg2) {
 }
 
 function tagToBonus(criteria, id) {
-	var tag = $('#' + id).val();
+	var tag = Dom('#' + id).val();
 	var bonus = null;
 	if (tag.length > 0) {
-		var base = $('#' + id + 'base :selected').text();
-		var weight = parseFloat($('#' + id + 'weight').val());
-		if ($('input[name=' + id + 'method]:radio:checked').val() == 'replace') {
+		var base = Dom('#' + id + 'base :selected').text();
+		var weight = parseFloat(Dom('#' + id + 'weight').val());
+		if (Dom('input[name=' + id + 'method]:radio:checked').val() == 'replace') {
 			bonus = replaceScoreBonusFactory(base, weight, tag)(criteria);
 		} else {
 			bonus = addScoreBonusFactory(base, weight, tag)(criteria);
@@ -115,46 +115,46 @@ function tagToBonus(criteria, id) {
 }
 
 function clearTag(id) {
-	$('#' + id).val('');
-	$('#' + id + 'base').val('SS');
-	$('#' + id + 'weight').val('1');
-	$($('input[name=' + id + 'method]:radio').get(0)).prop("checked", true);
-	$($('input[name=' + id + 'method]:radio').get(0)).parent().addClass("active");
-	$($('input[name=' + id + 'method]:radio').get(1)).parent().removeClass("active");
+	Dom('#' + id).val('');
+	Dom('#' + id + 'base').val('SS');
+	Dom('#' + id + 'weight').val('1');
+	Dom(Dom('input[name=' + id + 'method]:radio').get(0)).prop("checked", true);
+	Dom(Dom('input[name=' + id + 'method]:radio').get(0)).parent().addClass("active");
+	Dom(Dom('input[name=' + id + 'method]:radio').get(1)).parent().removeClass("active");
 }
 
 function bonusToTag(idx, info) {
-	$('#tag' + idx).val(info.tag);
+	Dom('#tag' + idx).val(info.tag);
 	if (info.replace) {
-		$($('input[name=tag' + idx + 'method]:radio').get(1)).prop("checked", true);
-		$($('input[name=tag' + idx + 'method]:radio').get(1)).parent().addClass("active");
-		$($('input[name=tag' + idx + 'method]:radio').get(0)).parent().removeClass("active");
+		Dom(Dom('input[name=tag' + idx + 'method]:radio').get(1)).prop("checked", true);
+		Dom(Dom('input[name=tag' + idx + 'method]:radio').get(1)).parent().addClass("active");
+		Dom(Dom('input[name=tag' + idx + 'method]:radio').get(0)).parent().removeClass("active");
 	} else {
-		$($('input[name=tag' + idx + 'method]:radio').get(0)).prop("checked", true);
-		$($('input[name=tag' + idx + 'method]:radio').get(0)).parent().addClass("active");
+		Dom(Dom('input[name=tag' + idx + 'method]:radio').get(0)).prop("checked", true);
+		Dom(Dom('input[name=tag' + idx + 'method]:radio').get(0)).parent().addClass("active");
 	}
-	$('#tag' + idx + 'base').val(info.base);
-	$('#tag' + idx + 'weight').val(info.weight);
+	Dom('#tag' + idx + 'base').val(info.base);
+	Dom('#tag' + idx + 'weight').val(info.weight);
 }
 
 var uiFilter = {};
 function onChangeUiFilter() {
 	uiFilter = {};
-	$('.fliter:checked').each(function () {
-		uiFilter[$(this).val()] = true;
+	Dom('.fliter:checked').each(function () {
+		uiFilter[Dom(this).val()] = true;
 	});
 
 	if(uiFilter["toulan"]){
-		$("#onekey").text("偷懶攻略");
+		Dom("#onekey").text("偷懶攻略");
 	}
 	else{
-		$("#onekey").text("一鍵攻略");		
+		Dom("#onekey").text("一鍵攻略");
 	}
 	
 	if (currentCategory && currentCategory != 'switchall') {
 		if (CATEGORY_HIERARCHY[currentCategory].length > 1) {
-			$('input[name=category-' + currentCategory + ']:checked').each(function () {
-				uiFilter[$(this).val()] = true;
+			Dom('input[name=category-' + currentCategory + ']:checked').each(function () {
+				uiFilter[Dom(this).val()] = true;
 			});
 		} else {
 			uiFilter[currentCategory] = true;
@@ -193,9 +193,9 @@ function refreshShoppingCart() {
 
 function drawLevelInfo() {
 	var info = "";
-	var $skill = $("#skillInfo");
-	var $categoryF = $("#categoryFInfo");
-	var $hint = $("#hintInfo");
+	var $skill = Dom("#skillInfo");
+	var $categoryF = Dom("#categoryFInfo");
+	var $hint = Dom("#hintInfo");
 	$skill.empty();
 	$hint.empty();
 	$categoryF.empty();
@@ -224,18 +224,18 @@ function drawLevelInfo() {
 			}
 		}
 		if (currentLevel.hint) {
-			notF = "";
+			var notF = "";
 			if (currentLevel.hint[0] && currentLevel.hint[0] != '') {
-				var $hintInfo = $("<font>").text("過關提示:  ").addClass("hintInfo");
+				var $hintInfo = Dom("<font>").text("過關提示:  ").addClass("hintInfo");
 				$hint.append($hintInfo).append(currentLevel.hint[0]);
 			}
 			if (currentLevel.hint[1] && currentLevel.hint[1] != '') {
-				var $notF = $("<font>").text("可穿戴部件:  ").addClass("not_f");
+				var $notF = Dom("<font>").text("可穿戴部件:  ").addClass("not_f");
 				$categoryF.append($notF).append(currentLevel.hint[1]);
 			}
-			$categoryF.append($("<br>"));
+			$categoryF.append(Dom("<br>"));
 			if (currentLevel.hint[2] && currentLevel.hint[2] != '') {
-				var $isF = $("<font>").text("會導致F的部件: ").addClass("is_f");
+				var $isF = Dom("<font>").text("會導致F的部件: ").addClass("is_f");
 				$categoryF.append($isF).append(currentLevel.hint[2]);
 			}
 		}
@@ -247,21 +247,21 @@ function drawLevelInfo() {
 			gongzhuSkill,
 			normalSkill;
 			if (currentLevel.skills[0]) {
-				$shaonv = $("<font>").text("少女級技能:  ").addClass("shaonvSkill");
+				$shaonv = Dom("<font>").text("少女級技能:  ").addClass("shaonvSkill");
 				shaonvSkill = "";
 				for (var i in currentLevel.skills[0]) {
 					shaonvSkill += (currentLevel.skills[0][i] + "  ");
 				}
 			}
 			if (currentLevel.skills[1]) {
-				$gongzhu = $("<font>").text("公主級技能:  ").addClass("gongzhuSkill");
+				$gongzhu = Dom("<font>").text("公主級技能:  ").addClass("gongzhuSkill");
 				gongzhuSkill = "";
 				for (var i in currentLevel.skills[1]) {
 					gongzhuSkill += (currentLevel.skills[1][i] + "  ");
 				}
 			}
 			if (currentLevel.skills[2]) {
-				$normal = $("<font>").text("技能:  ").addClass("normalSkill");
+				$normal = Dom("<font>").text("技能:  ").addClass("normalSkill");
 				normalSkill = "";
 				for (var i in currentLevel.skills[2]) {
 					normalSkill += (currentLevel.skills[2][i] + "  ");
@@ -274,7 +274,7 @@ function drawLevelInfo() {
 
 		info = log.join(" ");
 	}
-	$("#tagInfo").text(info);
+	Dom("#tagInfo").text(info);
 }
 
 function byCategoryAndScore(a, b) {
@@ -409,7 +409,7 @@ function filtering(criteria, filters) {
 			result.sort(byId);
 	}
 
-	if ($("#showmore").attr("isshowmore") == 1) {
+	if (Dom("#showmore").attr("isshowmore") == 1) {
 		var size = 10;
 		if (result[0] && result[0].type.mainType == "飾品")
 			size = 5;
@@ -435,9 +435,9 @@ function matches(c, criteria, filters) {
 }
 
 function loadCustomInventory() {
-	var myClothes = $("#myClothes").val();
+	var myClothes = Dom("#myClothes").val();
 	myClothes = myClothes.replace("发型","髮型").replace("连衣裙","連身裙").replace("上装","上衣").replace("下装","下著").replace("袜子","襪子").replace("饰品","飾品").replace("妆容","妝容").replace("萤光之灵","螢光之靈");
-	$("#myClothes").val(myClothes);
+	Dom("#myClothes").val(myClothes);
 	if (myClothes.indexOf('|') > 0) {
 		loadNew(myClothes);
 	} else {
@@ -448,8 +448,8 @@ function loadCustomInventory() {
 }
 
 function toggleAll(c) {
-	var all = $('#all-' + c)[0].checked;
-	var x = $('input[name=category-' + c + ']:checkbox');
+	var all = Dom('#all-' + c)[0].checked;
+	var x = Dom('input[name=category-' + c + ']:checkbox');
 	x.each(function () {
 		this.checked = all;
 	});
@@ -457,43 +457,51 @@ function toggleAll(c) {
 }
 
 function drawFilter() {//refactor me
-	out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
+	var out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
 	for (var c in CATEGORY_HIERARCHY) {
-		out += '<li id="' + c + '"><a href="javascript:void(0)" onClick="switchCate(\'' + c + '\')">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
+		out += '<li id="' + c + '"><a href="#" data-switch-cate="' + c + '">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
 	}
-		out += '<li id="switchall"><a href="javascript:void(0)" onClick="switchCate(\'switchall\')">全部&nbsp;&nbsp;<span class="badge"></span></a></li>';
+		out += '<li id="switchall"><a href="#" data-switch-cate="switchall">全部&nbsp;&nbsp;<span class="badge"></span></a></li>';
 	out += "</ul>";
 	for (var c in CATEGORY_HIERARCHY) {
 		out += '<div id="category-' + c + '">';
 		if (CATEGORY_HIERARCHY[c].length > 1) {
 			// draw a select all checkbox...
-			out += "<label><input type='checkbox' id='all-" + c + "' onClick='toggleAll(\"" + c + "\")' checked>全選</label><br/>";
+			out += "<label><input type='checkbox' id='all-" + c + "' data-toggle-all='" + c + "' checked>全選</label><br/>";
 			// draw sub categories
 			for (var i in CATEGORY_HIERARCHY[c]) {
 				out += "<label class='filterlabel'><input type='checkbox' name='category-" + c + "' value='" + CATEGORY_HIERARCHY[c][i]
-				 + "'' id='" + CATEGORY_HIERARCHY[c][i] + "' onClick='onChangeUiFilter()' checked />" + CATEGORY_HIERARCHY[c][i].split("-")[1] + "</label>\n";
+				 + "' id='" + CATEGORY_HIERARCHY[c][i] + "' data-category-filter checked />" + CATEGORY_HIERARCHY[c][i].split("-")[1] + "</label>\n";
 			}
 		}
 		out += '</div>';
 	}
-	$('#category_container').html(out);
+	Dom('#category_container').html(out);
+	Dom('#categoryTab a[data-switch-cate]').click(function (event) {
+		event.preventDefault();
+		switchCate(this.getAttribute('data-switch-cate'));
+	});
+	Dom('input[data-toggle-all]').change(function () {
+		toggleAll(this.getAttribute('data-toggle-all'));
+	});
+	Dom('input[data-category-filter]').change(onChangeUiFilter);
 }
 
 var currentCategory;
 function switchCate(c) {
-	$("#searchResultList").html('');
+	Dom("#searchResultList").html('');
 	currentCategory = c;
-	$("ul#categoryTab li").removeClass("active");
-	$("#category_container div").removeClass("active");
-	$("#" + c).addClass("active");
-	$("#category-" + c).addClass("active");
+	Dom("ul#categoryTab li").removeClass("active");
+	Dom("#category_container div").removeClass("active");
+	Dom("#" + c).addClass("active");
+	Dom("#category-" + c).addClass("active");
 	onChangeUiFilter();
 	ReDrawcloneHeaderRow();
 	return false;
 }
 
 function changeFilter() {
-	$("#theme")[0].options[0].selected = true;
+	Dom("#theme")[0].options[0].selected = true;
 	currentLevel = null;
 	if (uiFilter['highscore']) autogenLimit();
 	else onChangeCriteria();
@@ -502,7 +510,7 @@ function changeFilter() {
 function changeTheme() {
 	currentLevel = null;
 	global.additionalBonus = null;
-	var theme = $("#theme").val();
+	var theme = Dom("#theme").val();
 	if (allThemes[theme]) {
 		setFilters(allThemes[theme]);
 	}
@@ -525,10 +533,10 @@ function setFilters(level) {
 				weight = -1;
 			}
 		}
-		$('#' + f + 'Weight').val(Math.abs(weight));
-		var radios = $('input[name=' + f + ']:radio');
+		Dom('#' + f + 'Weight').val(Math.abs(weight));
+		var radios = Dom('input[name=' + f + ']:radio');
 		for (var j = 0; j < radios.length; j++) {
-			var element = $(radios[j]);
+			var element = Dom(radios[j]);
 			if (parseInt(element.attr("value")) * weight > 0) {
 				element.prop("checked", true);
 				element.parent().addClass("active");
@@ -547,7 +555,7 @@ function setFilters(level) {
 }
 
 function drawTheme() {
-	var dropdown = $("#theme")[0];
+	var dropdown = Dom("#theme")[0];
 	var def = document.createElement('option');
 	def.text = '自訂關卡';
 	def.value = 'custom';
@@ -559,7 +567,7 @@ function drawTheme() {
 		dropdown.add(option);
 	}
 	
-	var dropdown2 = $("#theme-fliter")[0];
+	var dropdown2 = Dom("#theme-fliter")[0];
 	var def2 = document.createElement('option');
 	def2.text = '篩選';
 	def2.value = 'custom';
@@ -573,8 +581,8 @@ function drawTheme() {
 }
 
 function reDrawTheme() {
-	var fliterStr = $("#theme-fliter").val();
-	var dropdown = $("#theme");
+	var fliterStr = Dom("#theme-fliter").val();
+	var dropdown = Dom("#theme");
 	dropdown.empty();
 	var def = document.createElement('option');
 	def.text = '自訂關卡';
@@ -591,7 +599,7 @@ function reDrawTheme() {
 }
 
 function drawImport() {
-	var dropdown = $("#importCate")[0];
+	var dropdown = Dom("#importCate")[0];
 	var def = document.createElement('option');
 	def.text = '請選擇類別';
 	def.value = '';
@@ -605,7 +613,7 @@ function drawImport() {
 }
 
 function clearImport() {
-	$("#importData").val("");
+	Dom("#importData").val("");
 }
 
 function saveAndUpdate() {
@@ -614,25 +622,25 @@ function saveAndUpdate() {
 }
 
 function updateSize(mine) {
-	$("#inventoryCount").text('(' + mine.size + ')');
-	$("#myClothes").val(mine.serialize());
+	Dom("#inventoryCount").text('(' + mine.size + ')');
+	Dom("#myClothes").val(mine.serialize());
 	var subcount = {};
-	for (c in mine.mine) {
+	for (var c in mine.mine) {
 		var type = c.split('-')[0];
 		if (!subcount[type]) {
 			subcount[type] = 0;
 		}
 		subcount[type] += mine.mine[type].length;
 	}
-	for (c in subcount) {
-		$("#" + c + ">a span").text(subcount[c]);
+	for (var c in subcount) {
+		Dom("#" + c + ">a span").text(subcount[c]);
 	}
 }
 
 function doImport() {
-	var dropdown = $("#importCate")[0];
+	var dropdown = Dom("#importCate")[0];
 	var type = dropdown.options[dropdown.selectedIndex].value;
-	var raw = $("#importData").val();
+	var raw = Dom("#importData").val();
 	var data = raw.match(/\d+/g);
 	var mapping = {}
 	for (var i in data) {
@@ -667,7 +675,7 @@ function doImport() {
 }
 
 function goTop() {
-	$("html,body").animate({
+	Dom("html,body").animate({
 		scrollTop : 0
 	}, 500);
 }
@@ -675,7 +683,7 @@ function goTop() {
 function getDistinct(arr){
 	var newArr=[];
 	for (var i in arr){
-		if(jQuery.inArray(arr[i], newArr)<0){
+		if(Dom.inArray(arr[i], newArr)<0){
 			newArr.push(arr[i]);
 		}
 	}
@@ -683,13 +691,13 @@ function getDistinct(arr){
 }
 
 function toggleSearchResult(){
-	if($("#searchResultCheck").is(':checked')) $('#searchResult').show();
-	else $('#searchResult').hide();
+	if(Dom("#searchResultCheck").is(':checked')) Dom('#searchResult').show();
+	else Dom('#searchResult').hide();
 }
 
 function searchResult(){
 	switchCate(0);
-	var searchTxt=$('#searchResultInput').val();
+	var searchTxt=Dom('#searchResultInput').val();
 	if (searchTxt){
 		var outSet=[];
 		for (var i in clothes){
@@ -697,14 +705,14 @@ function searchResult(){
 		}
 		if (outSet.length>0) {
 			outSet=getDistinct(outSet);
-			$('#searchResultList').append(button_search('套裝：','searchCate'));
-			for (var i in outSet) {$('#searchResultList').append(button_search(outSet[i],'','searchResultSet'));}
-			$(".searchResultSet").click(function () {
+			Dom('#searchResultList').append(button_search('套裝：','searchCate'));
+			for (var i in outSet) {Dom('#searchResultList').append(button_search(outSet[i],'','searchResultSet'));}
+			Dom(".searchResultSet").click(function () {
 				switchCate(0);
-				var setName=$(this).attr('id').replace('search-','');
-				$('#searchResultList').append(button_search(setName+'：','searchCate'));
+				var setName=Dom(this).attr('id').replace('search-','');
+				Dom('#searchResultList').append(button_search(setName+'：','searchCate'));
 				for (var i in clothes){
-					if(clothes[i].isSuit==setName) {$('#searchResultList').append(clothesNameTd_Search(clothes[i]));}
+					if(clothes[i].isSuit==setName) {Dom('#searchResultList').append(clothesNameTd_Search(clothes[i]));}
 				}
 			});
 		}
@@ -716,9 +724,9 @@ function searchResult(){
 				}
 			}
 			if (outCate.length>0){
-				$('#searchResultList').append(button_search(h+'：','searchCate'));
+				Dom('#searchResultList').append(button_search(h+'：','searchCate'));
 				for (var i in outCate){
-					$('#searchResultList').append(outCate[i]);
+					Dom('#searchResultList').append(outCate[i]);
 				}
 			}
 		}
@@ -730,11 +738,11 @@ function autogenLimit(){
 	criteria = {};
 	for (var i in FEATURES) {
 		var f = FEATURES[i];
-		var weight = parseFloat($('#' + f + "Weight").val());
+		var weight = parseFloat(Dom('#' + f + "Weight").val());
 		if (!weight) {
 			weight = 1;
 		}
-		var checked = $('input[name=' + f + ']:radio:checked');
+		var checked = Dom('input[name=' + f + ']:radio:checked');
 		if (checked.length) {
 			criteria[f] = parseInt(checked.val()) * weight;
 		}
@@ -744,7 +752,7 @@ function autogenLimit(){
 	if (global.additionalBonus && global.additionalBonus.length > 0) {
 		criteria.bonus = global.additionalBonus;
 	}
-	criteria.levelName = $("#theme").val();
+	criteria.levelName = Dom("#theme").val();
 	var clothesOrigScore=[];
 	for(var i in clothes){
 		clothes[i].calc(criteria);
@@ -763,13 +771,13 @@ function autogenLimit(){
 			criteria = {};
 			for (var i in FEATURES) {
 				var f = FEATURES[i];
-				var weight = parseFloat($('#' + f + "Weight").val());
+				var weight = parseFloat(Dom('#' + f + "Weight").val());
 				if (!weight) {
 					weight = 1;
 				}
 				if (f==FEATURES[b]) {weight=accMul(weight,1.27);criteria.highscore1=f;}
 				if (f==FEATURES[a]) {weight=accMul(weight,1.778);criteria.highscore2=f;}
-				var checked = $('input[name=' + f + ']:radio:checked');
+				var checked = Dom('input[name=' + f + ']:radio:checked');
 				if (checked.length) {
 					criteria[f] = parseInt(checked.val()) * weight;
 				}
@@ -779,14 +787,14 @@ function autogenLimit(){
 			if (global.additionalBonus && global.additionalBonus.length > 0) {
 				criteria.bonus = global.additionalBonus;
 			}
-			criteria.levelName = $("#theme").val();
+			criteria.levelName = Dom("#theme").val();
 			//calc sumScores
 			shoppingCart.clear();
 			var currScoreByCate=[];
 			for (var i in clothes){
 				if (!clothes[i].own&&ownCnt) continue;
 				var c=clothes[i].type.type;
-				if ($.inArray(c, skipCategory)>=0) continue;
+				if (Dom.inArray(c, skipCategory)>=0) continue;
 				if (!currScoreByCate[c]) currScoreByCate[c]=0;
 				if (clothesOrigScore[i]*1.778 < currScoreByCate[c]) continue; //short cut, no hope to become the new winner; from ip
 				clothes[i].calc(criteria);
@@ -805,77 +813,77 @@ function autogenLimit(){
 			}
 		}
 	}
-	$(".1d27").removeClass("active");
-	$(".1d778").removeClass("active");
-	$('#' + boosts[0] + "1d27").addClass("active");
-	$('#' + boosts[1] + "1d778").addClass("active");
+	Dom(".1d27").removeClass("active");
+	Dom(".1d778").removeClass("active");
+	Dom('#' + boosts[0] + "1d27").addClass("active");
+	Dom('#' + boosts[1] + "1d778").addClass("active");
 	onChangeCriteria();
 }
 
 function initEvent() {
-	$("#show_history").click(function () {
-		$("#update_history").show();
-		$("#show_history").hide();		
-		$("#history-update-info-2").html(clothesHistoryNotice);
-		$("#history-update-info-3").html(levelHistoryNotice);
+	Dom("#show_history").click(function () {
+		Dom("#update_history").show();
+		Dom("#show_history").hide();
+		Dom("#history-update-info-2").html(clothesHistoryNotice);
+		Dom("#history-update-info-3").html(levelHistoryNotice);
 		return false;
 	});
-	$(".fliter").change(function () {
+	Dom(".fliter").change(function () {
 		onChangeUiFilter();
 		if (this.value == "balance") {
 			changeTheme();
 		}
 		if (this.value == "highscore") {
-			$(".highscore-link").toggle();
-			$(".highscore-rank").toggle();
-			if ($(this).is(':checked')) autogenLimit();
+			Dom(".highscore-link").toggle();
+			Dom(".highscore-rank").toggle();
+			if (Dom(this).is(':checked')) autogenLimit();
 			else onChangeCriteria();
 		}
 		if (this.value == "acc9") {
 			onChangeCriteria();
 		}
 	});
-	$(".filter-radio").change(function () {
+	Dom(".filter-radio").change(function () {
 		changeFilter();
 	});
-	$(".highscore-link").click(function () {
-		var has = $(this).hasClass("active");
-		if($(this).hasClass("1d27")){
-			$(".1d27").removeClass("active");
+	Dom(".highscore-link").click(function () {
+		var has = Dom(this).hasClass("active");
+		if(Dom(this).hasClass("1d27")){
+			Dom(".1d27").removeClass("active");
 		}
-		if($(this).hasClass("1d778")){
-			$(".1d778").removeClass("active");
+		if(Dom(this).hasClass("1d778")){
+			Dom(".1d778").removeClass("active");
 		}
 		if(!has){
-			$(this).addClass("active");
+			Dom(this).addClass("active");
 		}
 		onChangeCriteria();
 	});
-	$("#sharewardrobe").click(function(){
+	Dom("#sharewardrobe").click(function(){
 		shareWardrobe();
 	});
-	$(".showmore").click(function(){
-		var obj  = $(".showmore");
-		$(obj[1]).attr("isshowmore", (1 - $(obj[1]).attr("isshowmore")));
-		if($(obj[1]).attr("isshowmore") == "1"){
-			$(obj[0]).text("↓ 顯示全部衣服 ↓");
-			$(obj[1]).text("↓ 顯示全部衣服 ↓");
+	Dom(".showmore").click(function(){
+		var obj  = Dom(".showmore");
+		Dom(obj[1]).attr("isshowmore", (1 - Dom(obj[1]).attr("isshowmore")));
+		if(Dom(obj[1]).attr("isshowmore") == "1"){
+			Dom(obj[0]).text("↓ 顯示全部衣服 ↓");
+			Dom(obj[1]).text("↓ 顯示全部衣服 ↓");
 		}
 		else{
-			$(obj[0]).text("↑ 收起衣櫃 ↑");
-			$(obj[1]).text("↑ 收起衣櫃 ↑");
+			Dom(obj[0]).text("↑ 收起衣櫃 ↑");
+			Dom(obj[1]).text("↑ 收起衣櫃 ↑");
 		}
 		onChangeUiFilter();
 		if (typeof menuFixed === 'function') menuFixed("clothes");
 		return false;
 	});
-	$("#searchResultMode").click(function(){
-		if ($(this).hasClass("active")) {$(this).removeClass("active");$(this).html('→衣櫃');}
-		else {$(this).addClass("active");$(this).html('→購物車');}
+	Dom("#searchResultMode").click(function(){
+		if (Dom(this).hasClass("active")) {Dom(this).removeClass("active");Dom(this).html('→衣櫃');}
+		else {Dom(this).addClass("active");Dom(this).html('→購物車');}
 	});
-	$('#searchResultInput').keydown(function(e) {
+	Dom('#searchResultInput').keydown(function(e) {
 		if (e.keyCode==13) {
-			$(this).blur();
+			Dom(this).blur();
 			searchResult();
 		}
 	});
@@ -883,15 +891,15 @@ function initEvent() {
 	initOnekey();
 	
 	//前臺篩選
-	$(".front_filter_option").click(function(){
+	Dom(".front_filter_option").click(function(){
 		filterClotherHTML(this);
 		 return false;
 	});
-	$("#add_all").click(function(){
+	Dom("#add_all").click(function(){
 		var clotheslist = {};
-		var clothesDivList = $("#clothes .table-body .table-row");		
+		var clothesDivList = Dom("#clothes .table-body .table-row");
 		for(var i = 0 ; i < clothesDivList.length; i++){
-			var $row = $(clothesDivList[i])
+			var $row = Dom(clothesDivList[i])
 			if($row.find(".name.own:first").length > 0 || $row.css("display") == "none"){
 				continue;
 			}
@@ -937,11 +945,11 @@ function initEvent() {
 }
 
 function filterClotherHTML(btn){
-		var clothesDivList = $("#clothes .table-body .table-row");
+		var clothesDivList = Dom("#clothes .table-body .table-row");
 		var str = "";
 		var cls = ".source:first";
 		var type = 0;
-		switch($(btn).text()){
+		switch(Dom(btn).text()){
 			case "清空篩選": type = 0; break;
 			case "尚缺材料": cls = ".deps:first"; type = 3; break;
 			case "暫不缺材料": cls = ".depsFin:first"; type = 3; break;
@@ -966,21 +974,21 @@ function filterClotherHTML(btn){
 		}
 		 for(var i = 0 ; i < clothesDivList.length; i++){
 			 if(type == 0){//清空
-				$(clothesDivList[i]).show();
+				Dom(clothesDivList[i]).show();
 				continue;
 			 }
 			var ifhide = true;
 			var strs = str.split(",");
 			for(var j = 0; j < strs.length; j++){
-				if(filterCompare($(clothesDivList[i]), type, cls, strs[j])){
+				if(filterCompare(Dom(clothesDivList[i]), type, cls, strs[j])){
 					ifhide = false;
 				}
 				else{
-					ifhide &= filterLoop($(clothesDivList[i]), type, cls, strs[j]);
+					ifhide &= filterLoop(Dom(clothesDivList[i]), type, cls, strs[j]);
 				}
 			}
 			if(ifhide){
-				$(clothesDivList[i]).hide();	
+				Dom(clothesDivList[i]).hide();
 			}
 		 }
 }
@@ -989,7 +997,7 @@ function filterLoop(obj, type, cls, str){
 	if(filterCompare(obj, type, ".source:first", "定")
 		|| filterCompare(obj, type, ".source:first", "進")){
 		var id = obj.find(".source:first").text().replace(/(定|進)([0-9]+)[^0-9]*/, "$2");
-		var $source = $("#clickable-" + obj.find(".category:first").text().split("-")[0] + id).parent();
+		var $source = Dom("#clickable-" + obj.find(".category:first").text().split("-")[0] + id).parent();
 		if(filterCompare($source, type, cls, str)){
 			return false;
 		}
@@ -1021,8 +1029,8 @@ function filterCompare(obj, type, cls, str){
 }
 
 function initNotice() {
-	$("#update-info-2").html(clothesNotice);
-	$("#update-info-3").html(levelNotice);
+	Dom("#update-info-2").html(clothesNotice);
+	Dom("#update-info-3").html(levelNotice);
 }
 
 function init() {
@@ -1037,15 +1045,15 @@ function init() {
 	initEvent();
 }
 
-$(document).ready(function () {
+Dom(document).ready(function () {
 	initNotice();
 	init();
 	if (typeof menuFixed === 'function') menuFixed("clothes");
 });
 
 function exportCustomInventory() {
-	var $link = $("#clothesDownload");
-	var blob = new Blob([$("#myClothes").val()], 
+	var $link = Dom("#clothesDownload");
+	var blob = new Blob([Dom("#myClothes").val()],
 		{ type:"application/octect-stream" });
 	var blobUrl = URL.createObjectURL(blob);
 	var fileName = "clothes.txt";
@@ -1064,7 +1072,7 @@ function saveTextAsFile()
     downloadLink.download = fileNameToSaveAs;
     downloadLink.innerHTML = "Download File";
     downloadLink.href = textToSaveAsURL;
-    downloadLink.onclick = destroyClickedElement;
+    downloadLink.addEventListener('click', destroyClickedElement, { once: true });
     downloadLink.style.display = "none";
     document.body.appendChild(downloadLink);
  

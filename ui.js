@@ -1,7 +1,7 @@
 
 
 function thead(isShoppingCart) {
-	var $thead = $("<div>").addClass("table-head");
+	var $thead = Dom("<div>").addClass("table-head");
 	$thead.append(td("", "copy-header"));
 	$thead.append(td("分數", "score"));
 	$thead.append(td("名稱", "name"));
@@ -22,7 +22,7 @@ function thead(isShoppingCart) {
 	$thead.append(td("來源", "th_from"));
 	$thead.append(td("套裝", "th_issuit hidden"));
 	$thead.append(td("版本", "th_version hidden"));
-	$td_nbsp = td("", "");
+	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
 		$td_nbsp = td("回到頂部", "th_gotop");
 		$td_nbsp.addClass("gogogo-top");
@@ -36,12 +36,12 @@ function thead(isShoppingCart) {
 }
 
 function td(data, cls, beforeText) {
-	return $("<div>").addClass(cls).addClass("table-td").attr("before-text", beforeText).append(data);
+	return Dom("<div>").addClass(cls).addClass("table-td").attr("before-text", beforeText).append(data);
 }
 
 function copyNameText($row) {
 	// 清除所有其他行的highlight
-	$('.table-row.highlighted').removeClass('highlighted');
+	Dom('.table-row.highlighted').removeClass('highlighted');
 	
 	// 只複製名稱欄位的文字（第三個 table-td，因為第一個是複製按鈕欄位，第二個是分數）
 	var $nameTd = $row.find('.table-td').eq(2);
@@ -68,7 +68,7 @@ function copyNameText($row) {
 }
 
 function copyButton() {
-	return $('<button>')
+	return Dom('<button>')
 		.addClass('copy-btn')
 		.addClass('btn')
 		.addClass('btn-sm')
@@ -81,15 +81,15 @@ function copyButton() {
 			'display': 'block'
 		})
 		.click(function() {
-			var $row = $(this).closest('.table-row');
+			var $row = Dom(this).closest('.table-row');
 			copyNameText($row);
 		});
 }
 
 function row(piece, isShoppingCart) {
-	var $row = $("<div>").addClass("table-row");
+	var $row = Dom("<div>").addClass("table-row");
 	var $lineTop = $row;
-	//var $lineTop = $("<div>").addClass("table-line");
+	//var $lineTop = Dom("<div>").addClass("table-line");
 	
 	// 第一個 table-td：複製按鈕欄位
 	var $copyTd = td("", "copy-cell");
@@ -170,7 +170,7 @@ function getStyle(rating) {
 }
 
 function list(datas, isShoppingCart) {
-	var $list = $("<div>").addClass("table-body");
+	var $list = Dom("<div>").addClass("table-body");
 	if (isShoppingCart) {
 		$list.append(row(shoppingCart.totalScore, isShoppingCart));
 	}
@@ -203,7 +203,7 @@ function clothesNameTd(piece) {
 	}
 	cls += piece.own ? ' own' : '';
 
-	var $clothesNameA = $("<a>").attr("href", "#").addClass("button");
+	var $clothesNameA = Dom("<a>").attr("href", "#").addClass("button");
 	$clothesNameA.text(piece.name);
 	if(tooltip != ''){
 		$clothesNameA.attr("tooltip",tooltip);
@@ -213,7 +213,7 @@ function clothesNameTd(piece) {
 		toggleInventory(piece.type.mainType, piece.id, this);
 		return false;
 	});
-	var $clothesNameTd = $("<div>");
+	var $clothesNameTd = Dom("<div>");
 	$clothesNameTd.attr("id", "clickable-" + (piece.type.mainType + piece.id));
 	$clothesNameTd.addClass(cls);
 	$clothesNameTd.append($clothesNameA);
@@ -224,10 +224,10 @@ function clothesNameTd_Search(piece) {
 	var cls = "name table-td search";
 	cls += piece.own ? ' own' : '';
 
-	var $clothesNameA = $("<a>").attr("href", "#").addClass("button");
+	var $clothesNameA = Dom("<a>").attr("href", "#").addClass("button");
 	$clothesNameA.text(piece.name);
 	$clothesNameA.click(function () {
-		if ($('#searchResultMode').hasClass("active")){
+		if (Dom('#searchResultMode').hasClass("active")){
 			shoppingCart.put(clothesSet[piece.type.mainType][piece.id]);
 			refreshShoppingCart();
 			return false;
@@ -236,7 +236,7 @@ function clothesNameTd_Search(piece) {
 			return false;
 		}
 	});
-	var $clothesNameTd = $("<div>");
+	var $clothesNameTd = Dom("<div>");
 	$clothesNameTd.attr("id", "clickable-" + (piece.type.mainType + piece.id));
 	$clothesNameTd.addClass(cls);
 	$clothesNameTd.append($clothesNameA);
@@ -244,19 +244,19 @@ function clothesNameTd_Search(piece) {
 }
 
 function button_search(txt,cls1,cls2) {
-	var $clothesNameA = $("<span>").addClass("button");
+	var $clothesNameA = Dom("<span>").addClass("button");
 	if(cls2) $clothesNameA.addClass(cls2);
 	$clothesNameA.text(txt);
 	$clothesNameA.attr('id', 'search-'+txt);
 	
-	var $clothesNameTd = $("<div>").addClass('name table-td search');
+	var $clothesNameTd = Dom("<div>").addClass('name table-td search');
 	if(cls1) $clothesNameTd.addClass(cls1);
 	$clothesNameTd.append($clothesNameA);
 	return $clothesNameTd;
 }
 
 function shoppingCartButton(type, id) {
-	$shoppingCartButton = $("<button>").addClass("glyphicon glyphicon-shopping-cart btn btn-default");
+	var $shoppingCartButton = Dom("<button>").addClass("glyphicon glyphicon-shopping-cart btn btn-default");
 	$shoppingCartButton.click(function () {
 		shoppingCart.put(clothesSet[type][id]);
 		refreshShoppingCart();
@@ -265,7 +265,7 @@ function shoppingCartButton(type, id) {
 }
 
 function removeShoppingCartButton(detailedType) {
-	$removeShoppingCartButton = $("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
 	$removeShoppingCartButton.click(function () {
 		shoppingCart.remove(detailedType);
 		refreshShoppingCart();
@@ -274,7 +274,7 @@ function removeShoppingCartButton(detailedType) {
 }
 
 function drawTable(data, divId, isShoppingCart) {
-	var $table = $('#' + divId);
+	var $table = Dom('#' + divId);
 	$table.empty();
 	$table.append(thead(isShoppingCart));
 	$table.append(list(data, isShoppingCart));

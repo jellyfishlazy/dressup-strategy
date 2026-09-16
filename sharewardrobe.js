@@ -38,7 +38,7 @@ function shareWardrobe() {
 		strUrl += typeToggleChar(r) + "=" + result[r] + "&";
 	}
 	strUrl.substr(0,strUrl.length-1);
-	$("#share-link").html("<a href=" + strUrl + ">" + strUrl + "</a>");
+	Dom("#share-link").html("<a href=" + strUrl + ">" + strUrl + "</a>");
 }
 
 function typeToggleChar(source){
@@ -115,7 +115,7 @@ function GetRequest() {
 	var theRequest = new Object();
 	if (url.indexOf("?") != -1) {
 		var str = url.substr(1);
-		strs = str.split("&");
+		var strs = str.split("&");
 		for (var i = 0; i < strs.length; i++) {
 			theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
 		}

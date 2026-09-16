@@ -8,23 +8,23 @@ function showStrategy(keywords, suits){
 		if(keywords == null){
 			return true;
 		}
-		var strs = $.unique(clothes["name"].split(""));
-		_size = strs.length + keywords.length;
-		var newArray = $.merge(strs, keywords);
-		size_ = $.unique(newArray).length;
+		var strs = Dom.unique(clothes["name"].split(""));
+		var _size = strs.length + keywords.length;
+		var newArray = Dom.merge(strs, keywords);
+		var size_ = Dom.unique(newArray).length;
 		if(_size > size_)
 			return true;
-		return ($.inArray(clothes["isSuit"],suitNames)>=0);
+		return (Dom.inArray(clothes["isSuit"],suitNames)>=0);
 	}
 	
-	var $strategy = $("<div/>").addClass("strategy_info_div");
+	var $strategy = Dom("<div/>").addClass("strategy_info_div");
 		
-	var theme = allThemes[$("#theme").val()];
+	var theme = allThemes[Dom("#theme").val()];
 	var filters = clone(criteria);
 	filters.own = true;
 	filters.missing = true;
 	
-	var $title = p($("#theme").val() == "custom" ? "....." : $("#theme").val(),"title");
+	var $title = p(Dom("#theme").val() == "custom" ? "....." : Dom("#theme").val(),"title");
 	$strategy.append($title);
 	
 	var $author = p("配裝器一鍵攻略@莫默墨陌", "author");
@@ -33,7 +33,7 @@ function showStrategy(keywords, suits){
 	if(keywords != null){
 		var $keywords_p = p("關鍵字: "+keywords, "");
 		$strategy.append($keywords_p);
-		$.each(suits, function(){
+		Dom.each(suits, function(){
 			suitNames.push(this.name + "(" + this.score + ")");
 		});
 		var $suits = p("套裝: "+suitNames.join(", "), "");
@@ -43,17 +43,17 @@ function showStrategy(keywords, suits){
 	var $skill_title = p("技能: ", "skill_title");
 	$strategy.append($skill_title);
 	
-	if($("#skillInfo").text()){
-		var $skill_ops = p($("#skillInfo").text().replace("公主", "        公主"), "skill_ops");
+	if(Dom("#skillInfo").text()){
+		var $skill_ops = p(Dom("#skillInfo").text().replace("公主", "        公主"), "skill_ops");
 		$strategy.append($skill_ops);
 	}
-	else if($("#theme").val().indexOf("競技場") < 0) {
+	else if(Dom("#theme").val().indexOf("競技場") < 0) {
 		var $skill_ops = p("對手技能: ", "skill_ops");
 		$strategy.append($skill_ops);		
 	}
 	
 	var $skill_my = p("推薦攜帶: ", "skill_my");
-	if($("#theme").val().indexOf("競技場") >= 0){
+	if(Dom("#theme").val().indexOf("競技場") >= 0){
 		$skill_my = p("推薦攜帶: 微笑 飛吻 挑剔 沉睡", "skill_my");
 	}
 	$strategy.append($skill_my);
@@ -67,18 +67,18 @@ function showStrategy(keywords, suits){
 	var $tag = p(getstrTag(filters), "tag");
 	$strategy.append($tag);
 	
-	if($("#hintInfo").text()){
-		var $hint = p($("#hintInfo").text().replace("過關提示:",""), "hint", "過關提示: ", "hint_tiele");
+	if(Dom("#hintInfo").text()){
+		var $hint = p(Dom("#hintInfo").text().replace("過關提示:",""), "hint", "過關提示: ", "hint_tiele");
 		$strategy.append($hint.clone());
 	}
-	else if($("#theme").val().indexOf("競技場") < 0 && $("#theme").val().indexOf("聯盟委託") < 0){
+	else if(Dom("#theme").val().indexOf("競技場") < 0 && Dom("#theme").val().indexOf("聯盟委託") < 0){
 		var $hint = p("本關暫無過關提示, 若出現F, 請參考失敗後大喵的衣服提示, 或不穿外套進行嘗試", "hint", "過關提示: ", "hint_tiele");
 		$strategy.append($hint);
 	}
 	
-	if($("#categoryFInfo").text()){
-		var $F = p($("#categoryFInfo").text().replace("","").replace("會導致", "  <br/>  會導致"), "hint", "", "");
-		$strategy.append($("#categoryFInfo").clone().attr("id", ""));
+	if(Dom("#categoryFInfo").text()){
+		var $F = p(Dom("#categoryFInfo").text().replace("","").replace("會導致", "  <br/>  會導致"), "hint", "", "");
+		$strategy.append(Dom("#categoryFInfo").clone().attr("id", ""));
 	}
 		
 	var $clotheslist_title = p("推薦搭配: ", "clotheslist_title");
@@ -102,7 +102,7 @@ function showStrategy(keywords, suits){
 	for (var i in clothes) {		
 		if (matches(clothes[i], {}, filters)) {
 			clothes[i].calc(filters);
-			if (clothes[i].isF||$.inArray(clothes[i].type.type,skipCategory)>=0||clothes[i].sumScore == 0) continue;
+			if (clothes[i].isF||Dom.inArray(clothes[i].type.type,skipCategory)>=0||clothes[i].sumScore == 0) continue;
 			if (keywords != null 
 				&& (clothes[i].type.type == "連身裙"
 				|| clothes[i].type.type == "上衣"
@@ -152,13 +152,13 @@ function showStrategy(keywords, suits){
 		}
 	}
 
-	$author_sign = $("<div/>").addClass("stgy_author_sign_div");
+	var $author_sign = Dom("<div/>").addClass("stgy_author_sign_div");
 	var d = new Date();
 	$author_sign.append(p("nikkiup2u3 One Key Strategy@莫默墨陌", "author_sign_name"));
 	$author_sign.append(p("generate in " + (1900+d.getYear()) + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + d.getHours() + ":" + d.getMinutes(), "author_sign_name"));
 	$strategy.append($author_sign);
 	
-	$("#StrategyInfo").empty().append($strategy);
+	Dom("#StrategyInfo").empty().append($strategy);
 }
 
 function byActScore(a, b) {
@@ -166,17 +166,17 @@ function byActScore(a, b) {
 }
 
 function p(text, cls, text2, cls2){
-	var $p = $("<p/>").text(text).addClass("stgy_" + cls);
+	var $p = Dom("<p/>").text(text).addClass("stgy_" + cls);
 	if(text2){
-		$p.prepend($("<span/>").text(text2).addClass("stgy_" + cls2));
+		$p.prepend(Dom("<span/>").text(text2).addClass("stgy_" + cls2));
 	}
 	return $p;
 }
 
 function pspan(text, cls, text2, cls2){
-	var $p = $("<span/>").text(text).addClass("stgy_" + cls);
+	var $p = Dom("<span/>").text(text).addClass("stgy_" + cls);
 	if(text2){
-		$p.prepend($("<span/>").text(text2).addClass("stgy_" + cls2));
+		$p.prepend(Dom("<span/>").text(text2).addClass("stgy_" + cls2));
 	}
 	return $p;
 }
@@ -274,7 +274,7 @@ function isGrey(c,result){
 	for (var i in repelCates){
 		var sumFirst=0;
 		var sumOthers=0;
-		if($.inArray(c, repelCates[i])>=0){
+		if(Dom.inArray(c, repelCates[i])>=0){
 			for (var j in repelCates[i]){
 				if (j>0) {
 					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumOthers+=actScore(result[repelCates[i][j]][0]);
@@ -282,9 +282,9 @@ function isGrey(c,result){
 					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumFirst+=actScore(result[repelCates[i][j]][0]);
 				}
 			}
-			if($.inArray(c, repelCates[i])==0){
+			if(Dom.inArray(c, repelCates[i])==0){
 				if (sumFirst<sumOthers) return true;
-			}else if($.inArray(c, repelCates[i])>0){
+			}else if(Dom.inArray(c, repelCates[i])>0){
 				if (sumOthers<sumFirst) return true;
 			}
 		}
@@ -293,17 +293,17 @@ function isGrey(c,result){
 }
 
 function initOnekey(){
-	$("#onekey").click(function() {
-		$("#StrategyInfo").show();
+	Dom("#onekey").click(function() {
+		Dom("#StrategyInfo").show();
 		showStrategy();
-		if($("#onekey").text().indexOf('收起')>=0){
-			$("#StrategyInfo").hide();
-			if(uiFilter["toulan"]) $("#onekey").text("偷懶攻略");
-			else $("#onekey").text("一鍵攻略");
+		if(Dom("#onekey").text().indexOf('收起')>=0){
+			Dom("#StrategyInfo").hide();
+			if(uiFilter["toulan"]) Dom("#onekey").text("偷懶攻略");
+			else Dom("#onekey").text("一鍵攻略");
 		}
 		else {
-			$("#StrategyInfo").show();
-			$("#onekey").text("收起攻略");
+			Dom("#StrategyInfo").show();
+			Dom("#onekey").text("收起攻略");
 		}
 	});
 }

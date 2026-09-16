@@ -39,11 +39,11 @@ function lanStrategy_init(){
 		var name = clothes[i].name;
 		var type = clothes[i].type.type;
 		var matchStr = [];
-		for (j=0; j<name.length; j++){ //get name string
-			for (k=1; k<=2; k++){
+		for (var j=0; j<name.length; j++){ //get name string
+			for (var k=1; k<=2; k++){
 				if (j > name.length-k) continue;
 				var str = name.substr(j, k);
-				if ($.inArray(str,matchStr)<0) matchStr.push(str);
+				if (Dom.inArray(str,matchStr)<0) matchStr.push(str);
 				else continue;
 				if (wordSet[str] == null){
 					wordSet[str] = {};
@@ -102,7 +102,7 @@ function lanStrategy_init(){
 			if (!tags[j]) continue;
 			//if (tags[j].indexOf('+')>=0) continue; //skip 螢光之靈
 			var subtype = mainType=='襪子' ? mainType : type.split('·')[0];
-			tagCate = [subtype,tags[j]].join(' + ');
+			var tagCate = [subtype,tags[j]].join(' + ');
 			if (tagSet[tagCate] == null){
 				tagSet[tagCate] = {};
 				tagSet[tagCate]['name'] = tagCate;
@@ -179,7 +179,7 @@ function lanStrategy_recalc(n){
 	if (step==0){
 		var evalSuitSet = evalSets(suitSet); 
 		var suitArray = [];
-		for (var i in evalSuitSet) if (!evalSuitSet[i]['missing']&&$.inArray(i,lackClothes)<0) suitArray.push(evalSuitSet[i]);
+		for (var i in evalSuitSet) if (!evalSuitSet[i]['missing']&&Dom.inArray(i,lackClothes)<0) suitArray.push(evalSuitSet[i]);
 		suitArray.sort(function(a,b){return  b["score"] - a["score"];});
 		if (suitArray.length){//put suitArray[0] to lazySet
 			lazyKeywords[suitArray[0]['name']] = {};
@@ -209,8 +209,8 @@ function lanStrategy_recalc(n){
 				lazyKeywords[wordArray[0]['name']][type] = cl;
 				for (var j in repelCates){ //check repelCates before push into lazySet
 					if (type==repelCates[j][0]) {
-						for (k=1; k<repelCates[j].length; k++) if (lazySet[repelCates[j][k]]) delete lazySet[repelCates[j][k]];
-					}else if ($.inArray(type,repelCates[j])>0) {
+						for (var k=1; k<repelCates[j].length; k++) if (lazySet[repelCates[j][k]]) delete lazySet[repelCates[j][k]];
+					}else if (Dom.inArray(type,repelCates[j])>0) {
 						if (lazySet[repelCates[j][0]]) delete lazySet[repelCates[j][0]];
 					}
 				}
@@ -223,7 +223,7 @@ function lanStrategy_recalc(n){
 }
 
 function lanStrategy_print(lazySet){
-	var themeName = $("#theme").val();
+	var themeName = Dom("#theme").val();
 	
 	//check whether missing whitelist category at last
 	var whiteType = []; var whiteExtra = {}; var whiteTodo = [];
@@ -251,21 +251,21 @@ function lanStrategy_print(lazySet){
 	//remove whiteTodo elements if corresponding repelCates already have (not in whiteType)
 	//upd170830: disable this as whiteType without available clothes will not be displayed
 	/*for (var i in repelCates){
-		if ($.inArray(repelCates[i][0],whiteTodo)>=0) {//check others, if no others, remove [0]
+		if (Dom.inArray(repelCates[i][0],whiteTodo)>=0) {//check others, if no others, remove [0]
 			var rm = true;
 			for (var k in repelCates[i]){
 				if (k==0) continue;
-				if ($.inArray(repelCates[i][k],whiteTodo)>=0) rm = false;
+				if (Dom.inArray(repelCates[i][k],whiteTodo)>=0) rm = false;
 			}
 			if (rm) removeFromArray(repelCates[i][0],whiteTodo);
 		}
 		for (var j in repelCates[i]) {//check [0], if no [0] can remove it
 			if (j==0) continue;
-			if ($.inArray(repelCates[i][0],whiteTodo)<0) removeFromArray(repelCates[i][j],whiteTodo);
+			if (Dom.inArray(repelCates[i][0],whiteTodo)<0) removeFromArray(repelCates[i][j],whiteTodo);
 		}
 		var whiteTodoTmp = [];//group repelCates tgt
 		for (var l in repelCates[i]){
-			if ($.inArray(repelCates[i][l],whiteTodo)>=0) {
+			if (Dom.inArray(repelCates[i][l],whiteTodo)>=0) {
 				whiteTodoTmp.push(repelCates[i][l]);
 				removeFromArray(repelCates[i][l],whiteTodo);
 			}
@@ -276,14 +276,14 @@ function lanStrategy_print(lazySet){
 	//if other parts in lazySet isF, alert to take down
 	var takeDown = [];
 	for (var i in lazySet){
-		if ($.inArray(i,whiteType)>=0) continue;
+		if (Dom.inArray(i,whiteType)>=0) continue;
 		else if (lazySet[i].isF) takeDown.push(listCateName(lazySet[i]));
 	}
 	
 	//write result
-	var $strategy = $("<div/>").addClass("strategy_info_div");
+	var $strategy = Dom("<div/>").addClass("strategy_info_div");
 	
-	var $title = p($("#theme").val() == "custom" ? "....." : $("#theme").val(),"title");
+	var $title = p(Dom("#theme").val() == "custom" ? "....." : Dom("#theme").val(),"title");
 	$strategy.append($title);
 	
 	var $author = p("偷懶攻略·"+(lanOwn||lackClothes.length?'個人':'全')+"衣櫃版@莫默墨陌", "author");
@@ -292,17 +292,17 @@ function lanStrategy_print(lazySet){
 	var $skill_title = p("技能: ", "skill_title");
 	$strategy.append($skill_title);
 	
-	if($("#skillInfo").text()){
-		var $skill_ops = p($("#skillInfo").text().replace("公主", "        公主"), "skill_ops");
+	if(Dom("#skillInfo").text()){
+		var $skill_ops = p(Dom("#skillInfo").text().replace("公主", "        公主"), "skill_ops");
 		$strategy.append($skill_ops);
 	}
-	else if($("#theme").val().indexOf("競技場") < 0) {
+	else if(Dom("#theme").val().indexOf("競技場") < 0) {
 		var $skill_ops = p("對手技能: ", "skill_ops");
 		$strategy.append($skill_ops);		
 	}
 	
 	var $skill_my = p("推薦攜帶: ", "skill_my");
-	if($("#theme").val().indexOf("競技場") >= 0){
+	if(Dom("#theme").val().indexOf("競技場") >= 0){
 		$skill_my = p("推薦攜帶: 微笑 飛吻 挑剔 沉睡", "skill_my");
 	}
 	$strategy.append($skill_my);
@@ -316,42 +316,42 @@ function lanStrategy_print(lazySet){
 	var $tag = p(getstrTag(criteria), "tag");
 	$strategy.append($tag);
 	
-	if($("#hintInfo").text()){
-		var $hint = p($("#hintInfo").text().replace("過關提示:",""), "hint", "過關提示: ", "hint_tiele");
+	if(Dom("#hintInfo").text()){
+		var $hint = p(Dom("#hintInfo").text().replace("過關提示:",""), "hint", "過關提示: ", "hint_tiele");
 		$strategy.append($hint.clone());
 	}
-	else if($("#theme").val().indexOf("競技場") < 0 && $("#theme").val().indexOf("聯盟委託") < 0){
+	else if(Dom("#theme").val().indexOf("競技場") < 0 && Dom("#theme").val().indexOf("聯盟委託") < 0){
 		var $hint = p("本關暫無過關提示, 若出現F, 請參考失敗後大喵的衣服提示, 或不穿外套進行嘗試", "hint", "過關提示: ", "hint_tiele");
 		$strategy.append($hint);
 	}
 	
-	if($("#categoryFInfo").text()){
-		var $F = p($("#categoryFInfo").text().replace("","").replace("會導致", "  <br/>  會導致"), "hint", "", "");
-		$strategy.append($("#categoryFInfo").clone().attr("id", ""));
+	if(Dom("#categoryFInfo").text()){
+		var $F = p(Dom("#categoryFInfo").text().replace("","").replace("會導致", "  <br/>  會導致"), "hint", "", "");
+		$strategy.append(Dom("#categoryFInfo").clone().attr("id", ""));
 	}
 	
 	var $option = p("選項: ", "criteria_title");
 	$strategy.append($option);
 	
-	var $optionContent1 = $("<p/>");
+	var $optionContent1 = Dom("<p/>");
 	$optionContent1.append("展示<span id='lanSteps'>"+lanSteps+"</span>個步驟");
-	$optionContent1.append('<button class="btn btn-xs btn-default" onclick="add_lanSteps()">＋</button>');
-	$optionContent1.append('<button class="btn btn-xs btn-default" onclick="min_lanSteps()">－</button>');
+	$optionContent1.append(Dom('<button>').addClass('btn btn-xs btn-default').text('＋').click(add_lanSteps));
+	$optionContent1.append(Dom('<button>').addClass('btn btn-xs btn-default').text('－').click(min_lanSteps));
 	$strategy.append($optionContent1);
-	var $optionContent2 = $("<p/>");
+	var $optionContent2 = Dom("<p/>");
 	$optionContent2.append("每步≤<span id='limitRet'>"+limitRet+"</span>件衣服");
-	$optionContent2.append('<button class="btn btn-xs btn-default" onclick="add_limitRet()">＋</button>');
-	$optionContent2.append('<button class="btn btn-xs btn-default" onclick="min_limitRet()">－</button>');
+	$optionContent2.append(Dom('<button>').addClass('btn btn-xs btn-default').text('＋').click(add_limitRet));
+	$optionContent2.append(Dom('<button>').addClass('btn btn-xs btn-default').text('－').click(min_limitRet));
 	$strategy.append($optionContent2);
 	
-	var clotheslist_title = $("<p/>");
+	var clotheslist_title = Dom("<p/>");
 	clotheslist_title.append(pspan("偷懶步驟: ", "clotheslist_title"));
-	if (!lanOwn) clotheslist_title.append('<span id="stgy_save_lackClothes"><a id="stgy_add_lackClothes" data-tmp="點擊尚缺衣服以刪除" href="#" onclick="return false;">沒有這些衣服?</a> <a id="stgy_reset_lackClothes" href="#" onclick="return false;" style="display:none;">還原</a></span>');
+	if (!lanOwn) clotheslist_title.append('<span id="stgy_save_lackClothes"><a id="stgy_add_lackClothes" data-tmp="點擊尚缺衣服以刪除" href="#">沒有這些衣服?</a> <a id="stgy_reset_lackClothes" href="#" style="display:none;">還原</a></span>');
 	$strategy.append(clotheslist_title);
 	
 	var ii = 1; 
 	for (var i in lazyKeywords){
-		var categoryContent = $("<p/>");
+		var categoryContent = Dom("<p/>");
 		categoryContent.attr('id','step-'+ii);
 		
 		if (i.indexOf('套裝·')>=0) categoryContent.append(pspan_id(ii+'. '+i+" ", "clothes_category stgy_clothes",i.replace('套裝·','')));
@@ -374,8 +374,8 @@ function lanStrategy_print(lazySet){
 		ii++;
 	}
 	
-	if (!($.isEmptyObject(whiteExtra))){
-		var categoryContentExtra = $("<p/>");
+	if (!(Dom.isEmptyObject(whiteExtra))){
+		var categoryContentExtra = Dom("<p/>");
 		categoryContentExtra.append(pspan('加【過關必做】', "clothes_category"));
 		for (var i in whiteExtra){
 			lazySet[i] = whiteExtra[i];
@@ -391,13 +391,13 @@ function lanStrategy_print(lazySet){
 	if (takeDown.length)
 		$strategy.append(p(takeDown.join(' | '),"nm",'取消F品: ','hint_tiele'));
 	
-	$author_sign = $("<div/>").addClass("stgy_author_sign_div");
+	var $author_sign = Dom("<div/>").addClass("stgy_author_sign_div");
 	var d = new Date();
 	$author_sign.append(p("nikkiup2u3 Lazy Strategy@莫默墨陌", "author_sign_name"));
 	$author_sign.append(p("Generated at " + (d.getFullYear()) + "-" + (d.getMonth() + 1) + "-" + d.getDate() + " " + d.getHours() + ":" + d.getMinutes(), "author_sign_name"));
 	$strategy.append($author_sign);
 	
-	$("#StrategyInfo").empty().append($strategy);
+	Dom("#StrategyInfo").empty().append($strategy);
 	if (!lanOwn) initOnekey_lan();
 }
 
@@ -507,7 +507,7 @@ function listCateName(c){
 }
 
 function removeFromArray(e,arr){
-	var index = $.inArray(e,arr);
+	var index = Dom.inArray(e,arr);
 	if (index > -1) arr.splice(index, 1);
 	return arr;
 }
@@ -526,7 +526,7 @@ function isAccSumScore(c,num){
 
 function lanOwnChk(c, lanOwn) {
 	if (lanOwn) return c.own;
-	else if ($.inArray(c.longid, lackClothes)>=0) return false;
+	else if (Dom.inArray(c.longid, lackClothes)>=0) return false;
 	else return true;
 }
 
@@ -549,7 +549,7 @@ function min_limitRet(){
 		if (cntKeywordsReturns(i)>limitRet) recalc = true;
 	}
 	if (recalc) lanStrategy();
-	else $('#limitRet').text(limitRet);
+	else Dom('#limitRet').text(limitRet);
 }
 
 function cntKeywordsReturns(kw){
@@ -565,32 +565,34 @@ function cntKeywordsReturns(kw){
 }
 
 function pspan_id(text, cls, id){
-	var $p = $("<span/>").text(text).addClass("stgy_" + cls).attr('id',id);
+	var $p = Dom("<span/>").text(text).addClass("stgy_" + cls).attr('id',id);
 	return $p;
 }
 
 function initOnekey_lan(){
-	$("#stgy_add_lackClothes").click(function() {
-		var tmp = $("#stgy_add_lackClothes").attr('data-tmp');
-		$("#stgy_add_lackClothes").attr('data-tmp',$("#stgy_add_lackClothes").text());
-		$("#stgy_add_lackClothes").text(tmp);
-		$("#stgy_add_lackClothes").toggleClass("stgy_greyBackGround");
-		$("#stgy_reset_lackClothes").toggle();
-		$(".stgy_clothes").toggleClass("stgy_clothes_hover");
+	Dom("#stgy_add_lackClothes").click(function(event) {
+		event.preventDefault();
+		var tmp = Dom("#stgy_add_lackClothes").attr('data-tmp');
+		Dom("#stgy_add_lackClothes").attr('data-tmp',Dom("#stgy_add_lackClothes").text());
+		Dom("#stgy_add_lackClothes").text(tmp);
+		Dom("#stgy_add_lackClothes").toggleClass("stgy_greyBackGround");
+		Dom("#stgy_reset_lackClothes").toggle();
+		Dom(".stgy_clothes").toggleClass("stgy_clothes_hover");
 	});
-	$("#stgy_reset_lackClothes").click(function() {
+	Dom("#stgy_reset_lackClothes").click(function(event) {
+		event.preventDefault();
 		lackClothes = [];
 		lanStrategy();
 	});
-	$(".stgy_clothes").click(function() {
-		if (!$(".stgy_clothes").hasClass("stgy_clothes_hover")) return;
-		lackClothes.push($(this).attr('id'));
-		var stgy_save_lackClothes = $("#stgy_save_lackClothes").html();
-		var step = parseInt($(this).closest('p').attr('id').replace('step-',''));
+	Dom(".stgy_clothes").click(function() {
+		if (!Dom(".stgy_clothes").hasClass("stgy_clothes_hover")) return;
+		lackClothes.push(Dom(this).attr('id'));
+		var stgy_save_lackClothes = Dom("#stgy_save_lackClothes").html();
+		var step = parseInt(Dom(this).closest('p').attr('id').replace('step-',''));
 		lanStrategy_init();
 		lanStrategy_recalc(step);
-		$("#stgy_save_lackClothes").html(stgy_save_lackClothes);
-		$(".stgy_clothes").addClass("stgy_clothes_hover");
+		Dom("#stgy_save_lackClothes").html(stgy_save_lackClothes);
+		Dom(".stgy_clothes").addClass("stgy_clothes_hover");
 		initOnekey_lan();
 	});
 }
@@ -616,7 +618,7 @@ function showStrategy(){
 		return;
 	}
 		
-	var theme = allThemes[$("#theme").val()];
+	var theme = allThemes[Dom("#theme").val()];
 	var filters = clone(criteria);
 	filters.own = true;
 	filters.missing = true;
@@ -645,7 +647,7 @@ function showStrategy(){
 		}
 		if (matches(clothes[i], {}, filters)) {
 			clothes[i].calc(filters);
-			if (clothes[i].isF||$.inArray(type,skipCategory)>=0) continue;
+			if (clothes[i].isF||Dom.inArray(type,skipCategory)>=0) continue;
 			result[type].push(clothes[i]);
 			if(clothes[i].isSuit != "" 
 				&& type.indexOf("連身裙") < 0 
@@ -697,7 +699,7 @@ function showStrategy(){
 		
 	var wordMostNum = [];
 	for(var i in wordNums){
-		if(wordNums[i] > 3 &&  $.inArray(i, notArray) < 0){
+		if(wordNums[i] > 3 &&  Dom.inArray(i, notArray) < 0){
 			wordMostNum.push({"name" : i , "num" : wordNums[i]});
 		}
 	}	
@@ -714,9 +716,9 @@ function showStrategy(){
 	var selectSuitNum = 6;
 	showStrategy2(strWordMostNum.split(""), suitArray.slice(0,selectSuitNum));
 	
-	$(".stgy_clothes").each(function(){
-		var $p = $(this)
-		$.each(strWordMostNum.split(""), function(){
+	Dom(".stgy_clothes").each(function(){
+		var $p = Dom(this)
+		Dom.each(strWordMostNum.split(""), function(){
 			$p.html($p.html().replace(new RegExp(""+this, "g"), "<red>"+this+"</red>"))			
 		})
 	})

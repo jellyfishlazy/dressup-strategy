@@ -1,13 +1,29 @@
 // Incremental legacy coverage. Cross-script globals are explicit per migrated entry point.
 const browser = {
-  console: 'readonly', document: 'readonly', localStorage: 'readonly', alert: 'readonly',
+  console: 'readonly', document: 'readonly', localStorage: 'readonly', alert: 'readonly', confirm: 'readonly',
   unescape: 'readonly', escape: 'readonly', setTimeout: 'readonly', URL: 'readonly', Blob: 'readonly',
-  Storage: 'readonly', globalThis: 'readonly',
+  Storage: 'readonly', globalThis: 'readonly', window: 'readonly', getComputedStyle: 'readonly',
+  setInterval: 'readonly', FileReader: 'readonly', location: 'readonly',
 };
 const commonLegacy = {
-  ...browser, $: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly',
+  ...browser, $: 'readonly', Dom: 'readonly', WardrobeDomain: 'readonly', InventoryDomain: 'readonly',
   wardrobe: 'readonly', category: 'readonly', skipCategory: 'readonly', typeInfo: 'readonly',
   Flist: 'readonly', repelCates: 'readonly', pattern: 'readonly', accMul: 'readonly',
+};
+
+const mainRuntimeGlobals = {
+  ...browser, Dom: 'readonly', category: 'readonly', shoppingCart: 'readonly', clothesSet: 'readonly',
+  FEATURES: 'readonly', global: 'readonly', replaceScoreBonusFactory: 'readonly', addScoreBonusFactory: 'readonly',
+  drawTable: 'readonly', clone: 'readonly', accSumScore: 'readonly', accCateNum: 'readonly', skipCategory: 'readonly',
+  clothes: 'readonly', loadNew: 'readonly', load: 'readonly', ReDrawcloneHeaderRow: 'readonly', allThemes: 'readonly',
+  themeFilter: 'readonly', scoring: 'readonly', save: 'readonly', MyClothes: 'readonly', button_search: 'readonly',
+  clothesNameTd_Search: 'readonly', loadFromStorage: 'readonly', clothesHistoryNotice: 'readonly', levelHistoryNotice: 'readonly',
+  shareWardrobe: 'readonly', menuFixed: 'readonly', initOnekey: 'readonly', calcDependencies: 'readonly',
+  clothesNotice: 'readonly', levelNotice: 'readonly', lastVersion: 'readonly', CATEGORY_HIERARCHY: 'readonly',
+  criteria: 'writable', repelCates: 'readonly', Flist: 'readonly', p: 'readonly', pspan: 'readonly',
+  getStrCriteria: 'readonly', getstrTag: 'readonly', matches: 'readonly', lanStrategy: 'readonly', uiFilter: 'writable',
+  WardrobeDomain: 'readonly', InventoryDomain: 'readonly', typeInfo: 'readonly', accMul: 'readonly', pattern: 'readonly',
+  render: 'readonly', td: 'readonly', goTop: 'readonly', refreshShoppingCart: 'readonly', toggleInventory: 'readonly',
 };
 
 const safetyRules = {
@@ -40,6 +56,11 @@ export default [
   {
     files: ['wardrobechk.js'],
     languageOptions: { sourceType: 'script', globals: { ...browser, WardrobeDomain: 'readonly', InventoryDomain: 'readonly', wardrobe: 'readonly', category: 'readonly' } },
+    rules: safetyRules,
+  },
+  {
+    files: ['ui.js', 'nikki.js', 'onekeystrategy.js', 'onekeystrategy_lan.js', 'clock.js', 'sharewardrobe.js'],
+    languageOptions: { sourceType: 'script', globals: mainRuntimeGlobals },
     rules: safetyRules,
   },
   {

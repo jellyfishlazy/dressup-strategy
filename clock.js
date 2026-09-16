@@ -1,8 +1,8 @@
 var timeIndex = initTime();
 function initTime(){
 	var d = new Date();
-	time_zone = -d.getTimezoneOffset()/60;
-    offset = 8 - time_zone;
+	var time_zone = -d.getTimezoneOffset()/60;
+    var offset = 8 - time_zone;
 
 	var date = new Date();
 	var d;
@@ -32,8 +32,8 @@ function setTime() {
 	minutes = minutes < 10 ? "0" + minutes : minutes;
 	seconds = seconds < 10 ? "0" + seconds : seconds;
 	if(hour < 36)
-		$("#showTime").html("<red>" + hour + ":" + minutes + ":" + seconds + "</red>");
+		Dom("#showTime").html("<red>" + hour + ":" + minutes + ":" + seconds + "</red>");
 	else
-		$("#showTime").html(hour + ":" + minutes + ":" + seconds);
+		Dom("#showTime").html(hour + ":" + minutes + ":" + seconds);
 	timeIndex--;
 }
