@@ -1,4 +1,5 @@
-const Dom = globalThis.Dom;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
 
 var timeIndex = initTime();
 function initTime(){

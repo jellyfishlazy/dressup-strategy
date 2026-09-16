@@ -1,24 +1,29 @@
 import { rowToWardrobeItem } from './src/domain/wardrobe/index.mjs';
 import { createInventory, readBrowser, writeBrowser } from './src/domain/inventory/index.mjs';
 
-const Dom = globalThis.Dom;
-const wardrobe = globalThis.wardrobe;
-const category = globalThis.category;
-const skipCategory = globalThis.skipCategory;
-const typeInfo = globalThis.typeInfo;
-const Flist = globalThis.Flist;
-const repelCates = globalThis.repelCates;
-const pattern = globalThis.pattern;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const wardrobe = /** @type {typeof globalThis & { wardrobe: import('./src/domain/wardrobe/types.d.ts').WardrobeRow[] }} */ (globalThis).wardrobe;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: string[] }} */ (globalThis).skipCategory;
+const typeInfo = /** @type {typeof globalThis & { typeInfo: Record<string, ClothesType> }} */ (globalThis).typeInfo;
+const Flist = /** @type {typeof globalThis & { Flist: Record<string, { type: string[], tag?: string[], [id: string]: string | string[] | undefined }> }} */ (globalThis).Flist;
+const repelCates = /** @type {typeof globalThis & { repelCates: string[][] }} */ (globalThis).repelCates;
+const pattern = /** @type {typeof globalThis & { pattern: [string, string, string, string, number, string][] }} */ (globalThis).pattern;
 // Ivan's Workshop
 /** @typedef {import('./src/domain/scoring/types.d.ts').FeatureName} FeatureName */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ClothesType} ClothesType */
 /** @typedef {import('./src/domain/scoring/types.d.ts').RatingTuple} RatingTuple */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoreByCategoryState} ScoreByCategoryState */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringGlobalState} ScoringGlobalState */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ClothingDependency} ClothingDependency */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {ScoringClothing & { isSuit: unknown }} ModelClothing */
 /** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<ScoringClothing>} ClothesInventory */
 /** @typedef {import('./src/domain/shopping-cart/types.d.ts').MatcherShoppingCart<ScoringClothing>} MatcherCart */
 /** @type {FeatureName[]} */
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
+/** @type {Record<string, [FeatureName, import('./src/domain/scoring/types.d.ts').FeatureSign]>} */
 var CHINESE_TO_FEATURES = {
 	"簡約":["simple","+"],
 	"華麗":["simple","-"],
@@ -33,20 +38,22 @@ var CHINESE_TO_FEATURES = {
 };
 var ACCRATIO = [1, 1, 1, 1, 0.95, 0.9, 0.825, 0.75, 0.7, 0.65, 0.6, 0.55, 0.51, 0.47, 0.45, 0.425, 0.4];
 
+/** @type {ScoringGlobalState} */
 var global = {
   float: null,
   additionalBonus: null
 };
 
+/** @param {string | number} arg1 @param {string | number} arg2 */
 function accMul(arg1, arg2) {
 	var m = 0,
 	s1 = arg1.toString(),
 	s2 = arg2.toString();
 	try {
-		m += s1.split(".")[1].length
+		m += (s1.split(".")[1] ?? "").length
 	} catch (e) {}
 	try {
-		m += s2.split(".")[1].length
+		m += (s2.split(".")[1] ?? "").length
 	} catch (e) {}
 	return Number(s1.replace(".", "")) * Number(s2.replace(".", "")) / Math.pow(10, m)
 }
@@ -54,9 +61,13 @@ function accMul(arg1, arg2) {
 // parses a csv row into object
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm，extra
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14
+/**
+ * @param {import('./src/domain/wardrobe/types.d.ts').WardrobeRow} csv
+ * @returns {ModelClothing}
+ */
 var Clothes = function(csv) {
   var item = rowToWardrobeItem(csv);
-  var theType = typeInfo[item.type];
+  var theType = /** @type {ClothesType} */ (typeInfo[item.type]);
   if(!theType)
 	  console.log(csv);
   return {
@@ -73,12 +84,12 @@ var Clothes = function(csv) {
     cool: realRating(item.ratings.cool, item.ratings.warm, theType),
     // Split on '/', ',' and full-width '，' so 'POP/小動物' becomes two tokens
     // that levelBonus / Flist tag whitelists can match individually.
-    tags: item.tags.split(/[\/,，]/).map(function (value) { return value.trim(); }).filter(Boolean),
+    tags: item.tags.split(/[\/,，]/).map(function (/** @type {string} */ value) { return value.trim(); }).filter(Boolean),
     tagsRaw: item.tags,
     source: item.source.replace(/抽·/g,"").replace(/設·/g,"").replace(/設·圖/g,"設計圖"),
 	isSuit: item.suit,
 	version: item.version,
-    deps: [],
+    deps: /** @type {ClothingDependency[]} */ ([]),
     toCsv: function() {
       var name = this.name;
       var type = this.type;
@@ -98,19 +109,16 @@ var Clothes = function(csv) {
           cool[1], extra, source, isSuit, version];
     },
     addDep: function(sourceType, depNum, c) {
-		var depinfo = {};
-		depinfo.sourceType = sourceType;
-		depinfo.depNum = depNum;
+		/** @type {ClothingDependency} */
+		var depinfo = { sourceType, depNum, c };
       if (c == this) {
         alert("Self reference: " + this.type.type + " " + this.id + " " + this.name);
       }
-		depinfo.c = c;
       this.deps.push(depinfo);
     },
     getDeps: function(indent, parentDepNum) {
       var ret = '';
-        for (var i in this.deps) {
-          var depinfo = this.deps[i];
+        for (const depinfo of this.deps) {
 		  var c = depinfo.c;
 		  var depNumAll = 1;
 		  if(depinfo.sourceType != "染"){
@@ -133,14 +141,14 @@ var Clothes = function(csv) {
 		//rean - may miscalc when numbers in clothes name
 		var splits1=ret.split('[');
 		var splits2='';
-		for (let splitIndex = 1; splitIndex < splits1.length; splitIndex++){
-			splits2 += splits1[splitIndex].split(']')[0];
+		for (const splitPart of splits1.slice(1)){
+			splits2 += splitPart.split(']')[0];
 		}
 		//get text in [] and join tgt
 		var splits = splits2.split(/[^0-9]+/);
 		//split by and keep numbers
 		var depNumAlls = 0;
-		if (splits.length > 1) for (let splitIndex = 0; splitIndex < splits.length; splitIndex++) if(splits[splitIndex]) depNumAlls += Number(splits[splitIndex]);
+		if (splits.length > 1) for (const splitPart of splits) if(splitPart) depNumAlls += Number(splitPart);
 
 		if(indent == '   ' && ret != '')
 			ret = "[材料]" + this.name + (depNumAlls > 0 ?  ' - 總計需 '+ depNumAlls + ' 件' : '') + "\n" + ret;
@@ -148,19 +156,20 @@ var Clothes = function(csv) {
     },
     calc: function(filters) {
       var isf = 1 ;
-      if(Flist && Flist[filters.levelName]){
-        if (Flist[filters.levelName][this.longid]){
-          if (Flist[filters.levelName][this.longid] == "F"){
+      var levelRules = Flist && filters.levelName !== undefined ? Flist[filters.levelName] : undefined;
+      if(levelRules){
+        if (levelRules[this.longid]){
+          if (levelRules[this.longid] == "F"){
             isf = 0.1; //in blacklist
           }
-        }else if(Dom.inArray(this.type.type, Flist[filters.levelName]["type"])>-1){
+        }else if(Dom.inArray(this.type.type, levelRules["type"])>-1){
             //not in whitelist, check whether in tag list
-            if(!Flist[filters.levelName]["tag"]) isf = 0.1;
+            if(!levelRules["tag"]) isf = 0.1;
             else if(!this.tags) isf = 0.1;
             else{
               var isf_tag=0;
               for(var t in this.tags){
-                if(Dom.inArray(this.tags[t], Flist[filters.levelName]["tag"])>-1){
+                if(Dom.inArray(this.tags[t], levelRules["tag"])>-1){
                   isf_tag=1; break;
                 }
               }
@@ -172,27 +181,27 @@ var Clothes = function(csv) {
       var self = this;
       this.tmpScoreByCategory = ScoreByCategory();
       this.bonusByCategory = ScoreByCategory();
-      for (var i in FEATURES) {
-        var f = FEATURES[i];
-        if (filters[f]) {
-          var sub = filters[f] * self[f][2] * isf;
+      for (const f of FEATURES) {
+        var weight = filters[f];
+        if (weight) {
+          var sub = weight * self[f][2] * isf;
 		  //螢光之靈
 		  if(this.type && "螢光之靈" == this.type.type && this.tags != null){
-			var lights = this.tags[0].split("+");
-			var lightFilter = CHINESE_TO_FEATURES[lights[0]];
-			var lightScore = lights[1];
+			var lights = /** @type {string} */ (this.tags[0]).split("+");
+			var lightFilter = /** @type {[FeatureName, import('./src/domain/scoring/types.d.ts').FeatureSign]} */ (CHINESE_TO_FEATURES[/** @type {string} */ (lights[0])]);
+			var lightScore = Number(lights[1]);
 			if(f == lightFilter[0]){
 				if(filters.highscore1==f) lightScore=accMul(lightScore, 1.27);
 				if(filters.highscore2==f) lightScore=accMul(lightScore, 1.778);
-				if(0 > filters[f] && "-" == lightFilter[1]){
+				if(0 > weight && "-" == lightFilter[1]){
 					sub += lightScore * 1;
 				}
-				else if(0 < filters[f] && "+" == lightFilter[1]){
+				else if(0 < weight && "+" == lightFilter[1]){
 					sub += lightScore * 1;
 				}
 			}
 		  }
-          if (filters[f] > 0) {
+          if (weight > 0) {
             if (sub > 0) {
               this.tmpScoreByCategory.record(f, sub, 0); // matched with major
             } else {
@@ -220,6 +229,7 @@ var Clothes = function(csv) {
       if (filters.bonus) {
         for (var i in filters.bonus) {
           var bonus = filters.bonus[i];
+          if (!bonus) continue;
           var resultlist = bonus.filter(this);
           var result = resultlist[0];
           if (result > 0) {
@@ -242,6 +252,7 @@ var Clothes = function(csv) {
   };
 }
 
+/** @param {string} type @param {string} id */
 function clotonum(type,id){
 	var mainType='';
 	switch(type.split('-')[0]){
@@ -263,9 +274,9 @@ function clotonum(type,id){
 /** @returns {ScoreByCategoryState} */
 function ScoreByCategory() {
   /** @type {import('./src/domain/scoring/types.d.ts').ScoreMap} */
-  var initial = /** @type {any} */ ({});
-  for (var c in FEATURES) {
-    initial[FEATURES[c]] = [0, 0];
+  var initial = /** @type {import('./src/domain/scoring/types.d.ts').ScoreMap} */ ({});
+  for (const feature of FEATURES) {
+    initial[feature] = [0, 0];
   }
   return {
     scores: initial,
@@ -274,31 +285,35 @@ function ScoreByCategory() {
       this.scores[category] = [major, minor];
     },
     add: function(other) {
-      for (var c in other.scores) {
+      for (var key in other.scores) {
+        var c = /** @type {FeatureName} */ (key);
         this.scores[c][0] += other.scores[c][0];
         this.scores[c][1] += other.scores[c][1];
       }
     },
     round: function() {
-      for (var c in this.scores) {
+      for (var key in this.scores) {
+        var c = /** @type {FeatureName} */ (key);
         this.scores[c][0] = Math.round(this.scores[c][0]);
         this.scores[c][1] = Math.round(this.scores[c][1]);
       }
     },
     addRaw: function(filters, rawdata) {
-      for (var i in FEATURES) {
-        var f = FEATURES[i];
-        if (filters[f] && rawdata[f] > 0) {
-          if (filters[f] > 0) { // level requires major
-            this.scores[f][0] += rawdata[f];
+      for (const f of FEATURES) {
+        var weight = filters[f] || 0;
+        var rawScore = rawdata[f] || 0;
+        if (weight && rawScore > 0) {
+          if (weight > 0) { // level requires major
+            this.scores[f][0] += rawScore;
           } else { // level requires minor
-            this.scores[f][1] += rawdata[f];
+            this.scores[f][1] += rawScore;
           }
         }
       }
     },
     f: function() {
-      for (var c in this.scores) {
+      for (var key in this.scores) {
+        var c = /** @type {FeatureName} */ (key);
         this.scores[c][0] /= 10;
         this.scores[c][1] /= 10;
       }
@@ -313,26 +328,39 @@ function MyClothes() {
   });
 }
 
-var clothes = function() {
+var typedClothes = function() {
+  /** @type {ModelClothing[]} */
   var ret = [];
   for (var i in wardrobe) {
 //console.log(wardrobe[i]);
-    ret.push(Clothes(wardrobe[i]));
+    var row = wardrobe[i];
+    if (row) ret.push(Clothes(row));
   }
   return ret;
 }();
 
-var clothesSet = function() {
+var typedClothesSet = function() {
+  /** @type {Record<string, Record<string, ModelClothing>>} */
   var ret = {};
-  for (var i in clothes) {
-    var t = clothes[i].type.mainType;
+  for (var i in typedClothes) {
+    var clothing = typedClothes[i];
+    if (!clothing) continue;
+    var t = clothing.type.mainType;
     if (!ret[t]) {
       ret[t] = {};
     }
-    ret[t][clothes[i].id] = clothes[i];
+    var group = ret[t];
+    if (group) group[clothing.id] = clothing;
   }
   return ret;
 }();
+
+// Gate 8F-8 staged legacy boundary: keep collection items loose until consumer gates.
+// ponytail: aliases share the typed collections; remove the any boundary as consumers migrate.
+/** @type {any[]} */
+var clothes = typedClothes;
+/** @type {Record<string, any>} */
+var clothesSet = typedClothesSet;
 
 /** @returns {MatcherCart} */
 function createShoppingCart() {
@@ -351,8 +379,8 @@ function createShoppingCart() {
     delete this.cart[c];
   },
   putAll: function(clothes) {
-    for (var i in clothes) {
-      this.put(clothes[i]);
+    for (const clothing of Object.values(clothes)) {
+      this.put(clothing);
     }
   },
   put: function(c) {
@@ -360,51 +388,60 @@ function createShoppingCart() {
   },
   toList: function(sortBy) {
     var ret = [];
-    for (var t in this.cart) {
-      ret.push(this.cart[t]);
+    for (const clothing of Object.values(this.cart)) {
+      ret.push(clothing);
     }
     return ret.sort(sortBy);
   },
   calc: function(criteria) {
-    for (var c in this.cart) {
-      this.cart[c].calc(criteria);
+    for (const clothing of Object.values(this.cart)) {
+      clothing.calc(criteria);
     }
     // fake a clothes
     this.totalScore = fakeClothes(this.cart);
   },
   validate: function(criteria,accNum){ //accNum is the number of accessories kept finally
 	for (var i in repelCates){ //remove repelCates
+		var repelGroup = repelCates[i];
+		if (!repelGroup) continue;
 		var sumFirst = 0;
 		var sumOthers = 0;
-		for (var j in repelCates[i]){
-			var currCate=repelCates[i][j];
-			if (this.cart[currCate]) {
-				this.cart[currCate].calc(criteria);
-				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(this.cart[currCate], accNum?accNum:accCateNum) : this.cart[currCate].sumScore;
+		for (var j in repelGroup){
+			var currCate=repelGroup[j];
+			if (!currCate) continue;
+			var cartItem = this.cart[currCate];
+			if (cartItem) {
+				cartItem.calc(criteria);
+				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(cartItem, accNum?accNum:accCateNum) : /** @type {number} */ (cartItem.sumScore);
 				if (Number(j) > 0) sumOthers+=currSumScore;
 				else sumFirst+=currSumScore;
 			}
 		}
 		if (sumOthers > sumFirst) {
-			this.remove(repelCates[i][0]);
+			var firstCate = repelGroup[0];
+			if (firstCate) this.remove(firstCate);
 		}else{
-			for (var j in repelCates[i]){
-				if (Number(j) > 0) this.remove(repelCates[i][j]);
+			for (var j in repelGroup){
+				var removeCate = repelGroup[j];
+				if (Number(j) > 0 && removeCate) this.remove(removeCate);
 			}
 		}
 	}
 	if (accNum) {//keep accessories base on accNum
+		/** @type {[string, number][]} */
 		var sortCates=[];
 		for (var i in category){
 			var currCate=category[i];
-			if (currCate.split('-')[0] == '飾品' && this.cart[currCate]) {
-				sortCates.push([currCate, accSumScore(this.cart[currCate], accNum)]);
+			if (!currCate) continue;
+			var cartItem = this.cart[currCate];
+			if (currCate.split('-')[0] == '飾品' && cartItem) {
+				sortCates.push([currCate, accSumScore(cartItem, accNum)]);
 			}
 		}
 		if (sortCates.length > accNum) {
 			sortCates.sort(function(a,b){return b[1] - a[1]});
 			sortCates = sortCates.slice(accNum);
-			for (var i in sortCates) this.remove(sortCates[i][0]);
+			for (const [categoryName] of sortCates) this.remove(categoryName);
 		}
 	}
   }
@@ -414,28 +451,34 @@ function createShoppingCart() {
 
 var shoppingCart = createShoppingCart();
 
+/** @param {number} total @param {number} items */
 function accScore(total, items) {
   if (items < ACCRATIO.length) {
-    return total * ACCRATIO[items];
+    return total * (ACCRATIO[items] ?? 0.4);
   }
   return total * 0.4;
 }
 
+/** @param {Pick<ScoringClothing, 'tmpScore' | 'bonusScore'>} a @param {number} items */
 function accSumScore(a,items){
-	return accScore(a.tmpScore, items)+a.bonusScore;
+	return accScore(/** @type {number} */ (a.tmpScore), items)+/** @type {number} */ (a.bonusScore);
 }
 
 var accCateNum = function() {
 	var cnt = 0;
 	for (var i in category) {
-		if (category[i].split('-')[0] == "飾品") cnt++;
+		if (category[i]?.split('-')[0] == "飾品") cnt++;
 	}
 	for (var i in skipCategory) {
-		if (skipCategory[i].split('-')[0] == "飾品") cnt--;
+		if (skipCategory[i]?.split('-')[0] == "飾品") cnt--;
 	}
 	return cnt;
 }();
 
+/**
+ * @param {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartMap<ScoringClothing>} cart
+ * @returns {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartTotal}
+ */
 function fakeClothes(cart) {
   var totalScore = 0;
   var totalAccessories = 0;
@@ -445,20 +488,23 @@ function fakeClothes(cart) {
   var totalAccessoriesBonusByCategory = ScoreByCategory();
   var numAccessories = 0;
   for (var c in cart) {
+    // Cart totals consume clothing after calc() has populated its score state.
+    var clothing = /** @type {Required<ScoringClothing>} */ (cart[c]);
     if (c.split('-')[0] == "飾品") {
-      totalAccessories += cart[c].tmpScore;
-      totalScore += cart[c].bonusScore;
-      totalAccessoriesByCategory.add(cart[c].tmpScoreByCategory);
-      totalAccessoriesBonusByCategory.add(cart[c].bonusByCategory);
+      totalAccessories += clothing.tmpScore;
+      totalScore += clothing.bonusScore;
+      totalAccessoriesByCategory.add(clothing.tmpScoreByCategory);
+      totalAccessoriesBonusByCategory.add(clothing.bonusByCategory);
       numAccessories ++;
     } else {
-      totalScore += cart[c].sumScore;
-      totalScoreByCategory.add(cart[c].tmpScoreByCategory);
-      totalBonusByCategory.add(cart[c].bonusByCategory);
+      totalScore += clothing.sumScore;
+      totalScoreByCategory.add(clothing.tmpScoreByCategory);
+      totalBonusByCategory.add(clothing.bonusByCategory);
     }
   }
   totalScore += accScore(totalAccessories, numAccessories);
-  for (var c in totalAccessoriesByCategory.scores) {
+  for (var key in totalAccessoriesByCategory.scores) {
+    const c = /** @type {FeatureName} */ (key);
     totalAccessoriesByCategory.scores[c][0] = accScore(totalAccessoriesByCategory.scores[c][0],
         numAccessories);
     totalAccessoriesByCategory.scores[c][1] = accScore(totalAccessoriesByCategory.scores[c][1],
@@ -490,6 +536,7 @@ function fakeClothes(cart) {
   };
 }
 
+/** @param {number} score @param {number} bonus */
 function scoreWithBonusTd(score, bonus) {
   return  score +  bonus + "";
 }
@@ -507,13 +554,14 @@ function realRating(a, b, type) {
   var key = String(real);
   var score;
   if(Number.isNaN(numeric))
-	score = symbol * type.score[key];
+	score = symbol * (type.score[key] ?? Number.NaN);
   else
 	score = symbol * numeric * 15;
   var dev = type.deviation[key];
   return [a, b, score, dev];
 }
 
+/** @param {string} source @param {string} key */
 function parseSource(source, key) {
   var idx = source.indexOf(key);
   var ridx = source.indexOf('/', idx+1);
@@ -528,30 +576,36 @@ function parseSource(source, key) {
 
 function calcDependencies() {
   for (var i in pattern) {
-    var target = clothesSet[pattern[i][0]][pattern[i][1]];
-    var source = clothesSet[pattern[i][2]][pattern[i][3]];
-    if (!target) continue;
-    source.addDep(pattern[i][5], pattern[i][4], target);
+    var recipe = pattern[i];
+    if (!recipe) continue;
+    var target = typedClothesSet[recipe[0]]?.[recipe[1]];
+    var source = typedClothesSet[recipe[2]]?.[recipe[3]];
+    if (!target || !source) continue;
+    source.addDep(recipe[5], recipe[4], target);
   }
 }
 
+/** @param {string} myClothes @returns {ClothesInventory} */
 function load(myClothes) {
   var cs = myClothes.split(",");
-  for (var i in clothes) {
-    clothes[i].own = false;
-    if (cs.indexOf(clothes[i].name) >= 0) {
-      clothes[i].own = true;
+  for (var i in typedClothes) {
+    var clothing = typedClothes[i];
+    if (!clothing) continue;
+    clothing.own = false;
+    if (cs.indexOf(clothing.name) >= 0) {
+      clothing.own = true;
     }
   }
   var mine = MyClothes();
-  mine.filter(clothes);
+  mine.filter(typedClothes);
   return mine;
 }
 
+/** @param {string} myClothes @returns {ClothesInventory} */
 function loadNew(myClothes) {
   var mine = MyClothes();
   mine.deserialize(myClothes);
-  mine.update(clothes);
+  mine.update(typedClothes);
   return mine;
 }
 
@@ -565,7 +619,7 @@ function loadFromStorage() {
 
 function save(){
   var myClothes = MyClothes();
-  myClothes.filter(clothes);
+  myClothes.filter(typedClothes);
   var txt = myClothes.serialize();
   var storage = typeof localStorage !== 'undefined' ? localStorage : null;
   writeBrowser(storage, document, txt);

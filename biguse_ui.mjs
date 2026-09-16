@@ -4,10 +4,21 @@ import { goTop, toggleInventory, criteria, byCategoryAndScore } from './nikki.mj
 import { shoppingCart1, shoppingCart2 } from './biguse_model.mjs';
 import * as BigUseDomain from './src/domain/biguse/index.mjs';
 
-const Dom = globalThis.Dom;
-const NativeAutocomplete = globalThis.NativeAutocomplete;
-const wardrobe2 = globalThis.wardrobe2;
-const color = globalThis.color;
+/** @typedef {import('./src/legacy/native-dom-types.d.ts').DomFacade} DomFacade */
+/** @typedef {import('./src/legacy/native-dom-types.d.ts').DomCollection} DomCollection */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {{ name: string, sumScore?: number, id?: string, type?: ScoringClothing['type'] }} BigUseRow */
+/** @typedef {import('./src/domain/biguse/types.d.ts').AutocompleteSuggestion<ScoringClothing>} Suggestion */
+/** @typedef {{ attach(input: HTMLElement | null, options: { lookup(query: string): Suggestion[], onSelect(suggestion: Suggestion): void }): unknown }} Autocomplete */
+
+/** @type {DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: DomFacade }} */ (globalThis).Dom;
+const NativeAutocomplete = /** @type {typeof globalThis & { NativeAutocomplete: Autocomplete }} */ (globalThis).NativeAutocomplete;
+const wardrobe2 = /** @type {typeof globalThis & { wardrobe2: Record<string, [string, string, string]> }} */ (globalThis).wardrobe2;
+const color = /** @type {typeof globalThis & { color: Record<string, [string, string]> }} */ (globalThis).color;
+/**
+ * @param {DomCollection} $row
+ */
 function copyNameText($row) {
 	// 清除所有其他行的highlight
 	Dom('.table-row.highlighted').removeClass('highlighted');
@@ -55,6 +66,9 @@ function copyButton() {
 		});
 }
 
+/**
+ * @param {boolean} isShoppingCart
+ */
 function theadBiguse(isShoppingCart) {
 	var $thead = Dom("<div>").addClass("table-head");
 	$thead.append(td("", "copy-header"));
@@ -80,6 +94,11 @@ function theadBiguse(isShoppingCart) {
 	return $thead;
 }
 
+/**
+ * @param {BigUseRow} piece
+ * @param {boolean} isShoppingCart
+ * @param {number} index
+ */
 function rowBiguse(piece, isShoppingCart, index) {
 	var $row = Dom("<div>").addClass("table-row");
 	var $lineTop = $row;
@@ -96,7 +115,7 @@ function rowBiguse(piece, isShoppingCart, index) {
 	if (isShoppingCart) {
 		$nameTd = td(piece.name, '');
 	} else {
-		$nameTd = clothesNameTd(piece);
+		$nameTd = clothesNameTd(/** @type {ScoringClothing} */ (piece));
 	}
 	$lineTop.append($nameTd);
 
@@ -111,14 +130,14 @@ function rowBiguse(piece, isShoppingCart, index) {
 	});
 	$lineTop.append($imagetd);
 	if(wardrobe2[longid]){
-		$lineTop.append(td(wardrobe2[longid][0], "area"));
+		$lineTop.append(td(/** @type {[string, string, string]} */ (wardrobe2[longid])[0], "area"));
 
 	var colortd1 = td("", "");
-	colortd1.css("background", "rgb("+ wardrobe2[longid][1]+ ")");
+	colortd1.css("background", "rgb("+ /** @type {[string, string, string]} */ (wardrobe2[longid])[1]+ ")");
 		$lineTop.append(colortd1);
 
-	var colortd2 = td( color[wardrobe2[longid][2]][1], "color_search");
-	colortd2.css("background", "rgb("+ color[wardrobe2[longid][2]][0]+ ")").css("color","white");
+	var colortd2 = td( /** @type {[string, string]} */ (color[/** @type {[string, string, string]} */ (wardrobe2[longid])[2]])[1], "color_search");
+	colortd2.css("background", "rgb("+ /** @type {[string, string]} */ (color[/** @type {[string, string, string]} */ (wardrobe2[longid])[2]])[0]+ ")").css("color","white");
 		$lineTop.append(colortd2);
 	}
 	else if(piece.name != "總分"){
@@ -131,23 +150,28 @@ function rowBiguse(piece, isShoppingCart, index) {
 
 	if (isShoppingCart) {
 		if (piece.id) {
-			$lineTop.append(td(removeShoppingCartButton(piece.type.type, index), 'icon'));
+			$lineTop.append(td(removeShoppingCartButton(/** @type {ScoringClothing['type']} */ (piece.type).type, index), 'icon'));
 		}
 	} else {
-		$lineTop.append(td(shoppingCartButton(piece, 1), 'icon'));
-		$lineTop.append(td(shoppingCartButton(piece, 2), 'icon'));
+		$lineTop.append(td(shoppingCartButton(/** @type {ScoringClothing} */ (piece), 1), 'icon'));
+		$lineTop.append(td(shoppingCartButton(/** @type {ScoringClothing} */ (piece), 2), 'icon'));
 	}
 	//$row.append($lineTop);
 	return $lineTop;
 }
 
+/**
+ * @param {ScoringClothing[]} datas
+ * @param {boolean} isShoppingCart
+ * @param {number} index
+ */
 function listBiguse(datas, isShoppingCart, index) {
 	var $list = Dom("<div>").addClass("table-body");
 	if (isShoppingCart) {
 		$list.append(rowBiguse(BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2).totalScore, isShoppingCart, index));
 	}
 	for (var i in datas) {
-		var $row = rowBiguse(datas[i], isShoppingCart, index);
+		var $row = rowBiguse(/** @type {ScoringClothing} */ (datas[i]), isShoppingCart, index);
 		// 在 shoppingCart 中為所有數據行的第一個 table-td（複製按鈕欄位）添加複製按鈕
 		// 總分行（第一行）不需要按鈕，所以從 i >= 0 開始（因為總分行已經在前面添加了）
 		if (isShoppingCart) {
@@ -161,6 +185,9 @@ function listBiguse(datas, isShoppingCart, index) {
 	return $list;
 }
 
+/**
+ * @param {ScoringClothing} piece
+ */
 function clothesNameTd(piece) {
 	var cls = "name table-td";
 	var deps = piece.getDeps('   ', 1);
@@ -190,6 +217,10 @@ function clothesNameTd(piece) {
 	return $clothesNameTd;
 }
 
+/**
+ * @param {ScoringClothing} piece
+ * @param {number} index
+ */
 function shoppingCartButton(piece, index) {
 	var $shoppingCartButton = Dom("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
@@ -200,6 +231,10 @@ function shoppingCartButton(piece, index) {
 	return $shoppingCartButton;
 }
 
+/**
+ * @param {string} detailedType
+ * @param {number} index
+ */
 function removeShoppingCartButton(detailedType, index) {
 	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
@@ -225,6 +260,12 @@ function refreshShoppingCartBiguse() {
 	}
 }
 
+/**
+ * @param {ScoringClothing[]} data
+ * @param {string} divId
+ * @param {boolean} isShoppingCart
+ * @param {number} index
+ */
 function drawTable(data, divId, isShoppingCart, index) {
 	if(divId != "shoppingCart"){
 		var $table = Dom('#' + divId);
@@ -245,6 +286,7 @@ function drawTable(data, divId, isShoppingCart, index) {
 
 
 function initAutoComplete(){
+	/** @param {string} query */
 	var match = function(query){
 		return BigUseDomain.autocompleteSuggestions(clothes, query);
 	};

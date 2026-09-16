@@ -1,27 +1,35 @@
 ﻿import { rowToWardrobeItem } from './src/domain/wardrobe/index.mjs';
 import { createInventory, readBrowser, writeBrowser } from './src/domain/inventory/index.mjs';
 
-const Dom = globalThis.Dom;
-const wardrobe = globalThis.wardrobe;
-const category = globalThis.category;
-const skipCategory = globalThis.skipCategory;
-const repelCates = globalThis.repelCates;
-const typeInfo = globalThis.typeInfo;
-const Flist = globalThis.Flist;
-const manualScoring = globalThis.manualScoring;
-const pattern = globalThis.pattern;
-const pattern_extra = globalThis.pattern_extra;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const wardrobe = /** @type {typeof globalThis & { wardrobe: WardrobeRow[] }} */ (globalThis).wardrobe;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: string[] }} */ (globalThis).skipCategory;
+const repelCates = /** @type {typeof globalThis & { repelCates: string[][] }} */ (globalThis).repelCates;
+const typeInfo = /** @type {typeof globalThis & { typeInfo: LegacyDict }} */ (globalThis).typeInfo;
+const Flist = /** @type {typeof globalThis & { Flist: LegacyDict }} */ (globalThis).Flist;
+const manualScoring = /** @type {typeof globalThis & { manualScoring: LegacyDict }} */ (globalThis).manualScoring;
+const pattern = /** @type {typeof globalThis & { pattern: any[][] }} */ (globalThis).pattern;
+const pattern_extra = /** @type {typeof globalThis & { pattern_extra: any[][] | null | undefined }} */ (globalThis).pattern_extra;
 // Ivan's Workshop
 
 /** @typedef {import('./src/domain/scoring/types.d.ts').FeatureName} FeatureName */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ClothesType} ClothesType */
 /** @typedef {import('./src/domain/scoring/types.d.ts').RatingTuple} RatingTuple */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoreByCategoryState} ScoreByCategoryState */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringGlobalState} ScoringGlobalState */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ClothingDependency} ClothingDependency */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {import('./src/domain/scoring/types.d.ts').Criteria} Criteria */
+/** @typedef {import('./src/domain/scoring/types.d.ts').RawScoreMap} RawScoreMap */
+/** @typedef {import('./src/domain/wardrobe/types.d.ts').WardrobeRow} WardrobeRow */
+/** @typedef {Record<string, any>} LegacyDict */
 /** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<ScoringClothing>} ClothesInventory */
 /** @typedef {import('./src/domain/shopping-cart/types.d.ts').MaterialShoppingCart<ScoringClothing>} MaterialCart */
 /** @type {FeatureName[]} */
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
+/** @type {LegacyDict} */
 var CHINESE_TO_FEATURES = {
 	"簡約":["simple","+"],
 	"華麗":["simple","-"],
@@ -36,6 +44,7 @@ var CHINESE_TO_FEATURES = {
 };
 var ACCRATIO = [1, 1, 1, 1, 0.95, 0.9, 0.825, 0.75, 0.7, 0.65, 0.6, 0.55, 0.51, 0.47, 0.45, 0.425, 0.4];
 
+/** @type {ScoringGlobalState} */
 var global = {
   float: null,
   additionalBonus: null
@@ -44,6 +53,7 @@ var global = {
 // parses a csv row into object
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm, extra, source, set
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14     15      16
+/** @param {WardrobeRow} csv @returns {any} */
 var Clothes = function(csv) {
   var item = rowToWardrobeItem(csv);
   var theType = typeInfo[item.type];
@@ -63,12 +73,12 @@ var Clothes = function(csv) {
     cool: realRating(item.ratings.cool, item.ratings.warm, theType),
     // Split on '/', ',' and full-width '，' so 'POP/小動物' becomes two tokens
     // that levelBonus / Flist tag whitelists can match individually.
-    tags: item.tags.split(/[\/,，]/).map(function (value) { return value.trim(); }).filter(Boolean),
+    tags: item.tags.split(/[\/,，]/).map(function (/** @type {string} */ value) { return value.trim(); }).filter(Boolean),
     tagsRaw: item.tags,
     source: item.source,
     set: item.suit,
     version: item.version,
-    deps: [],
+    deps: /** @type {ClothingDependency[]} */ ([]),
     exDep: '',
     toCsv: function() {
       var name = this.name;
@@ -88,7 +98,7 @@ var Clothes = function(csv) {
           active[0], active[1], pure[0], pure[1], cool[0],
           cool[1], extra, source, set, version];
     },
-    addDep: function(sourceType, depNum, c) {
+    addDep: function(/** @type {string} */ sourceType, /** @type {number} */ depNum, /** @type {any} */ c) {
 		var depinfo = {};
 		depinfo.sourceType = sourceType;
 		depinfo.depNum = depNum;
@@ -98,10 +108,9 @@ var Clothes = function(csv) {
 		depinfo.c = c;
       this.deps.push(depinfo);
     },
-    getDeps: function(indent, parentDepNum) {
+    getDeps: function(/** @type {string} */ indent, /** @type {number} */ parentDepNum) {
       var ret = '';
-        for (var i in this.deps) {
-          var depinfo = this.deps[i];
+        for (const depinfo of this.deps) {
 		  var c = depinfo.c;
 		  var depNumAll = 1;
 		  if(depinfo.sourceType != "染"){
@@ -116,14 +125,14 @@ var Clothes = function(csv) {
         }
 		var splits1=ret.split('[');
 		var splits2='';
-		for (let splitIndex = 1; splitIndex < splits1.length; splitIndex++){
-			splits2 += splits1[splitIndex].split(']')[0];
+		for (const splitPart of splits1.slice(1)){
+			splits2 += splitPart.split(']')[0];
 		}
 		//get text in [] and join tgt
 		var splits = splits2.split(/[^0-9]+/);
 		//split by and keep numbers
 		var depNumAlls = 1;
-		if (splits.length > 1) for (let splitIndex = 0; splitIndex < splits.length; splitIndex++) if(splits[splitIndex]) depNumAlls += Number(splits[splitIndex]);
+		if (splits.length > 1) for (const splitPart of splits) if(splitPart) depNumAlls += Number(splitPart);
 		if (this.exDep) {
 			ret = indent + "[織夢]" + this.exDep + "\n" + ret;
 		}
@@ -131,21 +140,22 @@ var Clothes = function(csv) {
 			ret = "[材料]" + this.name + (' - 總計需 '+ depNumAlls + ' 件') + "\n" + ret;
       return ret;
     },
-    calc: function(filters) {
+    calc: function(/** @type {Criteria} */ filters) {
       var isf = 1 ;
-      if(Flist && Flist[filters.levelName]){
-        if (Flist[filters.levelName][this.longid]){
-          if (Flist[filters.levelName][this.longid] == "F"){
+      var levelName = filters.levelName;
+      if(Flist && levelName && Flist[levelName]){
+        if (Flist[levelName][this.longid]){
+          if (Flist[levelName][this.longid] == "F"){
             isf = 0.1; //in blacklist
           }
-        }else if(Dom.inArray(this.type.type, Flist[filters.levelName]["type"])>-1){
+        }else if(Dom.inArray(this.type.type, Flist[levelName]["type"])>-1){
             //not in whitelist, check whether in tag list
-            if(!Flist[filters.levelName]["tag"]) isf = 0.1; 
+            if(!Flist[levelName]["tag"]) isf = 0.1;
             else if(!this.tags) isf = 0.1; 
             else{
               var isf_tag=0;
               for(var t in this.tags){
-                if(Dom.inArray(this.tags[t], Flist[filters.levelName]["tag"])>-1){
+                if(Dom.inArray(this.tags[t], Flist[levelName]["tag"])>-1){
                   isf_tag=1; break;
                 }
               }
@@ -157,8 +167,7 @@ var Clothes = function(csv) {
       var self = this;
       this.tmpScoreByCategory = ScoreByCategory();
       this.bonusByCategory = ScoreByCategory();
-      for (var i in FEATURES) {
-        var f = FEATURES[i]; 
+      for (const f of FEATURES) {
         if (filters[f]) {
           var sub = filters[f] * self[f][2] * isf;
           if (filters[f] > 0) {
@@ -189,6 +198,7 @@ var Clothes = function(csv) {
       if (filters.bonus) {
         for (var i in filters.bonus) {
           var bonus = filters.bonus[i];
+          if (!bonus) continue;
           var resultlist = bonus.filter(this);
           var result = resultlist[0];
           if (result > 0) {
@@ -207,8 +217,9 @@ var Clothes = function(csv) {
       //螢光之靈
       if(this.type && "螢光之靈" == this.type.type && this.tags != null){
         var lights = this.tags[0].split("+");
-        if(2 == lights.length && CHINESE_TO_FEATURES[lights[0]]){
-          var lightBonus = CHINESE_TO_FEATURES[lights[0]];
+        var lightKey = lights[0];
+        if(2 == lights.length && lightKey && CHINESE_TO_FEATURES[lightKey]){
+          var lightBonus = CHINESE_TO_FEATURES[lightKey];
           //skills handling
           if(filters.highscore1==lightBonus[0]) lights[1]=Math.round(lights[1] * 1.27);
           if(filters.highscore2==lightBonus[0]) lights[1]=Math.round(lights[1] * 1.778);
@@ -225,13 +236,15 @@ var Clothes = function(csv) {
 
       this.tmpScore = Math.round(this.tmpScore);
       this.sumScore = this.tmpScore + this.bonusScore;
-      if(manualScoring && manualScoring[filters.levelName] && manualScoring[filters.levelName][this.type.mainType+this.id]){
-        if(!filters.highscore1&&!filters.highscore2&&!filters.balance) this.sumScore = manualScoring[filters.levelName][this.type.mainType+this.id];
+      var levelScoring = manualScoring && levelName ? manualScoring[levelName] : null;
+      if(levelScoring && levelScoring[this.type.mainType+this.id]){
+        if(!filters.highscore1&&!filters.highscore2&&!filters.balance) this.sumScore = levelScoring[this.type.mainType+this.id];
       }
     }
   };
 }
 
+/** @param {string} type @param {string | number} id */
 function clotonum(type,id){
 	var mainType='';
 	switch(type.split('-')[0]){
@@ -246,7 +259,7 @@ function clotonum(type,id){
 		case '妝容': mainType='9'; break;
 		case '螢光之靈': mainType='A'; break;
 	}
-	if (parseInt(id) >= 1000) return mainType + id;
+	if (parseInt(String(id)) >= 1000) return mainType + id;
 	else return mainType + '0' + id;
 }
 
@@ -254,41 +267,42 @@ function clotonum(type,id){
 function ScoreByCategory() {
   /** @type {import('./src/domain/scoring/types.d.ts').ScoreMap} */
   var initial = /** @type {any} */ ({});
-  for (var c in FEATURES) {
-    initial[FEATURES[c]] = [0, 0];
+  for (const feature of FEATURES) {
+    initial[feature] = [0, 0];
   }
   return {
     scores: initial,
     // score: positive - matched, negative - no matched
-    record: function(category, major, minor) {
+    record: function(/** @type {FeatureName} */ category, /** @type {number} */ major, /** @type {number} */ minor) {
       this.scores[category] = [major, minor];
     },
-    add: function(other) {
-      for (var c in other.scores) {
+    add: function(/** @type {ScoreByCategoryState} */ other) {
+      for (const c of FEATURES) {
         this.scores[c][0] += other.scores[c][0];
         this.scores[c][1] += other.scores[c][1];
       }
     },
     round: function() {
-      for (var c in this.scores) {
+      for (const c of FEATURES) {
         this.scores[c][0] = Math.round(this.scores[c][0]);
         this.scores[c][1] = Math.round(this.scores[c][1]);
       }
     },
-    addRaw: function(filters, rawdata) {
-      for (var i in FEATURES) {
-        var f = FEATURES[i]; 
-        if (filters[f] && rawdata[f] > 0) {
-          if (filters[f] > 0) { // level requires major
-            this.scores[f][0] += rawdata[f];
+    addRaw: function(/** @type {Criteria} */ filters, /** @type {RawScoreMap} */ rawdata) {
+      for (const f of FEATURES) {
+        var weight = filters[f] || 0;
+        var rawScore = rawdata[f] || 0;
+        if (weight && rawScore > 0) {
+          if (weight > 0) { // level requires major
+            this.scores[f][0] += rawScore;
           } else { // level requires minor
-            this.scores[f][1] += rawdata[f];
+            this.scores[f][1] += rawScore;
           }
         }
       }
     },
     f: function() {
-      for (var c in this.scores) {
+      for (const c of FEATURES) {
         this.scores[c][0] /= 10;
         this.scores[c][1] /= 10;
       }
@@ -303,16 +317,20 @@ function MyClothes() {
   });
 }
 
+/** @type {any[]} */
 var clothes = function() {
+  /** @type {any[]} */
   var ret = [];
-  for (var i in wardrobe) {
-//console.log(wardrobe[i]);
-    ret.push(Clothes(wardrobe[i]));
+  for (const row of wardrobe) {
+//console.log(row);
+    ret.push(Clothes(row));
   }
   return ret;
 }();
 
+/** @type {LegacyDict} */
 var clothesSet = function() {
+  /** @type {LegacyDict} */
   var ret = {};
   for (var i in clothes) {
     var t = clothes[i].type.mainType;
@@ -334,9 +352,9 @@ var shoppingCart = {
   contains: function(c) {
     //return this.cart[c.type.type] == c;
     var cnt=0;
-    for (var cc in category) {
-      if(this.cart[category[cc]]) cnt++;
-      if(this.cart[category[cc]] == c) break;
+    for (const categoryName of category) {
+      if(this.cart[categoryName]) cnt++;
+      if(this.cart[categoryName] == c) break;
     }
     return cnt;
   },
@@ -344,8 +362,8 @@ var shoppingCart = {
     delete this.cart[c];
   },
   putAll: function(clothes) {
-    for (var i in clothes) {
-      this.put(clothes[i]);
+    for (const clothing of Object.values(clothes)) {
+      this.put(clothing);
     }
   },
   put: function(c) {
@@ -353,51 +371,60 @@ var shoppingCart = {
   },
   toList: function(sortBy) {
     var ret = [];
-    for (var t in this.cart) {
-      ret.push(this.cart[t]);
+    for (const clothing of Object.values(this.cart)) {
+      ret.push(clothing);
     }
     return ret.sort(sortBy);
   },
   calc: function(criteria) {
-    for (var c in this.cart) {
-      this.cart[c].calc(criteria);
+    for (const clothing of Object.values(this.cart)) {
+      clothing.calc(criteria);
     }
     // fake a clothes
     this.totalScore = fakeClothes(this.cart);
   },
   validate: function(criteria,accNum){ //accNum is the number of accessories kept finally
 	for (var i in repelCates){ //remove repelCates
+		var repelGroup = repelCates[i];
+		if (!repelGroup) continue;
 		var sumFirst = 0;
 		var sumOthers = 0;
-		for (var j in repelCates[i]){
-			var currCate=repelCates[i][j];
-			if (this.cart[currCate]) {
-				this.cart[currCate].calc(criteria);
-				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(this.cart[currCate], accNum?accNum:accCateNum) : this.cart[currCate].sumScore;
+		for (var j in repelGroup){
+			var currCate=repelGroup[j];
+			if (!currCate) continue;
+			var cartItem = this.cart[currCate];
+			if (cartItem) {
+				cartItem.calc(criteria);
+				var currSumScore = currCate.split('-')[0] == '飾品' ? accSumScore(cartItem, accNum?accNum:accCateNum) : cartItem.sumScore;
 				if (Number(j) > 0) sumOthers+=currSumScore;
 				else sumFirst+=currSumScore;
 			}
 		}
 		if (sumOthers > sumFirst) {
-			shoppingCart.remove(repelCates[i][0]);
+			var firstCate = repelGroup[0];
+			if (firstCate) shoppingCart.remove(firstCate);
 		}else{
-			for (var j in repelCates[i]){
-				if (Number(j) > 0) shoppingCart.remove(repelCates[i][j]);
+			for (var j in repelGroup){
+				var removeCate = repelGroup[j];
+				if (Number(j) > 0 && removeCate) shoppingCart.remove(removeCate);
 			}
 		}
 	}
 	if (accNum) {//keep accessories base on accNum
+		/** @type {[string, number][]} */
 		var sortCates=[];
 		for (var i in category){
 			var currCate=category[i];
-			if (currCate.split('-')[0] == '飾品' && this.cart[currCate]) {
-				sortCates.push([currCate, accSumScore(this.cart[currCate], accNum)]);
+			if (!currCate) continue;
+			var cartItem = this.cart[currCate];
+			if (currCate.split('-')[0] == '飾品' && cartItem) {
+				sortCates.push([currCate, accSumScore(cartItem, accNum)]);
 			}
 		}
 		if (sortCates.length > accNum) {
 			sortCates.sort(function(a,b){return b[1] - a[1]});
 			sortCates = sortCates.slice(accNum);
-			for (var i in sortCates) shoppingCart.remove(sortCates[i][0]);
+			for (const [categoryName] of sortCates) shoppingCart.remove(categoryName);
 		}
 	}
   }
@@ -405,28 +432,31 @@ var shoppingCart = {
 
 shoppingCart.totalScore = fakeClothes(shoppingCart.cart);
 
+/** @param {number} total @param {number} items */
 function accScore(total, items) {
   if (items < ACCRATIO.length) {
-    return total * ACCRATIO[items];
+    return total * (ACCRATIO[items] ?? 0.4);
   }
   return total * 0.4;
 }
 
+/** @param {any} a @param {number} items */
 function accSumScore(a,items){
 	return accScore(a.tmpScore, items)+a.bonusScore;
 }
 
 var accCateNum = function() {
 	var cnt = 0;
-	for (var i in category) {
-		if (category[i].split('-')[0] == "飾品") cnt++;
+	for (const categoryName of category) {
+		if (categoryName.split('-')[0] == "飾品") cnt++;
 	}
-	for (var i in skipCategory) {
-		if (skipCategory[i].split('-')[0] == "飾品") cnt--;
+	for (const categoryName of skipCategory) {
+		if (categoryName.split('-')[0] == "飾品") cnt--;
 	}
 	return cnt;
 }();
 
+/** @param {LegacyDict} cart */
 function fakeClothes(cart) {
   var totalScore = 0;
   var totalAccessories = 0;
@@ -449,7 +479,7 @@ function fakeClothes(cart) {
     }
   }
   totalScore += accScore(totalAccessories, numAccessories);
-  for (var c in totalAccessoriesByCategory.scores) {
+  for (const c of FEATURES) {
     totalAccessoriesByCategory.scores[c][0] = accScore(totalAccessoriesByCategory.scores[c][0],
         numAccessories);
     totalAccessoriesByCategory.scores[c][1] = accScore(totalAccessoriesByCategory.scores[c][1],
@@ -481,6 +511,7 @@ function fakeClothes(cart) {
   };
 }
 
+/** @param {number} score @param {number} bonus */
 function scoreWithBonusTd(score, bonus) {
   return  score +  bonus + "";
 }
@@ -494,11 +525,12 @@ function scoreWithBonusTd(score, bonus) {
 function realRating(a, b, type) {
   var real = a ? a : b;
   var symbol = a ? 1 : -1;
-  var score = symbol * type.score[real];
-  var dev = type.deviation[real];
+  var score = symbol * (type.score[String(real)] ?? Number.NaN);
+  var dev = type.deviation[String(real)];
   return [a, b, score, dev];
 }
 
+/** @param {string} source @param {string} key */
 function parseSource(source, key) {
   var idx = source.indexOf(key);
   var ridx = source.indexOf('/', idx+1);
@@ -513,21 +545,26 @@ function parseSource(source, key) {
 
 function calcDependencies() {
   for (var i in pattern) {
-    var target = clothesSet[pattern[i][0]][pattern[i][1]];
-    var source = clothesSet[pattern[i][2]][pattern[i][3]];
+    var recipe = pattern[i];
+    if (!recipe) continue;
+    var target = clothesSet[recipe[0]][recipe[1]];
+    var source = clothesSet[recipe[2]][recipe[3]];
     if (!target) continue;
-    source.addDep(pattern[i][5], pattern[i][4], target);
+    source.addDep(recipe[5], recipe[4], target);
   }
   if (pattern_extra){
 	for (var i in pattern_extra){
-		var source = clothesSet[pattern_extra[i][0]][pattern_extra[i][1]];
-		var target = pattern_extra[i][2];
+		var recipe = pattern_extra[i];
+		if (!recipe) continue;
+		var source = clothesSet[recipe[0]][recipe[1]];
+		var target = recipe[2];
 		if (!source) continue;
 		source.exDep += (source.exDep.length>0 ? ',' : '') + target;
 	}
   }
 }
 
+/** @param {string} myClothes */
 function load(myClothes) {
   var cs = myClothes.split(",");
   for (var i in clothes) {
@@ -541,6 +578,7 @@ function load(myClothes) {
   return mine;
 }
 
+/** @param {string} myClothes */
 function loadNew(myClothes) {
   var mine = MyClothes();
   mine.deserialize(myClothes);

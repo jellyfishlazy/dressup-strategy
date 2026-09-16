@@ -7,7 +7,10 @@
  */
 export function serialize(mine) {
   let text = '';
-  for (const type in mine) text += `${type}:${mine[type].join(',')}|`;
+  for (const type in mine) {
+    const ids = mine[type];
+    if (ids) text += `${type}:${ids.join(',')}|`;
+  }
   return text;
 }
 
@@ -22,9 +25,12 @@ export function deserialize(raw) {
   for (const part of String(raw).split('|')) {
     if (!part) continue;
     const section = part.split(':');
-    const type = section[0];
-    mine[type] = section[1].split(',');
-    size += mine[type].length;
+    const type = section[0] ?? '';
+    const idsText = section[1];
+    if (idsText === undefined) throw new TypeError("Cannot read properties of undefined (reading 'split')");
+    const ids = idsText.split(',');
+    mine[type] = ids;
+    size += ids.length;
   }
   return { mine, size };
 }
@@ -64,8 +70,10 @@ export function createInventory(options) {
       /** @type {Record<string, Record<string, true>>} */
       const owned = {};
       for (const type in this.mine) {
+        const ids = this.mine[type];
+        if (!ids) continue;
         owned[type] = {};
-        for (const id of this.mine[type]) owned[type][id] = true;
+        for (const id of ids) owned[type][id] = true;
       }
       for (const clothing of clothes) {
         clothing.own = false;
@@ -131,7 +139,7 @@ export function writeCookie(doc, name, value, expireDays, encoder = input => inp
  * @returns {import('./types.d.ts').InventoryReadResult}
  */
 export function readBrowser(storage, doc) {
-  const decoder = typeof globalThis.unescape === 'function' ? globalThis.unescape : value => value;
+  const decoder = typeof globalThis.unescape === 'function' ? globalThis.unescape : /** @param {string} value */ value => value;
   return read(storage, name => readCookie(doc, name, decoder));
 }
 
@@ -141,6 +149,6 @@ export function readBrowser(storage, doc) {
  * @param {string} value
  */
 export function writeBrowser(storage, doc, value) {
-  const encoder = typeof globalThis.escape === 'function' ? globalThis.escape : input => input;
+  const encoder = typeof globalThis.escape === 'function' ? globalThis.escape : /** @param {string} input */ input => input;
   write(storage, (name, cookieValue, days) => writeCookie(doc, name, cookieValue, days, encoder), value);
 }

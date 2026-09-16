@@ -4,8 +4,8 @@ import { createInventory, readBrowser } from './src/domain/inventory/index.mjs';
 /** @typedef {{ own: boolean, name: string, type: string, mainType: string, id: string }} WardrobeInventoryClothing */
 /** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<WardrobeInventoryClothing>} WardrobeInventory */
 
-const wardrobeRows = globalThis.wardrobe;
-const category = globalThis.category;
+const wardrobeRows = /** @type {typeof globalThis & { wardrobe: import('./src/domain/wardrobe/types.d.ts').WardrobeRow[] }} */ (globalThis).wardrobe;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
 
 if (!Array.isArray(wardrobeRows) || !Array.isArray(category)) {
   throw new TypeError('Wardrobe Check requires wardrobe and category data globals');
@@ -14,23 +14,25 @@ if (!Array.isArray(wardrobeRows) || !Array.isArray(category)) {
 const clothes = wardrobeRows.map(retClothes);
 
 const CATEGORY_HIERARCHY = (() => {
+  /** @type {Record<string, string[]>} */
   const ret = {};
   for (const entry of category) {
-    const type = entry.split('-')[0];
+    const type = /** @type {string} */ (entry.split('-')[0]);
     if (!ret[type]) ret[type] = [];
     ret[type].push(entry);
   }
   return ret;
 })();
 
-/** @returns {WardrobeInventoryClothing} */
+/** @param {import('./src/domain/wardrobe/types.d.ts').WardrobeRow} csv
+ * @returns {WardrobeInventoryClothing} */
 function retClothes(csv) {
   const item = rowToWardrobeItem(csv);
   return {
     own: false,
     name: item.name,
     type: item.type,
-    mainType: item.type.split('-')[0],
+    mainType: item.type.split('-')[0] ?? item.type,
     id: item.id,
   };
 }
@@ -42,6 +44,9 @@ function createWardrobeInventory() {
   });
 }
 
+/**
+ * @param {string} myClothes
+ */
 function loadLegacyNames(myClothes) {
   const names = myClothes.split(',');
   for (const clothing of clothes) {
@@ -52,6 +57,9 @@ function loadLegacyNames(myClothes) {
   return mine;
 }
 
+/**
+ * @param {string} myClothes
+ */
 function loadSerializedInventory(myClothes) {
   const mine = createWardrobeInventory();
   mine.deserialize(myClothes);
@@ -71,16 +79,18 @@ function loadFromStorage() {
 function updateSize(mine) {
   const textarea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('myClothes'));
   if (textarea) textarea.value = mine.serialize();
+  /** @type {Record<string, number>} */
   const subcount = {};
   for (const type in mine.mine) {
-    const mainType = type.split('-')[0];
+    const mainType = type.split('-')[0] ?? type;
     if (!subcount[mainType]) subcount[mainType] = 0;
-    subcount[mainType] += mine.mine[type].length;
+    const ids = mine.mine[type];
+    if (ids) subcount[mainType] += ids.length;
   }
   for (const type in subcount) {
     const tab = document.getElementById(type);
     const badge = tab ? tab.querySelector('a span') : null;
-    if (badge) badge.textContent = subcount[type];
+    if (badge) badge.textContent = /** @type {string} */ (/** @type {unknown} */ (subcount[type]));
   }
 }
 
@@ -101,6 +111,9 @@ function drawFilter() {
   }
 }
 
+/**
+ * @param {string | null} categoryName
+ */
 function switchCate(categoryName) {
   const searchList = document.getElementById('searchResultList');
   if (searchList) searchList.innerHTML = '';
@@ -113,18 +126,22 @@ function switchCate(categoryName) {
   rebuildCate(categoryName);
 }
 
+/**
+ * @param {string | null} categoryName
+ */
 function rebuildCate(categoryName) {
+  /** @type {[string, string][]} */
   const owned = [];
   for (const clothing of clothes) {
     if (clothing.mainType !== categoryName || !clothing.own) continue;
     owned.push([clothing.id, clothing.name]);
   }
-  owned.sort((a, b) => a[0] - b[0]);
+  owned.sort((a, b) => /** @type {number} */ (/** @type {unknown} */ (a[0])) - /** @type {number} */ (/** @type {unknown} */ (b[0])));
 
   let leftHtml = '';
   let rightHtml = '';
   for (let index = 0; index < owned.length; index++) {
-    const row = owned[index][0] + '&nbsp;' + owned[index][1] + '<br>';
+    const row = /** @type {[string, string]} */ (owned[index])[0] + '&nbsp;' + /** @type {[string, string]} */ (owned[index])[1] + '<br>';
     if (index % 2 > 0) rightHtml += row;
     else leftHtml += row;
   }

@@ -3,7 +3,7 @@ import type { Criteria, ScoringClothing } from '../scoring/types.d.ts';
 export interface ShoppingCartTotal {
   name: string;
   sumScore: number;
-  toCsv(): unknown[];
+  toCsv(): Array<string | number>;
 }
 
 export type ShoppingCartMap<T = ScoringClothing> = Record<string, T>;

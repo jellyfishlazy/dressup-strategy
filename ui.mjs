@@ -1,10 +1,16 @@
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartTotal & Partial<ScoringClothing>} DisplayPiece */
 import { shoppingCart, clothesSet } from './model.mjs';
 import { goTop, toggleInventory, refreshShoppingCart } from './nikki.mjs';
 
-const Dom = globalThis.Dom;
-const lastVersion = globalThis.lastVersion;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const lastVersion = /** @type {typeof globalThis & { lastVersion: string }} */ (globalThis).lastVersion;
 
 
+/**
+ * @param {boolean} isShoppingCart
+ */
 function thead(isShoppingCart) {
 	var $thead = Dom("<div>").addClass("table-head");
 	$thead.append(td("", "copy-header"));
@@ -40,10 +46,18 @@ function thead(isShoppingCart) {
 	return $thead;
 }
 
+/**
+ * @param {unknown} data
+ * @param {string} cls
+ * @param {string} [beforeText]
+ */
 function td(data, cls, beforeText) {
 	return Dom("<div>").addClass(cls).addClass("table-td").attr("before-text", beforeText).append(data);
 }
 
+/**
+ * @param {import('./src/legacy/native-dom-types.d.ts').DomCollection} $row
+ */
 function copyNameText($row) {
 	// 清除所有其他行的highlight
 	Dom('.table-row.highlighted').removeClass('highlighted');
@@ -91,6 +105,10 @@ function copyButton() {
 		});
 }
 
+/**
+ * @param {DisplayPiece | ScoringClothing} piece
+ * @param {boolean} isShoppingCart
+ */
 function row(piece, isShoppingCart) {
 	var $row = Dom("<div>").addClass("table-row");
 	var $lineTop = $row;
@@ -107,11 +125,11 @@ function row(piece, isShoppingCart) {
 	if (isShoppingCart) {
 		$nameTd = td(piece.name, (piece.version==lastVersion ? 'new' : '' ));
 	} else {
-		$nameTd = clothesNameTd(piece);
+		$nameTd = clothesNameTd(/** @type {ScoringClothing} */ (piece));
 	}
 	$lineTop.append($nameTd);
 
-	var csv = piece.toCsv();
+	var csv = /** @type {[string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string]} */ (piece.toCsv());
 
 	$lineTop.append(td(render(csv[0]), 'category'));
 	$lineTop.append(td(render(csv[1]), 'id'));
@@ -133,15 +151,18 @@ function row(piece, isShoppingCart) {
 
 	if (isShoppingCart) {
 		if (piece.id) {
-			$lineTop.append(td(removeShoppingCartButton(piece.type.type), 'icon'));
+			$lineTop.append(td(removeShoppingCartButton(/** @type {ScoringClothing} */ (piece).type.type), 'icon'));
 		}
 	} else {
-		$lineTop.append(td(shoppingCartButton(piece.type.mainType, piece.id), 'icon'));
+		$lineTop.append(td(shoppingCartButton(/** @type {ScoringClothing} */ (piece).type.mainType, /** @type {string} */ (piece.id)), 'icon'));
 	}
 	//$row.append($lineTop);
 	return $lineTop;
 }
 
+/**
+ * @param {string} rating
+ */
 function render(rating) {
 	if (rating.charAt(0) == '-') {
 		return rating.substring(1);
@@ -149,11 +170,14 @@ function render(rating) {
 	return rating;
 }
 
+/**
+ * @param {string} rating
+ */
 function getStyle(rating) {
 	if (rating.charAt(0) == '-') {
 		return 'negative empty';
 	}
-	else if(rating>0){
+	else if(/** @type {number} */ (/** @type {unknown} */ (rating))>0){
 		return '';
 	}
 	switch (rating) {
@@ -174,13 +198,17 @@ function getStyle(rating) {
 	}
 }
 
+/**
+ * @param {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartInput<ScoringClothing>} datas
+ * @param {boolean} isShoppingCart
+ */
 function list(datas, isShoppingCart) {
 	var $list = Dom("<div>").addClass("table-body");
 	if (isShoppingCart) {
 		$list.append(row(shoppingCart.totalScore, isShoppingCart));
 	}
 	for (var i in datas) {
-		var $row = row(datas[i], isShoppingCart);
+		var $row = row(/** @type {ScoringClothing} */ (/** @type {Record<string, ScoringClothing>} */ (datas)[i]), isShoppingCart);
 		// 在 shoppingCart 中為所有數據行的第一個 table-td（複製按鈕欄位）添加複製按鈕
 		// 總分行（第一行）不需要按鈕，所以從 i >= 0 開始（因為總分行已經在前面添加了）
 		if (isShoppingCart) {
@@ -194,6 +222,9 @@ function list(datas, isShoppingCart) {
 	return $list;
 }
 
+/**
+ * @param {ScoringClothing} piece
+ */
 function clothesNameTd(piece) {
 	var cls = "name table-td";
 	var deps = piece.getDeps('   ', 1);
@@ -225,6 +256,9 @@ function clothesNameTd(piece) {
 	return $clothesNameTd;
 }
 
+/**
+ * @param {ScoringClothing} piece
+ */
 function clothesNameTd_Search(piece) {
 	var cls = "name table-td search";
 	cls += piece.own ? ' own' : '';
@@ -233,7 +267,7 @@ function clothesNameTd_Search(piece) {
 	$clothesNameA.text(piece.name);
 	$clothesNameA.click(function () {
 		if (Dom('#searchResultMode').hasClass("active")){
-			shoppingCart.put(clothesSet[piece.type.mainType][piece.id]);
+			shoppingCart.put(/** @type {ScoringClothing} */ (/** @type {Record<string, ScoringClothing>} */ (/** @type {Record<string, Record<string, ScoringClothing>>} */ (clothesSet)[piece.type.mainType])[piece.id]));
 			refreshShoppingCart();
 			return false;
 		}else{
@@ -248,6 +282,11 @@ function clothesNameTd_Search(piece) {
 	return $clothesNameTd;
 }
 
+/**
+ * @param {string} txt
+ * @param {string} [cls1]
+ * @param {string} [cls2]
+ */
 function button_search(txt,cls1,cls2) {
 	var $clothesNameA = Dom("<span>").addClass("button");
 	if(cls2) $clothesNameA.addClass(cls2);
@@ -260,15 +299,22 @@ function button_search(txt,cls1,cls2) {
 	return $clothesNameTd;
 }
 
+/**
+ * @param {string} type
+ * @param {string} id
+ */
 function shoppingCartButton(type, id) {
 	var $shoppingCartButton = Dom("<button>").addClass("glyphicon glyphicon-shopping-cart btn btn-default");
 	$shoppingCartButton.click(function () {
-		shoppingCart.put(clothesSet[type][id]);
+		shoppingCart.put(/** @type {ScoringClothing} */ (/** @type {Record<string, ScoringClothing>} */ (/** @type {Record<string, Record<string, ScoringClothing>>} */ (clothesSet)[type])[id]));
 		refreshShoppingCart();
 	});
 	return $shoppingCartButton;
 }
 
+/**
+ * @param {string} detailedType
+ */
 function removeShoppingCartButton(detailedType) {
 	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
 	$removeShoppingCartButton.click(function () {
@@ -278,6 +324,23 @@ function removeShoppingCartButton(detailedType) {
 	return $removeShoppingCartButton;
 }
 
+/**
+ * @overload
+ * @param {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartInput<ScoringClothing>} data
+ * @param {string} divId
+ * @param {boolean} isShoppingCart
+ * @returns {void}
+ */
+/**
+ * @overload
+ * @param {...unknown[]} args
+ * @returns {void}
+ */
+/**
+ * @param {import('./src/domain/shopping-cart/types.d.ts').ShoppingCartInput<ScoringClothing>} data
+ * @param {string} divId
+ * @param {boolean} isShoppingCart
+ */
 function drawTable(data, divId, isShoppingCart) {
 	var $table = Dom('#' + divId);
 	$table.empty();

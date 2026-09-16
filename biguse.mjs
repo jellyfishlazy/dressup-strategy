@@ -18,8 +18,9 @@ import { shoppingCart1, shoppingCart2 } from './biguse_model.mjs';
 import { drawTable, initAutoComplete, refreshShoppingCartBiguse } from './biguse_ui.mjs';
 import { chooseAccessories, switchCate } from './biguse_nikki.mjs';
 
-const Dom = globalThis.Dom;
-const MainActions = globalThis.MainActions;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const MainActions = /** @type {typeof globalThis & { MainActions: { register(actions: Record<string, (...args: never[]) => unknown>): void } }} */ (globalThis).MainActions;
 
 configureRuntimeHooks({
   drawTable,

@@ -11,12 +11,13 @@
   "scripts": {
     "lint": "eslint eslint.config.mjs playwright.config.mjs src/domain src/legacy \"scripts/*.mjs\" tests cn-search/scripts cn-search/src tool.js main.mjs model.mjs ui.mjs nikki.mjs onekeystrategy.mjs onekeystrategy_lan.mjs clock.mjs sharewardrobe.mjs biguse.mjs biguse_model.mjs biguse_ui.mjs biguse_nikki.mjs material_model.mjs material.mjs wardrobechk.mjs --max-warnings 0",
     "typecheck": "node scripts/typecheck-baseline.mjs",
+    "typecheck:no-implicit-any": "node scripts/typecheck-no-implicit-any.mjs",
     "typecheck:raw": "tsc -p tsconfig.json --pretty false",
     "typecheck:update": "node scripts/typecheck-baseline.mjs --update",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
     "validate:data": "node scripts/validate-data.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run validate:data",
+    "check": "npm run lint && npm run typecheck && npm run typecheck:no-implicit-any && npm test && npm run validate:data",
     "build:cn-index": "npm run build:cn-index --workspace cn-search"
   },
   "devDependencies": {

@@ -9,8 +9,6 @@ test('Gate 8A adds check-only TypeScript without changing runtime file extension
   assert.equal(config.compilerOptions.allowJs, true);
   assert.equal(config.compilerOptions.checkJs, true);
   assert.equal(config.compilerOptions.noEmit, true);
-  assert.equal(config.compilerOptions.strict, false);
-  assert.equal(config.compilerOptions.noImplicitAny, false);
   for (const file of ['main', 'model', 'nikki', 'biguse', 'material', 'wardrobechk']) {
     assert.equal(existsSync(new URL(`../${file}.ts`, import.meta.url)), false, `${file}.ts should not exist in Gate 8A`);
   }

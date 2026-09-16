@@ -2,18 +2,32 @@ import { clothes, accSumScore, accCateNum } from './model.mjs';
 import { CATEGORY_HIERARCHY, criteria, uiFilter, matches } from './nikki.mjs';
 import { lanStrategy } from './onekeystrategy_lan.mjs';
 
-const Dom = globalThis.Dom;
-const category = globalThis.category;
-const skipCategory = globalThis.skipCategory;
-const repelCates = globalThis.repelCates;
-const allThemes = globalThis.allThemes;
-const clone = globalThis.clone;
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {import('./src/domain/scoring/types.d.ts').Criteria} Criteria */
+/** @typedef {Record<import('./src/domain/scoring/types.d.ts').FeatureName, number>} FeatureWeights */
+/** @typedef {ScoringClothing & { isSuit?: unknown }} StrategyClothing */
+/** @typedef {Record<string, StrategyClothing[]>} StrategyResults */
+/** @typedef {import('./src/domain/scoring/types.d.ts').ScoreBonus & { tagWhitelist?: string | string[], param?: number }} StrategyBonus */
+
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: string[] }} */ (globalThis).skipCategory;
+const repelCates = /** @type {typeof globalThis & { repelCates: string[][] }} */ (globalThis).repelCates;
+const allThemes = /** @type {typeof globalThis & { allThemes: Record<string, { weight: FeatureWeights }> }} */ (globalThis).allThemes;
+const clone = /** @type {typeof globalThis & { clone: <T>(value: T) => T }} */ (globalThis).clone;
+/**
+ * @param {string[] | null} [keywords]
+ * @param {{ name: string, score: number }[]} [suits]
+ */
 function showStrategy(keywords, suits){
-	if(uiFilter["toulan"]){
+	if((/** @type {Record<string, boolean>} */ (uiFilter))["toulan"]){
 		lanStrategy();
 		return;
 	}
+	/** @type {string[]} */
 	var suitNames = [];
+	/** @param {StrategyClothing} clothes */
 	function haveKeywords(clothes){
 		if(keywords == null){
 			return true;
@@ -24,13 +38,13 @@ function showStrategy(keywords, suits){
 		var size_ = Dom.unique(newArray).length;
 		if(_size > size_)
 			return true;
-		return (Dom.inArray(clothes["isSuit"],suitNames)>=0);
+		return (Dom.inArray(clothes["isSuit"], /** @type {unknown[]} */ (suitNames))>=0);
 	}
 
 	var $strategy = Dom("<div/>").addClass("strategy_info_div");
 
 	var theme = allThemes[Dom("#theme").val()];
-	var filters = clone(criteria);
+	var filters = clone(/** @type {Criteria} */ (criteria));
 	filters.own = true;
 	filters.missing = true;
 
@@ -43,7 +57,7 @@ function showStrategy(keywords, suits){
 	if(keywords != null){
 		var $keywords_p = p("關鍵字: "+keywords, "");
 		$strategy.append($keywords_p);
-		Dom.each(suits, function(){
+		Dom.each(/** @type {{ name: string, score: number }[]} */ (suits), function(){
 			suitNames.push(this.name + "(" + this.score + ")");
 		});
 		var $suits = p("套裝: "+suitNames.join(", "), "");
@@ -68,7 +82,7 @@ function showStrategy(keywords, suits){
 	}
 	$strategy.append($skill_my);
 
-	var $criteria_title = p("屬性-" + (uiFilter["balance"] ? "均衡權重" : "真實權重") + ": ", "criteria_title");
+	var $criteria_title = p("屬性-" + ((/** @type {Record<string, boolean>} */ (uiFilter))["balance"] ? "均衡權重" : "真實權重") + ": ", "criteria_title");
 	$strategy.append($criteria_title);
 
 	var $criteria = p(getStrCriteria(filters),"criteria");
@@ -94,45 +108,53 @@ function showStrategy(keywords, suits){
 	var $clotheslist_title = p("推薦搭配: ", "clotheslist_title");
 	$strategy.append($clotheslist_title);
 
-	for (var i in CATEGORY_HIERARCHY) {
+	var hierarchy = /** @type {Record<string, string[]>} */ (CATEGORY_HIERARCHY);
+	for (var i in hierarchy) {
+		var group = hierarchy[i];
+		if (!group) continue;
 		if(i == "襪子"){
-			filters[CATEGORY_HIERARCHY[i][0]] = true;
-			filters[CATEGORY_HIERARCHY[i][1]] = true;
+			if (group[0] !== undefined) filters[group[0]] = true;
+			if (group[1] !== undefined) filters[group[1]] = true;
 		}
 		if(i != "飾品"){
-			filters[CATEGORY_HIERARCHY[i]] = true;
+			filters[String(group)] = true;
 		}
 		else{
-			for (var j in CATEGORY_HIERARCHY[i]) {
-				filters[CATEGORY_HIERARCHY[i][j]] = true;
+			for (var subtype of group) {
+				filters[subtype] = true;
 			}
 		}
 	}
+	/** @type {StrategyResults} */
 	var result = {};
 	for (var i in clothes) {
-		if (matches(clothes[i], {}, filters)) {
-			clothes[i].calc(filters);
-			if (clothes[i].isF||Dom.inArray(clothes[i].type.type,skipCategory)>=0||clothes[i].sumScore == 0) continue;
+		var piece = /** @type {StrategyClothing | undefined} */ (clothes[i]);
+		if (!piece) continue;
+		if (matches(piece, {}, filters)) {
+			piece.calc(filters);
+			if (piece.isF||Dom.inArray(piece.type.type,skipCategory)>=0||piece.sumScore == 0) continue;
 			if (keywords != null
-				&& (clothes[i].type.type == "連身裙"
-				|| clothes[i].type.type == "上衣"
-				|| clothes[i].type.type == "下著")
+				&& (piece.type.type == "連身裙"
+				|| piece.type.type == "上衣"
+				|| piece.type.type == "下著")
 			) {
-				if (!result["手選" + clothes[i].type.type]) {
-					result["手選" + clothes[i].type.type] = [];
+				if (!result["手選" + piece.type.type]) {
+					result["手選" + piece.type.type] = [];
 				}
-				result["手選" + clothes[i].type.type].push(clothes[i]);
+				var manual = result["手選" + piece.type.type];
+				if (manual) manual.push(piece);
 			}
-			if (!haveKeywords(clothes[i]) && clothes[i].type.type != "螢光之靈") continue;
-			if (!result[clothes[i].type.type]) {
-				result[clothes[i].type.type] = [];
+			if (!haveKeywords(piece) && piece.type.type != "螢光之靈") continue;
+			if (!result[piece.type.type]) {
+				result[piece.type.type] = [];
 			}
-			result[clothes[i].type.type].push(clothes[i]);
+			var candidates = result[piece.type.type];
+			if (candidates) candidates.push(piece);
 		}
 	}
 
 	for (var r in result){
-		result[r].sort(byActScore);
+		result[r]?.sort(byActScore);
 	}
 
 	if(keywords != null){
@@ -142,6 +164,7 @@ function showStrategy(keywords, suits){
 	}
 	for (var c in category){
 		var name = category[c];
+		if (name === undefined) continue;
 		if(name.indexOf("飾品")>=0)
 			continue;
 		if (result[name]){
@@ -153,6 +176,7 @@ function showStrategy(keywords, suits){
 
 	for (var c in category){
 		var name = category[c];
+		if (name === undefined) continue;
 		if(name.indexOf("飾品")<0)
 			continue;
 		if (result[name]) {
@@ -171,10 +195,20 @@ function showStrategy(keywords, suits){
 	Dom("#StrategyInfo").empty().append($strategy);
 }
 
+/**
+ * @param {StrategyClothing} a
+ * @param {StrategyClothing} b
+ */
 function byActScore(a, b) {
-	return actScore(a) - actScore(b) == 0 ? a.id - b.id : actScore(b) - actScore(a);
+	return actScore(a) - actScore(b) == 0 ? /** @type {number} */ (/** @type {unknown} */ (a.id)) - /** @type {number} */ (/** @type {unknown} */ (b.id)) : actScore(b) - actScore(a);
 }
 
+/**
+ * @param {unknown} text
+ * @param {string} cls
+ * @param {string} [text2]
+ * @param {string} [cls2]
+ */
 function p(text, cls, text2, cls2){
 	var $p = Dom("<p/>").text(text).addClass("stgy_" + cls);
 	if(text2){
@@ -183,6 +217,12 @@ function p(text, cls, text2, cls2){
 	return $p;
 }
 
+/**
+ * @param {unknown} text
+ * @param {string} cls
+ * @param {string} [text2]
+ * @param {string} [cls2]
+ */
 function pspan(text, cls, text2, cls2){
 	var $p = Dom("<span/>").text(text).addClass("stgy_" + cls);
 	if(text2){
@@ -191,6 +231,9 @@ function pspan(text, cls, text2, cls2){
 	return $p;
 }
 
+/**
+ * @param {{ weight: FeatureWeights }} theme
+ */
 function ifCriteriaHighLow(theme){
 	var a,b,c,d,e;
 	theme.weight["simple"] >= 0 ? a = theme.weight["simple"] : a = -theme.weight["simple"];
@@ -202,61 +245,77 @@ function ifCriteriaHighLow(theme){
 	var fangcha = (avg-a)*(avg-a) + (avg-b)*(avg-b) + (avg-c)*(avg-c) + (avg-d)*(avg-d) + (avg-e)*(avg-e);
 }
 
+/**
+ * @param {Criteria} filters
+ */
 function getStrCriteria(filters){
+	var weights = /** @type {FeatureWeights} */ (filters);
 	var strCriteria = "";
-	filters["simple"] >= 0 ? strCriteria += "簡約" : strCriteria += "華麗";
+	weights["simple"] >= 0 ? strCriteria += "簡約" : strCriteria += "華麗";
 	strCriteria += " : ";
-	filters["cute"] >= 0 ? strCriteria += "可愛" : strCriteria += "成熟";
+	weights["cute"] >= 0 ? strCriteria += "可愛" : strCriteria += "成熟";
 	strCriteria += " : ";
-	filters["active"] >= 0 ? strCriteria += "活潑" : strCriteria += "優雅";
+	weights["active"] >= 0 ? strCriteria += "活潑" : strCriteria += "優雅";
 	strCriteria += " : ";
-	filters["pure"] >= 0 ? strCriteria += "清純" : strCriteria += "性感";
+	weights["pure"] >= 0 ? strCriteria += "清純" : strCriteria += "性感";
 	strCriteria += " : ";
-	filters["cool"] >= 0 ? strCriteria += "清涼" : strCriteria += "保暖";
+	weights["cool"] >= 0 ? strCriteria += "清涼" : strCriteria += "保暖";
 	strCriteria += " ≈ ";
-	filters["simple"] >= 0 ? strCriteria += filters["simple"] : strCriteria += -filters["simple"];
+	weights["simple"] >= 0 ? strCriteria += weights["simple"] : strCriteria += -weights["simple"];
 	strCriteria += " : ";
-	filters["cute"] >= 0 ? strCriteria += filters["cute"] : strCriteria += -filters["cute"];
+	weights["cute"] >= 0 ? strCriteria += weights["cute"] : strCriteria += -weights["cute"];
 	strCriteria += " : ";
-	filters["active"] >= 0 ? strCriteria += filters["active"] : strCriteria += -filters["active"];
+	weights["active"] >= 0 ? strCriteria += weights["active"] : strCriteria += -weights["active"];
 	strCriteria += " : ";
-	filters["pure"] >= 0 ? strCriteria += filters["pure"] : strCriteria += -filters["pure"];
+	weights["pure"] >= 0 ? strCriteria += weights["pure"] : strCriteria += -weights["pure"];
 	strCriteria += " : ";
-	filters["cool"] >= 0 ? strCriteria += filters["cool"] : strCriteria += -filters["cool"];
+	weights["cool"] >= 0 ? strCriteria += weights["cool"] : strCriteria += -weights["cool"];
 
 	return strCriteria;
 }
 
+/**
+ * @param {Criteria} filters
+ */
 function getstrTag(filters){
 	var str = "";
+	var bonus = /** @type {StrategyBonus[] | undefined} */ (filters.bonus);
 
-	if(filters.bonus && filters.bonus[0] && filters.bonus[0].tagWhitelist){
-		str+="本關有TAG[" + filters.bonus[0].tagWhitelist + "]，加分約" + filters.bonus[0].param;
-		if(filters.bonus[1] && filters.bonus[1].tagWhitelist){
-			str+="，TAG[" + filters.bonus[1].tagWhitelist + "], 加分約" + filters.bonus[1].param;
+	if(bonus && bonus[0] && bonus[0].tagWhitelist){
+		str+="本關有TAG[" + bonus[0].tagWhitelist + "]，加分約" + bonus[0].param;
+		if(bonus[1] && bonus[1].tagWhitelist){
+			str+="，TAG[" + bonus[1].tagWhitelist + "], 加分約" + bonus[1].param;
 		}
 	}
 	return str;
 }
 
+/**
+ * @param {StrategyClothing[] | null | undefined} result
+ */
 function getstrClothes(result){
 	if(result == null || result.length == 0)
 		return " : 無";
 	var str = " :";
 	var max = 5;
 	for(var i in result){
+		var piece = result[i];
+		if (!piece) continue;
 		if(max > 0){
-			str += " " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + ">";
+			str += " " + piece.name + "「" + actScore(piece) + " " + removeNum(piece.source) + "」" + ">";
 			max--;
 		}
-		else if(result[i].source.indexOf("少") >=0 || result[i].source.indexOf("公") >= 0 || result[i].source.indexOf("店") >= 0 || result[i].source.indexOf("送") >= 0 ){
-			str += "> " + result[i].name + "「" + actScore(result[i]) + " " + removeNum(result[i].source) + "」" + " ";
+		else if(piece.source.indexOf("少") >=0 || piece.source.indexOf("公") >= 0 || piece.source.indexOf("店") >= 0 || piece.source.indexOf("送") >= 0 ){
+			str += "> " + piece.name + "「" + actScore(piece) + " " + removeNum(piece.source) + "」" + " ";
 			break;
 		}
 	}
 	 return str.slice(0, str.length-1);
 }
 
+/**
+ * @param {string} str
+ */
 function removeNum(str){
 	if (str.indexOf("定")>=0 || str.indexOf("進")>=0) str = str.replace(/[0-9]/g,"");
 	str = str.replace(/聯盟·.*/, "聯盟");
@@ -276,25 +335,36 @@ function removeNum(str){
 	return str;
 }
 
+/**
+ * @param {ScoringClothing} obj
+ */
 function actScore(obj){
-	return (obj.type.mainType=='飾品') ? (uiFilter["acc9"] ? Math.round(accSumScore(obj,9)) : Math.round(accSumScore(obj,accCateNum))) : obj.sumScore;
+	return (obj.type.mainType=='飾品') ? ((/** @type {Record<string, boolean>} */ (uiFilter))["acc9"] ? Math.round(accSumScore(obj,9)) : Math.round(accSumScore(obj,accCateNum))) : /** @type {number} */ (obj.sumScore);
 }
 
+/**
+ * @param {string} c
+ * @param {StrategyResults} result
+ */
 function isGrey(c,result){
 	for (var i in repelCates){
+		var repelled = repelCates[i];
+		if (!repelled) continue;
 		var sumFirst=0;
 		var sumOthers=0;
-		if(Dom.inArray(c, repelCates[i])>=0){
-			for (var j in repelCates[i]){
+		if(Dom.inArray(c, repelled)>=0){
+			for (var j in repelled){
+				var subtype = repelled[j];
+				var first = subtype === undefined ? undefined : result[subtype]?.[0];
 				if (Number(j)>0) {
-					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumOthers+=actScore(result[repelCates[i][j]][0]);
+					if (first) sumOthers+=actScore(first);
 				}else {
-					if (result[repelCates[i][j]]&&result[repelCates[i][j]][0]) sumFirst+=actScore(result[repelCates[i][j]][0]);
+					if (first) sumFirst+=actScore(first);
 				}
 			}
-			if(Dom.inArray(c, repelCates[i])==0){
+			if(Dom.inArray(c, repelled)==0){
 				if (sumFirst<sumOthers) return true;
-			}else if(Dom.inArray(c, repelCates[i])>0){
+			}else if(Dom.inArray(c, repelled)>0){
 				if (sumOthers<sumFirst) return true;
 			}
 		}
@@ -308,7 +378,7 @@ function initOnekey(){
 		showStrategy();
 		if(Dom("#onekey").text().indexOf('收起')>=0){
 			Dom("#StrategyInfo").hide();
-			if(uiFilter["toulan"]) Dom("#onekey").text("偷懶攻略");
+			if((/** @type {Record<string, boolean>} */ (uiFilter))["toulan"]) Dom("#onekey").text("偷懶攻略");
 			else Dom("#onekey").text("一鍵攻略");
 		}
 		else {

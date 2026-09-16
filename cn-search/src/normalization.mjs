@@ -1,7 +1,11 @@
 import { WARDROBE_FIELD_INDEX as FIELD } from '../../src/domain/wardrobe/schema.mjs';
 
+/** @typedef {import('../../src/domain/wardrobe/types.d.ts').WardrobeRow} WardrobeRow */
+/** @typedef {{ s2tw: (value: string) => string, tw2cn: (value: string) => string }} LexiconConverters */
+
 const SPLIT_SEG = /(\/|,|，)/;
 
+/** @param {any} value */
 export function normalizeHanHyphenToDot(value) {
   if (!value) return value;
   let out = String(value);
@@ -14,6 +18,7 @@ export function normalizeHanHyphenToDot(value) {
   return out;
 }
 
+/** @param {any} value */
 export function unifyLimitedLoginWording(value) {
   return String(value)
     .replace(/限时登入/g, '限时登录')
@@ -22,19 +27,23 @@ export function unifyLimitedLoginWording(value) {
     .replace(/限時登陸/g, '限时登录');
 }
 
+/** @param {any} value */
 export function canonicalLexAnchor(value) {
   if (!value) return value;
   return unifyLimitedLoginWording(normalizeHanHyphenToDot(String(value)));
 }
 
+/** @param {any} value */
 export function splitPreserveSeg(value) {
   if (!value) return [];
   return String(value).split(SPLIT_SEG);
 }
 
+/** @param {LexiconConverters} converters */
 export function createLexicon({ s2tw, tw2cn }) {
   let lexByKey = Object.create(null);
 
+  /** @param {unknown} twStr */
   function registerEntry(twStr) {
     if (!twStr || typeof twStr !== 'string') return;
     const text = twStr.trim();
@@ -44,6 +53,7 @@ export function createLexicon({ s2tw, tw2cn }) {
     if (!prev || (prev !== text && text.length > prev.length)) lexByKey[key] = text;
   }
 
+  /** @param {unknown} value */
   function registerFieldPieces(value) {
     if (!value || typeof value !== 'string') return;
     registerEntry(value);
@@ -53,6 +63,7 @@ export function createLexicon({ s2tw, tw2cn }) {
     }
   }
 
+  /** @param {WardrobeRow[] | null | undefined} wardrobe */
   function build(wardrobe) {
     lexByKey = Object.create(null);
     if (!Array.isArray(wardrobe)) return;
@@ -64,6 +75,7 @@ export function createLexicon({ s2tw, tw2cn }) {
     }
   }
 
+  /** @param {any} cnSimpStr */
   function alignWholeField(cnSimpStr) {
     if (!cnSimpStr) return '';
     const raw = String(cnSimpStr);
@@ -77,6 +89,7 @@ export function createLexicon({ s2tw, tw2cn }) {
     return s2tw(canon);
   }
 
+  /** @param {any} cnStr */
   function alignCompoundField(cnStr) {
     if (!cnStr) return '';
     const raw = String(cnStr);

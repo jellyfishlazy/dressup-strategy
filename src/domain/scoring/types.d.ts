@@ -19,7 +19,12 @@ export interface Criteria extends Partial<Record<FeatureName, number>> {
   highscore2?: FeatureName;
   balance?: boolean;
   bonus?: ScoreBonus[];
-  [key: string]: unknown;
+  [key: string]: any;
+}
+
+export interface ScoringGlobalState {
+  float: any;
+  additionalBonus: ScoreBonus[] | null;
 }
 
 export type BonusFilterResult = [number, RawScoreMap];

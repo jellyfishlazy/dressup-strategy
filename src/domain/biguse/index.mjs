@@ -42,10 +42,14 @@ export function pieceIdentity(piece) {
 export function imageLongId(piece) {
   const { type, id } = pieceIdentity(piece);
   if (!type || !id) return '';
-  const prefix = {
+  const category = type.split('-')[0];
+  if (!category) return '';
+  /** @type {Record<string, string>} */
+  const imagePrefixes = {
     '髮型': '10', '連身裙': '20', '外套': '30', '上衣': '40', '下著': '50',
     '襪子': '60', '鞋子': '70', '飾品': '80', '妝容': '90', '螢光之靈': '100',
-  }[type.split('-')[0]] || '';
+  };
+  const prefix = imagePrefixes[category] || '';
   if (!prefix) return '';
   return (id.length > 3 ? prefix.replace('0', '') : prefix) + id;
 }

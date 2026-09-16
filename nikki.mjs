@@ -3,6 +3,7 @@ import { drawTable, button_search, clothesNameTd_Search } from './ui.mjs';
 import { initOnekey } from './onekeystrategy.mjs';
 import { shareWardrobe } from './sharewardrobe.mjs';
 
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
 const Dom = globalThis.Dom;
 const category = globalThis.category;
 const skipCategory = globalThis.skipCategory;
@@ -86,8 +87,8 @@ function toggleInventory(type, id, _triggerElement) {
 var criteria = {};
 function onChangeCriteria() {
 	criteria = {};
-	for (var i in FEATURES) {
-		var f = FEATURES[i];
+	for (const f of FEATURES) {
+
 		var weight = parseFloat(Dom('#' + f + "Weight").val());
 		if (!weight) {
 			weight = 1;
@@ -115,18 +116,22 @@ function onChangeCriteria() {
 	refreshTable();
 	if(uiFilter["highscore"]){
 		var totalscores = shoppingCart.totalScore.toCsv();
+		/** @type {[string, number][]} */
 		var rank = [];
-		rank.push(["simplerank" , totalscores[3] > totalscores[4] ? totalscores[3] : totalscores[4]]);
-		rank.push(["cuterank" , totalscores[5] > totalscores[6] ? totalscores[5] : totalscores[6]]);
-		rank.push(["activerank" , totalscores[7] > totalscores[8] ? totalscores[7] : totalscores[8]]);
-		rank.push(["purerank" , totalscores[9] > totalscores[10] ? totalscores[9] : totalscores[10]]);
-		rank.push(["coolrank" , totalscores[11] > totalscores[12] ? totalscores[11] : totalscores[12]]);
+		const scoreAt = index => Number(totalscores[index] ?? 0);
+		rank.push(["simplerank", Math.max(scoreAt(3), scoreAt(4))]);
+		rank.push(["cuterank", Math.max(scoreAt(5), scoreAt(6))]);
+		rank.push(["activerank", Math.max(scoreAt(7), scoreAt(8))]);
+		rank.push(["purerank", Math.max(scoreAt(9), scoreAt(10))]);
+		rank.push(["coolrank", Math.max(scoreAt(11), scoreAt(12))]);
 		rank.sort(function(a,b){
 			return b[1] - a[1];
 		});
 		var numstr = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ"];
-		for(var r  in rank){
-			Dom("#" + rank[r][0]).text(numstr[r]);
+		for (let rankIndex = 0; rankIndex < rank.length; rankIndex++) {
+			const rankEntry = rank[rankIndex];
+			if (!rankEntry) continue;
+			Dom("#" + rankEntry[0]).text(numstr[rankIndex] ?? '');
 		}
 	}
 }
@@ -187,7 +192,8 @@ function onChangeUiFilter() {
 	}
 
 	if (currentCategory && currentCategory != 'switchall') {
-		if (CATEGORY_HIERARCHY[currentCategory].length > 1) {
+		var activeCategories = CATEGORY_HIERARCHY[currentCategory];
+		if (activeCategories && activeCategories.length > 1) {
 			Dom('input[name=category-' + currentCategory + ']:checked').each(function () {
 				uiFilter[Dom(this).val()] = true;
 			});
@@ -391,12 +397,14 @@ function filterTopAccessories(filters) {
 function filterTopClothes(filters) {
 	filters['own'] = true;
 	for (var i in CATEGORY_HIERARCHY) {
+		var categoryGroup = CATEGORY_HIERARCHY[i];
+		if (!categoryGroup) continue;
 		if (i == "襪子") {
-			filters[CATEGORY_HIERARCHY[i][0]] = true;
-			filters[CATEGORY_HIERARCHY[i][1]] = true;
+			if (categoryGroup[0]) filters[categoryGroup[0]] = true;
+			if (categoryGroup[1]) filters[categoryGroup[1]] = true;
 		}
 		if (i != "飾品") {
-			filters[CATEGORY_HIERARCHY[i]] = true;
+			filters[String(categoryGroup)] = true;
 		}
 	}
 	for (var i in skipCategory) {
@@ -562,9 +570,9 @@ function setFilters(level) {
 	currentLevel = level;
 	global.additionalBonus = currentLevel.additionalBonus;
 	var weights = level.weight;
-	for (var i in FEATURES) {
-		var f = FEATURES[i];
-		var weight = weights[f];
+	for (const f of FEATURES) {
+
+		var weight = weights[f] ?? 0;
 		if (uiFilter["balance"]) {
 			if (weight > 0) {
 				weight = 1;
@@ -611,10 +619,11 @@ function drawTheme() {
 	def2.text = '篩選';
 	def2.value = 'custom';
 	dropdown2.add(def2);
-	for (var index in themeFilter) {
+	for (const filterEntry of themeFilter) {
 		var option = document.createElement('option');
-		option.text = themeFilter[index][0];
-		option.value = themeFilter[index][1];
+		if (!filterEntry) continue;
+		option.text = filterEntry[0] ?? '';
+		option.value = filterEntry[1] ?? '';
 		dropdown2.add(option);
 	}
 }
@@ -665,11 +674,12 @@ function updateSize(mine) {
 	Dom("#myClothes").val(mine.serialize());
 	var subcount = {};
 	for (var c in mine.mine) {
-		var type = c.split('-')[0];
+		var type = c.split('-')[0] ?? c;
 		if (!subcount[type]) {
 			subcount[type] = 0;
 		}
-		subcount[type] += mine.mine[type].length;
+		var ownedIds = mine.mine[c];
+		if (ownedIds) subcount[type] = (subcount[type] || 0) + ownedIds.length;
 	}
 	for (var c in subcount) {
 		Dom("#" + c + ">a span").text(subcount[c]);
@@ -680,13 +690,15 @@ function doImport() {
 	var dropdown = Dom("#importCate")[0];
 	var type = dropdown.options[dropdown.selectedIndex].value;
 	var raw = Dom("#importData").val();
-	var data = raw.match(/\d+/g);
+	var data = raw.match(/\d+/g) || [];
 	var mapping = {}
-	for (var i in data) {
-		while (data[i].length < 3) {
-			data[i] = "0" + data[i];
+	for (let dataIndex = 0; dataIndex < data.length; dataIndex++) {
+		let value = data[dataIndex] ?? '';
+		while (value.length < 3) {
+			value = "0" + value;
 		}
-		mapping[data[i]] = true;
+		data[dataIndex] = value;
+		mapping[value] = true;
 	}
 	var updating = [];
 	for (var i in clothes) {
@@ -701,8 +713,9 @@ function doImport() {
 	if (confirm("你將要在>>" + type + "<<中導入：\n" + names)) {
 		var myClothes = MyClothes();
 		myClothes.filter(clothes);
-		if (myClothes.mine[type]) {
-			myClothes.mine[type] = myClothes.mine[type].concat(data);
+		var existingIds = myClothes.mine[type];
+		if (existingIds) {
+			myClothes.mine[type] = existingIds.concat(data);
 		} else {
 			myClothes.mine[type] = data;
 		}
@@ -775,8 +788,8 @@ function searchResult(){
 function autogenLimit(){
 	//onChangeCriteria, calc normal weight
 	criteria = {};
-	for (var i in FEATURES) {
-		var f = FEATURES[i];
+	for (const f of FEATURES) {
+
 		var weight = parseFloat(Dom('#' + f + "Weight").val());
 		if (!weight) {
 			weight = 1;
@@ -808,8 +821,8 @@ function autogenLimit(){
 			if (FEATURES[b]==FEATURES[a]) continue;
 			//onChangeCriteria, calc highscore
 			criteria = {};
-			for (var i in FEATURES) {
-				var f = FEATURES[i];
+			for (const f of FEATURES) {
+
 				var weight = parseFloat(Dom('#' + f + "Weight").val());
 				if (!weight) {
 					weight = 1;
@@ -935,6 +948,7 @@ function initEvent() {
 		 return false;
 	});
 	Dom("#add_all").click(function(){
+		/** @type {Record<string, {idlist: string[], namelist: string[]}>} */
 		var clotheslist = {};
 		var clothesDivList = Dom("#clothes .table-body .table-row");
 		for(var i = 0 ; i < clothesDivList.length; i++){
@@ -944,25 +958,29 @@ function initEvent() {
 			}
 			var id  = $row.find(".id:first").text();
 			var name  = $row.find(".name:first").text();
-			var type = $row.find(".category:first").text().split("-")[0];
-			if (clotheslist[type]) {
-				clotheslist[type]["idlist"].push(id);
-				clotheslist[type]["namelist"].push(name);
+			var type = $row.find(".category:first").text().split("-")[0] ?? '';
+			if (!type) continue;
+			var clothesEntry = clotheslist[type];
+			if (clothesEntry) {
+				clothesEntry.idlist.push(id);
+				clothesEntry.namelist.push(name);
 			} else {
-				clotheslist[type] = {};
-				clotheslist[type]["idlist"] = [id];
-				clotheslist[type]["namelist"] = [name];
+				clotheslist[type] = { idlist: [id], namelist: [name] };
+
+
 			}
 		}
-		if(clotheslist.length <= 0){
+		if(Object.keys(clotheslist).length === 0){
 			alert("沒有需要添加的部件");
 			return;
 		}
 		var confirmStr = "";
 		for(var typeName in clotheslist){
-			var names = clotheslist[typeName]["namelist"].join(",");
+			var clothesEntry = clotheslist[typeName];
+			if (!clothesEntry) continue;
+			var names = clothesEntry.namelist.join(",");
 			if(names.length > 50){
-				names = names.substring(0,50) + "...等" + clotheslist[typeName]["namelist"].length + "件衣服";
+				names = names.substring(0,50) + "...等" + clothesEntry.namelist.length + "件衣服";
 			}
 			confirmStr += "你將要在>>" + typeName + "<<中導入：\n" + names + "\n";
 		}
@@ -970,10 +988,13 @@ function initEvent() {
 			var myClothes = MyClothes();
 			myClothes.filter(clothes);
 			for(var typeName in clotheslist){
-				if (myClothes.mine[typeName]) {
-					myClothes.mine[typeName] = myClothes.mine[typeName].concat(clotheslist[typeName]["idlist"]);
+			var clothesEntry = clotheslist[typeName];
+			if (!clothesEntry) continue;
+					var existingIds = myClothes.mine[typeName];
+				if (existingIds) {
+					myClothes.mine[typeName] = existingIds.concat(clothesEntry.idlist);
 				} else {
-					myClothes.mine[typeName] = clotheslist[typeName]["idlist"];
+					myClothes.mine[typeName] = clothesEntry.idlist;
 				}
 			}
 			myClothes.update(clothes);
@@ -1126,12 +1147,13 @@ function loadFileAsText()
     var textarea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById("myClothes"));
     var fileToLoad = fileInput?.files?.[0];
     if (!fileToLoad || !textarea) return;
+    const targetTextarea = textarea;
 
     var fileReader = new FileReader();
     fileReader.onload = function(fileLoadedEvent)
     {
         var textFromFileLoaded = String(fileLoadedEvent.target?.result ?? '');
-        textarea.value = textFromFileLoaded;
+        targetTextarea.value = textFromFileLoaded;
     };
     fileReader.readAsText(fileToLoad, "UTF-8");
 }

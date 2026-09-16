@@ -2,22 +2,32 @@ import { clothes, loadFromStorage, accSumScore, accCateNum } from './model.mjs';
 import { CATEGORY_HIERARCHY, criteria, uiFilter, byScore, matches } from './nikki.mjs';
 import { p, pspan, getStrCriteria, getstrTag } from './onekeystrategy.mjs';
 
-const Dom = globalThis.Dom;
-const category = globalThis.category;
-const skipCategory = globalThis.skipCategory;
-const repelCates = globalThis.repelCates;
-const Flist = globalThis.Flist;
-const allThemes = globalThis.allThemes;
-const clone = globalThis.clone;
+/** @typedef {Record<string, any>} LegacyDict */
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const category = /** @type {typeof globalThis & { category: any }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: any }} */ (globalThis).skipCategory;
+const repelCates = /** @type {typeof globalThis & { repelCates: any }} */ (globalThis).repelCates;
+const Flist = /** @type {typeof globalThis & { Flist: LegacyDict }} */ (globalThis).Flist;
+const allThemes = /** @type {typeof globalThis & { allThemes: LegacyDict }} */ (globalThis).allThemes;
+const clone = /** @type {typeof globalThis & { clone: (value: any) => any }} */ (globalThis).clone;
 var limitRet = 15; //maximum return when search by keywords
 var lanSteps = 5;
+/** @type {any[]} */
 var lackClothes = []; //array of longid
+/** @type {LegacyDict} */
 var allScores = {};
+/** @type {LegacyDict} */
 var suitSet = {};
+/** @type {LegacyDict} */
 var wordSet = {};
+/** @type {LegacyDict} */
 var tagSet = {};
+/** @type {LegacyDict} */
 var lazyKeywords = {};
+/** @type {number[]} */
 var lazySetScore = [];
+/** @type {number | undefined} */
 var lanOwn;
 
 function lanStrategy_init(){
@@ -149,7 +159,7 @@ function lanStrategy_init(){
 			if (typeName=='襪子-襪套') tagSet[i]['typeCount'][typeName] += tagSet[i]['typeCount']['襪子-襪子'];
 			else if (typeName=='襪子-襪子') tagSet[i]['typeCount'][typeName] += tagSet[i]['typeCount']['襪子-襪套'];
 			if (tagSet[i]['typeCount'][typeName] > limitRet){
-				tagSet[tagCate]['count'] -= tagSet[i]['typeCount'][typeName];
+				tagSet[i]['count'] -= tagSet[i]['typeCount'][typeName];
 				delete tagSet[i]['clothes'][typeName];
 				delete tagSet[i]['acc'][typeName];
 			}
@@ -171,14 +181,16 @@ function lanStrategy(){
 			allScores[clothes[i].type.type].push(clothes[i]);
 		//}
 	}
-	for (var i in allScores) allScores[i].sort(function(a,b){return isAccSumScore(b) - isAccSumScore(a);});
+	for (var i in allScores) allScores[i].sort(function(/** @type {any} */ a, /** @type {any} */ b){return isAccSumScore(b) - isAccSumScore(a);});
 
 	lanStrategy_init();
 	lanStrategy_recalc(1);
 }
 
+/** @param {number} n */
 function lanStrategy_recalc(n){
 	var step = n - 1;
+	/** @type {LegacyDict} */
 	var lazySet = {};
 	lazySetScore.splice(step,9999);
 	var ii = 0;
@@ -189,9 +201,10 @@ function lanStrategy_recalc(n){
 	}
 	if (step==0){
 		var evalSuitSet = evalSets(suitSet);
+		/** @type {any[]} */
 		var suitArray = [];
 		for (var i in evalSuitSet) if (!evalSuitSet[i]['missing']&&Dom.inArray(i,lackClothes)<0) suitArray.push(evalSuitSet[i]);
-		suitArray.sort(function(a,b){return  b["score"] - a["score"];});
+		suitArray.sort(function(/** @type {any} */ a, /** @type {any} */ b){return  b["score"] - a["score"];});
 		if (suitArray.length){//put suitArray[0] to lazySet
 			lazyKeywords[suitArray[0]['name']] = {};
 			for (var i in suitArray[0]['result']){
@@ -206,12 +219,13 @@ function lanStrategy_recalc(n){
 	}
 	for (var step=step; step<lanSteps; step++){
 		//loop to search keywords with value add, put into lazySet
+		/** @type {any[]} */
 		var wordArray = [];
 		var evalWordSet = evalSets(wordSet,lazySet);
 		for (var i in evalWordSet) wordArray.push(evalWordSet[i]);
 		var evalTagSet = evalSets(tagSet,lazySet);
 		for (var i in evalTagSet) wordArray.push(evalTagSet[i]);
-		wordArray.sort(function(a,b){return  b["score"]==a["score"] ? a["count"]-b["count"] : b["score"]-a["score"];});
+		wordArray.sort(function(/** @type {any} */ a, /** @type {any} */ b){return  b["score"]==a["score"] ? a["count"]-b["count"] : b["score"]-a["score"];});
 		if (wordArray.length){//put wordArray[0] to lazySet
 			lazyKeywords[wordArray[0]['name']] = {};
 			for (var i in wordArray[0]['result']){
@@ -233,11 +247,17 @@ function lanStrategy_recalc(n){
 	lanStrategy_print(lazySet);
 }
 
+/** @param {LegacyDict} lazySet */
 function lanStrategy_print(lazySet){
 	var themeName = Dom("#theme").val();
 
 	//check whether missing whitelist category at last
-	var whiteType = []; var whiteExtra = {}; var whiteTodo = [];
+	/** @type {any[]} */
+	var whiteType = [];
+	/** @type {LegacyDict} */
+	var whiteExtra = {};
+	/** @type {any[]} */
+	var whiteTodo = [];
 	if (Flist&&Flist[themeName]&&Flist[themeName]["type"]){
 		whiteType = Flist[themeName]["type"];
 		for (var i in whiteType){
@@ -285,6 +305,7 @@ function lanStrategy_print(lazySet){
 	}*/
 
 	//if other parts in lazySet isF, alert to take down
+	/** @type {any[]} */
 	var takeDown = [];
 	for (var i in lazySet){
 		if (Dom.inArray(i,whiteType)>=0) continue;
@@ -318,7 +339,7 @@ function lanStrategy_print(lazySet){
 	}
 	$strategy.append($skill_my);
 
-	var $criteria_title = p("屬性-" + (uiFilter["balance"] ? "均衡權重" : "真實權重") + ": ", "criteria_title");
+	var $criteria_title = p("屬性-" + (/** @type {LegacyDict} */ (uiFilter)["balance"] ? "均衡權重" : "真實權重") + ": ", "criteria_title");
 	$strategy.append($criteria_title);
 
 	var $criteria = p(getStrCriteria(criteria),"criteria");
@@ -412,6 +433,7 @@ function lanStrategy_print(lazySet){
 	if (!lanOwn) initOnekey_lan();
 }
 
+/** @param {LegacyDict} obj */
 function getLazySetScore(obj){
 	var lazySetAccNum = 0; //see how much accesories it has
 	for (var i in obj){
@@ -424,6 +446,7 @@ function getLazySetScore(obj){
 	return Math.round(sumScore);
 }
 
+/** @param {LegacyDict} resultObj @param {LegacyDict} [existObj] */
 function evalSets(resultObj,existObj){
 	if (existObj) {
 		for (var i in existObj){
@@ -485,7 +508,9 @@ function evalSets(resultObj,existObj){
 		//remove repelCates and calc score
 		resultObj[str]['score'] = 0;
 		for (var j in repelCates){
+			/** @type {[number, number]} */
 			var sumFirst = [0,0]; //count, score
+			/** @type {[number, number]} */
 			var sumOthers = [0,0];
 			for (var k in repelCates[j]){
 				if (resultObj[str]['typeScore'][repelCates[j][k]]){
@@ -513,28 +538,34 @@ function evalSets(resultObj,existObj){
 	return resultObj;
 }
 
+/** @param {any} c */
 function listCateName(c){
 	return '[' + c.type.type + ']' + c.name;
 }
 
+/** @param {any} e @param {any[]} arr */
 function removeFromArray(e,arr){
 	var index = Dom.inArray(e,arr);
 	if (index > -1) arr.splice(index, 1);
 	return arr;
 }
 
+/** @param {any} c */
 function isAcc(c){
 	return c.type.mainType == "飾品";
 }
 
+/** @param {string} type */
 function isAcc_c(type){
 	return type.indexOf("飾品")==0;
 }
 
+/** @param {any} c @param {number} [num] */
 function isAccSumScore(c,num){
 	return c.isF ? 0 : (isAcc(c) ? Math.round(accSumScore(c,num?num:accCateNum)) : c.sumScore);
 }
 
+/** @param {any} c @param {number | undefined} lanOwn */
 function lanOwnChk(c, lanOwn) {
 	if (lanOwn) return c.own;
 	else if (Dom.inArray(c.longid, lackClothes)>=0) return false;
@@ -563,6 +594,7 @@ function min_limitRet(){
 	else Dom('#limitRet').text(limitRet);
 }
 
+/** @param {string} kw */
 function cntKeywordsReturns(kw){
 	if (kw.indexOf('套裝·')>=0) return 0;
 	else if (kw.indexOf('+')>0) {
@@ -575,6 +607,7 @@ function cntKeywordsReturns(kw){
 	else return wordSet[kw]['count'];
 }
 
+/** @param {unknown} text @param {string} cls @param {string} id */
 function pspan_id(text, cls, id){
 	var $p = Dom("<span/>").text(text).addClass("stgy_" + cls).attr('id',id);
 	return $p;

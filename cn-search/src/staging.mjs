@@ -1,5 +1,10 @@
 import { RATING_FIELDS, WARDROBE_FIELD_COUNT, WARDROBE_FIELD_INDEX as FIELD } from '../../src/domain/wardrobe/schema.mjs';
 
+/** @typedef {{ s2tw: (value: string) => string, alignCompoundField: (value: string) => string, alignWholeField: (value: string) => string }} StagingDeps */
+/** @typedef {{ hasTw: boolean, key: string, type: string, tags: any, cnFullRow: any[] | null }} StagingSource */
+/** @typedef {{ key: string, row: any[] }} StagingEntry */
+
+/** @param {StagingSource} item @param {Record<string, any[]>} fullTwByKey @param {StagingDeps} deps */
 export function buildStagingRow(item, fullTwByKey, deps) {
   const { s2tw, alignCompoundField, alignWholeField } = deps;
   if (item.hasTw) {
@@ -25,6 +30,7 @@ export function buildStagingRow(item, fullTwByKey, deps) {
   return row;
 }
 
+/** @param {any[]} row */
 export function rowSummary(row) {
   return {
     name: row[FIELD.name] || '', type: row[FIELD.type] || '', id: row[FIELD.id] || '',
@@ -32,6 +38,7 @@ export function rowSummary(row) {
   };
 }
 
+/** @param {any[]} row */
 export function rowToWardrobeLine(row) {
   const parts = [];
   for (let i = 0; i < WARDROBE_FIELD_COUNT; i++) {
@@ -46,6 +53,7 @@ export function rowToWardrobeLine(row) {
   return '  [' + parts.join(',') + '],';
 }
 
+/** @param {StagingEntry[]} staging @param {Date} [now] */
 export function buildStagingSnippet(staging, now = new Date()) {
   const header =
     '// data/wardrobe.js 片段（' + staging.length + ' 筆）\n' +
@@ -55,17 +63,19 @@ export function buildStagingSnippet(staging, now = new Date()) {
 }
 
 export function createStagingStore() {
+  /** @type {StagingEntry[]} */
   let entries = [];
+  /** @type {Record<string, true>} */
   let keys = Object.create(null);
   return {
     list: () => entries,
-    has: (key) => !!keys[key],
-    add(key, row) {
+    has: (/** @type {string} */ key) => !!keys[key],
+    add(/** @type {string} */ key, /** @type {any[] | null | undefined} */ row) {
       if (keys[key]) return { ok: false, reason: 'dup' };
       if (!row) return { ok: false, reason: 'no-fullrow' };
       entries.push({ key, row }); keys[key] = true; return { ok: true };
     },
-    remove(key) {
+    remove(/** @type {string} */ key) {
       if (!keys[key]) return false;
       entries = entries.filter((entry) => entry.key !== key);
       delete keys[key]; return true;

@@ -1,14 +1,16 @@
 import { MyClothes, clothes } from './model.mjs';
 
-const Dom = globalThis.Dom;
-const category = globalThis.category;
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
+const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
 function shareWardrobe() {
 	var myClothes = MyClothes();
 	myClothes.filter(clothes);
 	var mine = myClothes.mine;
-	var result = [];
-	for (var t in category) {
-		var type = category[t];
+	/** @type {Record<string, string>} */
+	var result = {};
+	for (const categoryType of category) {
+		var type = categoryType;
 		if (type.indexOf('飾品') >= 0) {
 			if (type == '飾品-頭飾')
 				type = "飾品";
@@ -25,13 +27,14 @@ function shareWardrobe() {
 			result[type] = "1";
 			continue;
 		}
-		var size = Number(mine[type][mine[type].length - 1]);
+		var ids = mine[type] || [];
+		var size = Number(ids[ids.length - 1] ?? 0);
 		var array = [1];
 		for (var i = 0; i < size; i++) {
 			array.push(0);
 		}
-		for (var j in mine[type]) {
-			var id = Number(mine[type][j]);
+		for (const ownedId of ids) {
+			var id = Number(ownedId);
 			array[id] = 1;
 		}
 		var str = array.join('');
@@ -45,6 +48,9 @@ function shareWardrobe() {
 	Dom("#share-link").html("<a href=" + strUrl + ">" + strUrl + "</a>");
 }
 
+/**
+ * @param {string} source
+ */
 function typeToggleChar(source){
 	if(source  == '髮型')
 		return 'a';
@@ -95,7 +101,7 @@ function getWardrobe() {
 	for (var t in request) {
 		txt += typeToggleChar(t);
 		txt += ":";
-		var str = unzipNum(request[t]);
+		var str = unzipNum(/** @type {string} */ (request[t]));
 		str = str.substr(1,str.length);
 		for (let index = 0; index < str.length; index++) {
 			if (str.charAt(index) == "1") {
@@ -116,17 +122,21 @@ function getWardrobe() {
 
 function GetRequest() {
 	var url = location.search; //獲取url中"?"符後的字串
-	var theRequest = new Object();
+	var theRequest = /** @type {Record<string, string>} */ (new Object());
 	if (url.indexOf("?") != -1) {
 		var str = url.substr(1);
 		var strs = str.split("&");
-		for (var i = 0; i < strs.length; i++) {
-			theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+		for (const entry of strs) {
+			const [key = '', value = ''] = entry.split('=');
+			theRequest[key] = unescape(value);
 		}
 	}
 	return theRequest;
 }
 
+/**
+ * @param {string} inputNum
+ */
 function zipChunk(inputNum){
 	var numeric = parseInt(inputNum, 2);
 	if(numeric > 61){
@@ -143,6 +153,9 @@ function zipChunk(inputNum){
 	return String(numeric);
 }
 
+/**
+ * @param {string} num
+ */
 function zipNum(num){
 	var result = "";
 	for(var i = num.length; i>0; i-=6){
@@ -156,6 +169,9 @@ function zipNum(num){
     return result;
 }
 
+/**
+ * @param {string} num
+ */
 function unzipNum(num){
 	var result = "";
 	for(var i = num.length; i>=0; i--){
@@ -164,6 +180,9 @@ function unzipNum(num){
     return result;
 }
 
+/**
+ * @param {string} inputNum
+ */
 function unzip(inputNum){
 	if(inputNum == "(")
 		return "111110";
@@ -172,14 +191,18 @@ function unzip(inputNum){
 	if(/^[0-9]$/.test(inputNum)){
 		return pad(Number(inputNum).toString(2), 6);
 	}
-	if(inputNum.charCodeAt() <= 'Z'.charCodeAt(0)){
-		return pad((inputNum.charCodeAt() - 'A'.charCodeAt(0) + 36).toString(2), 6);
+	if(/** @type {{ charCodeAt(index?: number): number }} */ (inputNum).charCodeAt() <= 'Z'.charCodeAt(0)){
+		return pad((/** @type {{ charCodeAt(index?: number): number }} */ (inputNum).charCodeAt() - 'A'.charCodeAt(0) + 36).toString(2), 6);
 	}
-	if(inputNum.charCodeAt() <= 'z'.charCodeAt(0)){
-		return pad((inputNum.charCodeAt() - 'a'.charCodeAt(0) + 10).toString(2), 6);
+	if(/** @type {{ charCodeAt(index?: number): number }} */ (inputNum).charCodeAt() <= 'z'.charCodeAt(0)){
+		return pad((/** @type {{ charCodeAt(index?: number): number }} */ (inputNum).charCodeAt() - 'a'.charCodeAt(0) + 10).toString(2), 6);
 	}
 }
 
+/**
+ * @param {string} num
+ * @param {number} n
+ */
 function pad(num, n) {
 	var len = num.toString().length;
 	while(len < n) {

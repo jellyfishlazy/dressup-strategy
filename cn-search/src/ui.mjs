@@ -1,5 +1,9 @@
 import { rowSummary, rowToWardrobeLine } from './staging.mjs';
 
+/** @typedef {{ hasTw: boolean, cnFullRow: any[] | null, key: string, id: string, type: string, name: string, suit: string, tags: string, source: string, version: string, cnName: string, cnSuit: string, cnSource: string }} SearchDisplayRow */
+/** @typedef {{ key: string, row: any[] }} StagingEntry */
+
+/** @param {unknown} value */
 export function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
@@ -7,11 +11,13 @@ export function escapeHtml(value) {
     .replace(/>/g, '&gt;');
 }
 
+/** @param {SearchDisplayRow[]} rows @param {number} [cap] */
 export function resultRowsHtml(rows, cap = 800) {
   const count = Math.min(rows.length, cap);
   const parts = [];
   for (let i = 0; i < count; i++) {
     const row = rows[i];
+    if (!row) continue;
     const rawBits = [];
     if (row.cnName && row.cnName !== row.name) rawBits.push(row.cnName);
     if (row.cnSuit && row.cnSuit !== row.suit) rawBits.push(row.cnSuit);
@@ -39,6 +45,7 @@ export function resultRowsHtml(rows, cap = 800) {
   return parts.join('');
 }
 
+/** @param {StagingEntry[]} staging */
 export function stagingRowsHtml(staging) {
   return staging.map((entry) => {
     const summary = rowSummary(entry.row);

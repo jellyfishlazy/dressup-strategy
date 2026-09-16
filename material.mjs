@@ -1,5 +1,6 @@
 ﻿import { clothes, clothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
 
+/** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
 const Dom = globalThis.Dom;
 const MaterialActions = globalThis.MaterialActions;
 const html2canvas = globalThis.html2canvas;
@@ -270,6 +271,8 @@ function chgScopeSub2(j,k,l){
 	if(!k) k = Dom("#chooseCate").val();
 
 	var valArr=[];
+	var levelDropInfo='';
+	var levelDropNote='';
 	if (j==1){
 		for(var i in clothes){
 			if(clothes[i].type.type==k&&clothes[i].source.indexOf('設')>-1){
@@ -359,11 +362,14 @@ function chgStars(){
 	var selectArr=[];
 	for (var i in clothes){
 		if(clothes[i].stars==j){
-			for (var s in src_desc){
-				if (src_desc[s].indexOf('重構')>-1) continue;
-				for (let ss = 0; ss < src[s].length; ss++){
-					if(clothes[i].source.indexOf(src[s][ss])>-1){
-						selectArr.push(src_desc[s]);
+			for (let sourceIndex = 0; sourceIndex < src_desc.length; sourceIndex++){
+				const sourceDescription = src_desc[sourceIndex];
+				const sourceRule = src[sourceIndex];
+				if (sourceDescription === undefined || sourceRule === undefined) continue;
+				if (sourceDescription.indexOf('重構')>-1) continue;
+				for (let ss = 0; ss < sourceRule.length; ss++){
+					if(clothes[i].source.indexOf(sourceRule[ss] ?? '')>-1){
+						selectArr.push(sourceDescription);
 						break;
 					}
 				}
@@ -381,6 +387,7 @@ function chgStars(){
 
 function chgStars2(){
 	var j, k, l, l1;
+	var levelDropInfo='';
 	Dom("#levelDropInfo").html('');
 	Dom("#levelDropNote").html('');
 	Dom("#downloadimage").html('');
@@ -390,7 +397,9 @@ function chgStars2(){
 	
 	var kp=Dom.inArray(k,src_desc);
 	if(kp>-1){
-		var srcs=src[kp].split(',');
+		var sourceRule = src[kp];
+		if (sourceRule === undefined) return;
+		var srcs=sourceRule.split(',');
 		var outStars2=[];
 		for (var i in clothes){
 			if(clothes[i].stars!=j) continue;
@@ -411,7 +420,7 @@ function chgStars2(){
 					for (var i in outStars2){
 						var src_sp=outStars2[i][0].source.split("/");
 						for (var ss in src_sp){
-							if(src_sp[ss]==chapList[l1]+'-'+l2+src[kp]){
+							if(src_sp[ss]==chapList[l1]+'-'+l2+sourceRule){
 								outStars2tmp.push([outStars2[i][0],src_sp[ss],outStars2[i][2]]);
 								break;
 							}
@@ -468,6 +477,7 @@ function showFactorInfo(){
 	else genFactor(t);
 }
 
+/** @returns {[string, string]} */
 function addhighlightdeps(i){
 	var deps1=clothes[i].getDeps('   ', 1);
 	var deps=add_genFac(deps1,1);
@@ -492,8 +502,8 @@ function addhighlightdeps(i){
 function getLastIndexHL(txt,setName){
 	var max_index = -1;
 	//var max_name = '';
-	for (var c in highlight_parts[setName]){
-		var name = highlight_parts[setName][c];
+	var parts = highlight_parts[setName] || [];
+	for (const name of parts){
 		if(txt.lastIndexOf(name) > max_index) {
 			max_index = txt.lastIndexOf(name);
 			//max_name = name;
@@ -522,8 +532,8 @@ function showLevelDropInfo(){
 							var depsResult=addhighlightdeps(i);
 							var depsSplit=depsResult[0].split('\n');
 							var lack=[];
-							for (var d in depsSplit){
-								if(depsSplit[d].indexOf('總計需')>0||depsSplit[d].indexOf('[消耗')>0) lack.push(depsSplit[d]);
+							for (const depLine of depsSplit){
+								if(depLine.indexOf('總計需')>0||depLine.indexOf('[消耗')>0) lack.push(depLine);
 							}
 							var item=depsResult[1]?depsResult[1]:clothes[i].name;
 							var line=tab(ahref(item,'genFactor('+i+')','inherit'));
@@ -700,7 +710,8 @@ function genFactor2(cloth,num){
 				genFactor2(clothesSet[pattern[i][2]][pattern[i][3]],pattern[i][4]*num);
 				for (var c in convert){//add dye count
 					if(cloth==clothesSet[convert[c][0]][convert[c][1]]){
-						convertlistCnt[Dom.inArray(convert[c][2],convertlist)]+=convert[c][4]*num;
+						var convertIndex = Dom.inArray(convert[c][2],convertlist);
+						if (convertIndex >= 0) convertlistCnt[convertIndex] = (convertlistCnt[convertIndex] || 0) + convert[c][4]*num;
 						break;
 					}
 				}
@@ -823,7 +834,12 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 	var output=tr(tab('基礎材料')+tab('來源')+tab(ahref(reqtxt,construct_href_1+showConstructInd+','+oppoConsumeInd+')')),'style="font-weight:bold;"');
 	
 	for (var s in src){//sort by source
-		header[s]='<u>'+src_desc[s]+'</u>'+((src[s]=='重構')?'　'+ahref(constxt,construct_href_1+oppoConstructInd+','+showConsumeInd+')'):'');
+		var sourceRule = src[s];
+		if (sourceRule === undefined) continue;
+		var sourceDescription = src_desc[s] || '';
+		/** @type {Record<string, number>} */
+		var mercRes={};
+		header[s]='<u>'+sourceDescription+'</u>'+((sourceRule=='重構')?'　'+ahref(constxt,construct_href_1+oppoConstructInd+','+showConsumeInd+')'):'');
 		if(Number(s)<2){
 			for (l1=0; l1<chapList.length; l1++){
 				for (l=1;l<30;l++){//sort by level
@@ -833,8 +849,8 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 						var srci=clothes[i].source;
 						var src_sp=clothes[i].source.split("/");
 						for (var ss in src_sp){
-							if( (Number(s)==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0&&srci.indexOf(src[1])<0) ||
-								(Number(s)==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+src[s])==0) ){
+							if( (Number(s)==0&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+sourceRule)==0&&srci.indexOf(src[1])<0) ||
+								(Number(s)==1&&src_sp[ss].indexOf(chapList[l1]+'-'+l2+sourceRule)==0) ){
 								if(!content[s]) content[s]='';
 								content[s]+=retFactor(i,srci);
 								break;
@@ -843,7 +859,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 					}}
 				}
 			}
-		}else if (src[s]=='重構'&&showConstructInd){ //for construct
+		}else if (sourceRule=='重構'&&showConstructInd){ //for construct
 			var constructMaterial=function() {
 				var ret = [];
 				for (var i in constructMaterialName) {
@@ -851,7 +867,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 				}
 				return ret;
 			}();
-			for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])&&clothes[i].source.indexOf(src[s])>-1){
+			for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])&&clothes[i].source.indexOf(sourceRule)>-1){
 				for (var con in construct) {
 					if (clothesSet[construct[con][0]][construct[con][1]]==clothes[i]){
 						shownFactor[i]=1;
@@ -869,8 +885,8 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 				}
 			}
 		}else{
-			var mercRes={};
-			var s_split=src[s].split(',');//sort by defined order
+
+			var s_split=sourceRule.split(',');//sort by defined order
 			for(var sp_n in s_split){
 				for (var i in clothes){ if((!shownFactor[i])&&reqCnt[i]&&(!parentInd[i])){
 					var srci=clothes[i].source;
@@ -880,7 +896,7 @@ function genBasicMaterial(setInd,id,showConstructInd,showConsumeInd){
 						var price=getMerc(clothes[i]); //add sum of price for each category
 						if(price){
 							if(!mercRes[price[0]]) mercRes[price[0]]=price[1]*reqCnt[i];
-							else mercRes[price[0]]+=price[1]*reqCnt[i];
+							else mercRes[price[0]] = (mercRes[price[0]] || 0) + price[1]*reqCnt[i];
 						}
 					}
 				}}
@@ -1220,7 +1236,7 @@ function toimage() {
                     Dom("#auto").attr('href', canvas.toDataURL("image/png"));
                     Dom("#auto").attr('download','download.png');
                     var lnk = document.getElementById("auto");
-                    lnk.click();
+                    if (lnk) lnk.click();
         	}
       	});
 }
