@@ -55,7 +55,7 @@
     var intro = byId('intro');
     var link = byId('aIntro');
     if (!intro || !link) return;
-    var opening = intro.style.display === 'none';
+    var opening = root.getComputedStyle(intro).display === 'none';
     intro.style.display = opening ? 'inline' : 'none';
     link.textContent = opening ? '<收起>' : '<展開>';
     if (typeof Storage !== 'undefined') localStorage.setItem('nikki_ZHCX_hideIntro', opening ? 0 : 1);
