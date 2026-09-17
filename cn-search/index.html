@@ -5,11 +5,14 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 	<title>陸服衣櫃條件搜尋</title>
-	<link rel="stylesheet" href="../bootstrap/bootstrap.min.css">
 	<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.3.0/dist/umd/full.js"></script>
 	<script src="../data/wardrobe.js"></script>
 	<style>
-		body { padding: 16px 20px 80px; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; }
+		body { margin: 0; padding: 16px 20px 80px; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; }
+		.search-action { display: inline-block; padding: 5px 10px; font-size: 12px; font-weight: 400; line-height: 1.5; color: #333; text-align: center; vertical-align: middle; white-space: nowrap; cursor: pointer; background: #fff; border: 1px solid #ccc; border-radius: 3px; }
+		.search-action:hover, .search-action:focus { color: #333; background: #e6e6e6; border-color: #adadad; }
+		.search-action-primary { color: #fff; background: #337ab7; border-color: #2e6da4; }
+		.search-action-primary:hover, .search-action-primary:focus { color: #fff; background: #286090; border-color: #204d74; }
 		h1 { font-size: 22px; margin: 0 0 4px; }
 		.subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
 		.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
@@ -114,7 +117,7 @@
 			<label for="q-cn-only">僅顯示陸服獨有</label>
 		</div>
 		<div class="filter-actions">
-			<button class="btn btn-sm btn-outline-secondary" id="btn-clear" type="button">清除</button>
+			<button class="search-action" id="btn-clear" type="button">清除</button>
 		</div>
 	</div>
 
@@ -124,9 +127,9 @@
 			<span class="count-pill" id="staging-count">0 筆</span>
 			<span class="spacer"></span>
 			<div class="staging-actions">
-				<button class="btn btn-sm btn-outline-primary" id="btn-copy-staging" type="button" title="複製為 data/wardrobe.js 可貼上的列">複製為 wardrobe 列</button>
-				<button class="btn btn-sm btn-outline-secondary" id="btn-download-staging" type="button" title="下載為 .js 片段">下載片段</button>
-				<button class="btn btn-sm btn-outline-danger" id="btn-clear-staging" type="button">清空</button>
+				<button class="search-action" id="btn-copy-staging" type="button" title="複製為 data/wardrobe.js 可貼上的列">複製為 wardrobe 列</button>
+				<button class="search-action" id="btn-download-staging" type="button" title="下載為 .js 片段">下載片段</button>
+				<button class="search-action" id="btn-clear-staging" type="button">清空</button>
 			</div>
 		</div>
 		<div class="staging-empty" id="staging-empty">尚未加入任何項目。點擊結果表左側的「＋」或表頭的「＋全部」累加，或使用下方「手動新增項目」自行補資料。</div>
@@ -200,8 +203,8 @@
 			</div>
 
 			<div class="manual-actions">
-				<button class="btn btn-sm btn-outline-secondary" id="btn-manual-reset" type="button">清除表單</button>
-				<button class="btn btn-sm btn-primary" id="btn-manual-add" type="button">新增至暫存</button>
+				<button class="search-action" id="btn-manual-reset" type="button">清除表單</button>
+				<button class="search-action search-action-primary" id="btn-manual-add" type="button">新增至暫存</button>
 			</div>
 		</div>
 	</details>

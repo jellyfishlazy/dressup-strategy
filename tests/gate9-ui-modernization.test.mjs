@@ -6,15 +6,11 @@ const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'
 
 const activePages = ['index.html', 'biguse.html', 'material.html', 'wardrobechk.html'];
 
-test('UI Gate 9B loads the shared foundation on every active page after Bootstrap', () => {
+test('UI foundation loads on every active page after Bootstrap retirement', () => {
   for (const file of activePages) {
     const html = read(file);
-    const bootstrapIndex = html.indexOf('bootstrap/bootstrap.min.css');
-    const foundationIndex = html.indexOf('ui-foundation.css');
-
-    assert.notEqual(bootstrapIndex, -1, `${file} still keeps Bootstrap during Gate 9B`);
-    assert.notEqual(foundationIndex, -1, `${file} loads ui-foundation.css`);
-    assert.ok(bootstrapIndex < foundationIndex, `${file} loads the project foundation after Bootstrap`);
+    assert.notEqual(html.indexOf('ui-foundation.css'), -1, `${file} loads ui-foundation.css`);
+    assert.doesNotMatch(html, /bootstrap\/bootstrap\.min\.css/, `${file} no longer loads Bootstrap CSS`);
   }
 });
 
@@ -49,16 +45,11 @@ test('UI Gate 9B establishes shared tokens and neutral base primitives', () => {
   assert.match(css, /\.ui-muted\s*\{/);
 });
 
-test('UI Gate 9B does not retire Bootstrap or page-specific styles early', () => {
+test('UI Gate 9B preserves page-specific styles alongside the shared foundation', () => {
   const index = read('index.html');
   const biguse = read('biguse.html');
   const material = read('material.html');
   const wardrobe = read('wardrobechk.html');
-
-  assert.match(index, /bootstrap\/bootstrap\.min\.css/);
-  assert.match(biguse, /bootstrap\/bootstrap\.min\.css/);
-  assert.match(material, /bootstrap\/bootstrap\.min\.css/);
-  assert.match(wardrobe, /bootstrap\/bootstrap\.min\.css/);
 
   assert.match(index, /style\.css/);
   assert.match(biguse, /biguse\.css/);
@@ -116,8 +107,26 @@ test('UI Gate 9C migrates shared static and runtime Bootstrap component classes'
   }
 });
 
-test('UI Gate 9C keeps Bootstrap loaded only as a compatibility stylesheet', () => {
-  for (const file of activePages) assert.match(read(file), /bootstrap\/bootstrap\.min\.css/);
+test('UI Gate 9E retires Bootstrap CSS and legacy Bootstrap button hooks', () => {
+  const pageEvents = read('src/legacy/page-events.js');
+  const foundation = read('ui-foundation.css');
+
+  for (const file of [...activePages, 'cn-search/index.html']) assert.doesNotMatch(read(file), /bootstrap\/bootstrap\.min\.css/);
+  assert.doesNotMatch(read('index.html'), /data-toggle="buttons"/);
+  assert.doesNotMatch(read('biguse.html'), /data-toggle="buttons"/);
+  assert.match(read('index.html'), /data-ui-buttons/);
+  assert.match(read('biguse.html'), /data-ui-buttons/);
+  assert.doesNotMatch(pageEvents, /syncBootstrapButtons|data-toggle="buttons"/);
+  assert.match(pageEvents, /syncUiButtons/);
+  assert.match(pageEvents, /\[data-ui-buttons\]/);
+
+  for (const baseline of [
+    /p\s*\{[^}]*margin:\s*0 0 10px/s,
+    /a\s*\{[^}]*text-decoration:\s*none/s,
+    /hr\s*\{[^}]*border-top:\s*1px solid #eeeeee/s,
+    /label\s*\{[^}]*font-weight:\s*700/s,
+    /\[data-ui-buttons\][^\{]*\{[^}]*clip:\s*rect\(0, 0, 0, 0\)/s,
+  ]) assert.match(foundation, baseline);
 });
 
 test('UI Gate 9D defines shared page-level layout primitives', () => {

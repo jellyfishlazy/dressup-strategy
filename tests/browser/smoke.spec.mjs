@@ -151,3 +151,43 @@ test('UI Gate 9D keeps page layouts responsive across desktop and mobile', async
 
   await expectNoFailures(failures);
 });
+
+test('UI Gate 9E runs without Bootstrap CSS and preserves project-owned button behavior', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+
+  for (const url of ['/index.html', '/biguse.html', '/material.html', '/wardrobechk.html']) {
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const stylesheets = await page.locator('link[rel="stylesheet"]').evaluateAll(links => links.map(link => link.getAttribute('href')));
+    expect(stylesheets.some(href => href?.includes('bootstrap/'))).toBe(false);
+  }
+
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  const firstGroup = page.locator('[data-ui-buttons]').first();
+  const radios = firstGroup.locator('input[type="radio"]');
+  await expect(radios).toHaveCount(2);
+  const radioStyle = await radios.first().evaluate(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    return { position: style.position, clip: style.clip };
+  });
+  expect(radioStyle.position).toBe('absolute');
+  expect(radioStyle.clip).not.toBe('auto');
+
+  const labels = firstGroup.locator('label');
+  await labels.first().click();
+  await expect(labels.first()).toHaveClass(/active/);
+  await labels.nth(1).click();
+  await expect(labels.first()).not.toHaveClass(/active/);
+  await expect(labels.nth(1)).toHaveClass(/active/);
+
+  const baseline = await page.locator('body').evaluate(body => {
+    const view = body.ownerDocument.defaultView;
+    const link = body.ownerDocument.querySelector('.title a');
+    if (!link) throw new Error('expected title link');
+    return {
+      bodyFontSize: view.getComputedStyle(body).fontSize,
+      linkDecoration: view.getComputedStyle(link).textDecorationLine,
+    };
+  });
+  expect(baseline).toEqual({ bodyFontSize: '14px', linkDecoration: 'none' });
+  await expectNoFailures(failures);
+});

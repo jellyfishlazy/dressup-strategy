@@ -11,17 +11,19 @@ test('active HTML entry points no longer use inline event handlers', () => {
   }
 });
 
-test('Bootstrap JavaScript is retired while CSS remains available', () => {
+test('Bootstrap JavaScript and active CSS consumers are retired', () => {
   assert.equal(existsSync(new URL('../bootstrap/bootstrap.min.js', import.meta.url)), false);
   for (const file of ['index.html', 'biguse.html', 'material.html', 'wardrobechk.html', 'cn-search/index.html']) {
-    assert.doesNotMatch(read(file), /bootstrap\/bootstrap\.min\.js/, file);
+    const source = read(file);
+    assert.doesNotMatch(source, /bootstrap\/bootstrap\.min\.js/, file);
+    assert.doesNotMatch(source, /bootstrap\/bootstrap\.min\.css/, file);
   }
-  assert.match(read('index.html'), /bootstrap\/bootstrap\.min\.css/);
 });
 
-test('native event bridge replaces inline handlers and Bootstrap button data API', () => {
+test('native event bridge replaces inline handlers and owns button-group state', () => {
   const source = read('src/legacy/page-events.js');
-  assert.match(source, /querySelectorAll\('\[data-toggle="buttons"\]'\)/);
+  assert.match(source, /querySelectorAll\('\[data-ui-buttons\]'\)/);
+  assert.doesNotMatch(source, /data-toggle="buttons"|syncBootstrapButtons/);
   for (const id of ['theme-fliter', 'theme', 'importCate', 'btn-import', 'btn-load-custom-inventory', 'aIntro']) {
     assert.match(source, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }

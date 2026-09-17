@@ -14,8 +14,8 @@
       }
     };
   }
-  function syncBootstrapButtons() {
-    var groups = document.querySelectorAll('[data-toggle="buttons"]');
+  function syncUiButtons() {
+    var groups = document.querySelectorAll('[data-ui-buttons]');
     for (var i = 0; i < groups.length; i++) {
       groups[i].addEventListener('change', function (event) {
         var input = event.target;
@@ -73,7 +73,7 @@
     if (typeof Storage !== 'undefined' && localStorage.getItem('nikki_ZHCX_hideIntro') > 0) toggleMaterialIntro();
   }
   function init() {
-    syncBootstrapButtons();
+    syncUiButtons();
     bindFilterEvents();
     bindInventoryEvents();
     bindMainEvents();
