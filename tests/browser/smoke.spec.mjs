@@ -128,15 +128,15 @@ test('UI Gate 9D keeps page layouts responsive across desktop and mobile', async
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => getComputedStyle(element).display)).toBe('flex');
+  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).display)).toBe('flex');
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => getComputedStyle(element).display)).toBe('block');
+  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).display)).toBe('block');
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
-  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
+  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
 
   await page.goto('/material.html', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#intro')).toBeHidden();
@@ -145,9 +145,9 @@ test('UI Gate 9D keeps page layouts responsive across desktop and mobile', async
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/wardrobechk.html', { waitUntil: 'domcontentloaded' });
-  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
+  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
 
   await expectNoFailures(failures);
 });
