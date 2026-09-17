@@ -31,12 +31,11 @@ function thead(isShoppingCart) {
 	$thead.append(td("保暖", ""));
 	$thead.append(td("特殊屬性", "th_tag"));
 	$thead.append(td("來源", "th_from"));
-	$thead.append(td("套裝", "th_issuit hidden"));
-	$thead.append(td("版本", "th_version hidden"));
+	$thead.append(td("套裝", "th_issuit ui-hidden"));
+	$thead.append(td("版本", "th_version ui-hidden"));
 	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
-		$td_nbsp = td("回到頂部", "th_gotop");
-		$td_nbsp.addClass("gogogo-top");
+		$td_nbsp = td("回到頂部", "th_gotop ui-gotop");
 		$td_nbsp.click(function () {
 			goTop();
 		});
@@ -89,9 +88,9 @@ function copyNameText($row) {
 function copyButton() {
 	return Dom('<button>')
 		.addClass('copy-btn')
-		.addClass('btn')
-		.addClass('btn-sm')
-		.addClass('btn-outline-secondary')
+		.addClass('ui-btn')
+		.addClass('ui-btn-sm')
+		.addClass('ui-btn-default')
 		.text('複製')
 		.css({
 			'font-size': '10px',
@@ -146,8 +145,8 @@ function row(piece, isShoppingCart) {
 	$lineTop.append(td(render(csv[12]), getStyle(csv[12]), "暖"));
 	$lineTop.append(td(render(csv[13]), 'tag'));
 	$lineTop.append(td(render(csv[14]), 'source'));
-	$lineTop.append(td(render(csv[15]), 'issuit hidden'));
-	$lineTop.append(td(render(csv[16]), 'version hidden'));
+	$lineTop.append(td(render(csv[15]), 'issuit ui-hidden'));
+	$lineTop.append(td(render(csv[16]), 'version ui-hidden'));
 
 	if (isShoppingCart) {
 		if (piece.id) {
@@ -304,7 +303,7 @@ function button_search(txt,cls1,cls2) {
  * @param {string} id
  */
 function shoppingCartButton(type, id) {
-	var $shoppingCartButton = Dom("<button>").addClass("glyphicon glyphicon-shopping-cart btn btn-default");
+	var $shoppingCartButton = Dom("<button>").addClass("ui-icon-button ui-icon-cart ui-btn ui-btn-default");
 	$shoppingCartButton.click(function () {
 		shoppingCart.put(/** @type {ScoringClothing} */ (/** @type {Record<string, ScoringClothing>} */ (/** @type {Record<string, Record<string, ScoringClothing>>} */ (clothesSet)[type])[id]));
 		refreshShoppingCart();
@@ -316,7 +315,7 @@ function shoppingCartButton(type, id) {
  * @param {string} detailedType
  */
 function removeShoppingCartButton(detailedType) {
-	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default');
 	$removeShoppingCartButton.click(function () {
 		shoppingCart.remove(detailedType);
 		refreshShoppingCart();

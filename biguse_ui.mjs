@@ -50,9 +50,9 @@ function copyNameText($row) {
 function copyButton() {
 	return Dom('<button>')
 		.addClass('copy-btn')
-		.addClass('btn')
-		.addClass('btn-sm')
-		.addClass('btn-outline-secondary')
+		.addClass('ui-btn')
+		.addClass('ui-btn-sm')
+		.addClass('ui-btn-default')
 		.text('複製')
 		.css({
 			'font-size': '10px',
@@ -82,8 +82,7 @@ function theadBiguse(isShoppingCart) {
 	$thead.append(td("編號", "th_number"));
 	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
-		$td_nbsp = td("回到頂部", "th_gotop");
-		$td_nbsp.addClass("gogogo-top");
+		$td_nbsp = td("回到頂部", "th_gotop ui-gotop");
 		$td_nbsp.click(function () {
 			goTop();
 		});
@@ -222,7 +221,7 @@ function clothesNameTd(piece) {
  * @param {number} index
  */
 function shoppingCartButton(piece, index) {
-	var $shoppingCartButton = Dom("<button>").addClass("btn btn-default").text(index == 1 ? "A" : "B");
+	var $shoppingCartButton = Dom("<button>").addClass("ui-btn ui-btn-default").text(index == 1 ? "A" : "B");
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$shoppingCartButton.click(function () {
 		tShoppingCart.put(piece);
@@ -236,7 +235,7 @@ function shoppingCartButton(piece, index) {
  * @param {number} index
  */
 function removeShoppingCartButton(detailedType, index) {
-	var $removeShoppingCartButton = Dom("<button>").addClass('glyphicon glyphicon-trash btn btn-xs btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default');
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$removeShoppingCartButton.click(function () {
 		tShoppingCart.remove(detailedType);

@@ -122,3 +122,32 @@ test('browser can import the Gate 7A ESM domain entries from static hosting', as
   expect(result).toEqual({ wardrobeCount: 18, wardrobeId: '001', inventory: '1:001|', close: true });
   await expectNoFailures(failures);
 });
+
+test('UI Gate 9D keeps page layouts responsive across desktop and mobile', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => getComputedStyle(element).display)).toBe('flex');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => page.locator('.ui-main-top').evaluate(element => getComputedStyle(element).display)).toBe('block');
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => page.locator('#shoppingCartCompare').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+
+  await page.goto('/material.html', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#intro')).toBeHidden();
+  await page.locator('#aIntro').click();
+  await expect(page.locator('#intro')).toBeVisible();
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/wardrobechk.html', { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => page.locator('.ui-wardrobe-grid').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+
+  await expectNoFailures(failures);
+});

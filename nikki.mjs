@@ -580,11 +580,11 @@ function toggleAll(c) {
 }
 
 function drawFilter() {//refactor me
-	var out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
+	var out = "<ul class='ui-tabs ui-tabs-justified' id='categoryTab'>";
 	for (var c in categoryHierarchy) {
-		out += '<li id="' + c + '"><a href="#" data-switch-cate="' + c + '">' + c + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
+		out += '<li id="' + c + '"><a href="#" data-switch-cate="' + c + '">' + c + '&nbsp;&nbsp;<span class="ui-badge">0</span></a></li>';
 	}
-		out += '<li id="switchall"><a href="#" data-switch-cate="switchall">全部&nbsp;&nbsp;<span class="badge"></span></a></li>';
+		out += '<li id="switchall"><a href="#" data-switch-cate="switchall">全部&nbsp;&nbsp;<span class="ui-badge"></span></a></li>';
 	out += "</ul>";
 	for (var c in categoryHierarchy) {
 		out += '<div id="category-' + c + '">';

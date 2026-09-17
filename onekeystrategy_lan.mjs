@@ -378,13 +378,13 @@ function lanStrategy_print(lazySet){
 
 	var $optionContent1 = Dom("<p/>");
 	$optionContent1.append("展示<span id='lanSteps'>"+lanSteps+"</span>個步驟");
-	$optionContent1.append(Dom('<button>').addClass('btn btn-xs btn-default').text('＋').click(add_lanSteps));
-	$optionContent1.append(Dom('<button>').addClass('btn btn-xs btn-default').text('－').click(min_lanSteps));
+	$optionContent1.append(Dom('<button>').addClass('ui-btn ui-btn-xs ui-btn-default').text('＋').click(add_lanSteps));
+	$optionContent1.append(Dom('<button>').addClass('ui-btn ui-btn-xs ui-btn-default').text('－').click(min_lanSteps));
 	$strategy.append($optionContent1);
 	var $optionContent2 = Dom("<p/>");
 	$optionContent2.append("每步≤<span id='limitRet'>"+limitRet+"</span>件衣服");
-	$optionContent2.append(Dom('<button>').addClass('btn btn-xs btn-default').text('＋').click(add_limitRet));
-	$optionContent2.append(Dom('<button>').addClass('btn btn-xs btn-default').text('－').click(min_limitRet));
+	$optionContent2.append(Dom('<button>').addClass('ui-btn ui-btn-xs ui-btn-default').text('＋').click(add_limitRet));
+	$optionContent2.append(Dom('<button>').addClass('ui-btn ui-btn-xs ui-btn-default').text('－').click(min_limitRet));
 	$strategy.append($optionContent2);
 
 	var clotheslist_title = Dom("<p/>");

@@ -224,3 +224,49 @@ The intentionally retained boundaries are: the active native-DOM compatibility f
 Final validation is complete on `refactor/gate8f-strictness-20260916`: `npm run typecheck:raw` PASS at zero diagnostics; canonical `strict: true`, `noUncheckedIndexedAccess: true`, and `exactOptionalPropertyTypes: true` remain enabled; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **119/119 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**. Direct Chromium probes additionally exercise both normal and lazy one-key strategy paths: both render visible strategy output, produce non-empty results (240 and 278 text characters respectively), switch the action button to `????`, and emit zero page or console errors. `git diff --check` PASS, and the retired loose collection/global-fallback patterns are absent.
 
 Gate 9 is therefore complete: **9A inventory, 9B model export cleanup, 9C stable boundary tightening, 9D dead compatibility cleanup, and 9E final validation are all DONE.** The modernization closeout intentionally stops here; remaining broad boundaries are documented compatibility/data seams, not queued cleanup disguised as debt. No commit or push is performed by Gate 9E itself.
+
+
+### UI Modernization Gate 9A - UI/CSS inventory
+
+UI/CSS modernization starts from the clean technical-closeout commit rather than mixing visual work into the Gate 8/technical Gate 9 history. Gate 9A is audit-only: it maps the active page/style dependencies and establishes the migration order before any visual runtime changes.
+
+All four active pages still load the bundled **Bootstrap 3.3.5** stylesheet. Main and BigUse are the most Bootstrap-coupled pages: their HTML uses large numbers of `btn*`, `form-inline`, checkbox/group, and active-state classes, while runtime modules also generate Bootstrap-flavored classes such as `glyphicon`, `btn-*`, `nav-tabs`, `nav-justified`, `badge`, `hidden`, and `active`. Wardrobe Check has little Bootstrap markup in the static HTML but generates Bootstrap navigation/badge classes at runtime. Material has only a small amount of Bootstrap markup in its HTML, yet `material.mjs` dynamically emits Bootstrap buttons and glyphicons. Bootstrap therefore cannot be removed safely until both static and generated class consumers are migrated.
+
+The current stylesheet stack is fragmented by page purpose:
+- **Main / Wardrobe Check shared:** `style.css` + `ui.css` + mobile-only `mobileui.css`.
+- **Main / BigUse strategy UI:** `onekeystrategy.css`.
+- **BigUse additions:** `biguse.css`.
+- **Material:** its separate `data/material_style.css` plus Bootstrap, with a small inline style block.
+- **Main only:** Font Awesome 4.7 is loaded from an external CDN.
+
+Responsive behavior is similarly fragmented. All active pages include a viewport meta tag that disables user scaling; Main/BigUse/Wardrobe Check load a separate stylesheet only below 650px, `onekeystrategy.css` contains its own 650px media query, and `style.css` has a separate 1020px breakpoint. Material has no equivalent shared responsive layer. Inline styles remain in all four pages (Main 8, BigUse 12, Material 4, Wardrobe Check 1), including layout-critical widths/floats in Main and BigUse. Repeated color literals and page-specific table/button rules show that the current CSS has no shared token layer.
+
+The UI modernization sequence is therefore fixed as follows:
+1. **Gate 9B - design tokens and base layer:** introduce shared CSS custom properties and neutral base/layout primitives without changing page semantics or removing Bootstrap.
+2. **Gate 9C - shared controls/components:** replace Bootstrap-dependent button, form, navigation, badge, table-action, visibility, and state classes with project-owned primitives; update both static HTML and runtime-generated markup.
+3. **Gate 9D - page-by-page migration:** Main first, then BigUse, Material, and Wardrobe Check, preserving existing behavior and browser smoke after every page.
+4. **Gate 9E - Bootstrap CSS retirement:** remove `bootstrap/bootstrap.min.css` only after zero active Bootstrap-class consumers remain; separately decide whether Font Awesome is retained or replaced.
+5. **Gate 9F - responsive and visual polish:** unify breakpoints, remove layout-critical inline styles, restore user zoom, and normalize desktop/mobile spacing, typography, controls, and tables.
+6. **Gate 9G Final - visual closeout:** full quality/browser validation plus representative desktop/mobile screenshot review.
+
+Gate 9A makes no runtime or stylesheet changes. Its purpose is to prevent the usual CSS modernization tragedy in which somebody deletes Bootstrap first and only afterward discovers that JavaScript has been manufacturing Bootstrap class names in three different files for a decade.
+
+
+### UI Modernization Gate 9B - design tokens and base layer
+
+UI Gate 9B introduces a project-owned visual foundation without changing page structure or retiring Bootstrap. A new shared `ui-foundation.css` defines Bootstrap-compatible baseline typography and colors plus project tokens for text/link/surface/border/semantic colors, spacing, radii, shadows, control heights, responsive breakpoints, and focus-ring styling. It also establishes neutral base primitives for box sizing, body typography/background, links, form-control font inheritance, focus-visible handling, hidden state, and simple surface/muted helpers.
+
+All four active pages now load `ui-foundation.css` immediately after `bootstrap/bootstrap.min.css` and before their existing page-specific styles. This ordering is intentional: Bootstrap remains the compatibility source during migration, the new foundation supplies project-owned defaults/tokens, and existing page CSS still wins where current behavior must be preserved. No Bootstrap stylesheet, Bootstrap class, runtime-generated class, inline layout style, or existing page stylesheet is removed in Gate 9B.
+
+Regression coverage is added in `tests/gate9-ui-modernization.test.mjs`. It locks foundation loading on Main, BigUse, Material, and Wardrobe Check; verifies Bootstrap remains before the foundation during this stage; verifies the shared token/base contract; and prevents premature removal of page-specific styles. Validation is complete: the UI Gate 9B regression suite is 3/3 PASS; `npm run typecheck:raw` PASS at zero diagnostics; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **122/122 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**; and `git diff --check` PASS. Gate 9C is next and will migrate shared controls/components away from Bootstrap-owned class semantics before any page-by-page visual rewrite.
+
+
+### UI Modernization Gate 9C - shared controls/components
+
+UI Gate 9C moves the shared component vocabulary away from Bootstrap-owned class semantics while deliberately keeping the Bootstrap 3.3.5 stylesheet loaded as a compatibility safety net for the remaining page-level migration. `ui-foundation.css` now owns buttons and variants/sizes, control sizing, button groups, inline-form and checkbox wrappers, tabs/justified tabs, badges, hidden state, cart/trash icon buttons, and the back-to-top affordance. The project-owned classes are used consistently in static HTML and in runtime-generated markup.
+
+Main and BigUse static controls now use `ui-btn*`, `ui-control*`, `ui-check`, `ui-inline-form`, `ui-btn-group`, and `ui-hidden`. Runtime UI generators in `ui.mjs`, `biguse_ui.mjs`, `nikki.mjs`, `onekeystrategy_lan.mjs`, `material.mjs`, and `wardrobechk.mjs` now emit project-owned buttons, tabs, badges, and icon classes rather than `glyphicon`, `nav-tabs`, `nav-justified`, or Bootstrap `btn-*` variants. Main/BigUse cart actions use CSS-owned cart/trash glyphs, Material's generated cart/image buttons use the same shared component layer, and the previous Glyphicons Halflings back-to-top CSS dependency is retired in favor of `ui-gotop`. Existing application state class `active` remains intentionally unchanged because runtime behavior depends on it and it is not Bootstrap-specific.
+
+Legacy page CSS selectors that styled Bootstrap navigation, checkbox wrappers, and badges are retargeted to the new `ui-*` vocabulary, including the mobile rules. A final exact-token audit confirms zero active occurrences of `glyphicon`, `nav-tabs`, `nav-justified`, `btn-default`, `btn-info`, `btn-success`, or `btn-outline-secondary` across the four active pages and their shared runtime generators. Bootstrap CSS still appears exactly once on each active page and is not removed until Gate 9E.
+
+Regression coverage in `tests/gate9-ui-modernization.test.mjs` now includes Gate 9C shared-component contracts and runtime/static migration guards. Validation is complete: UI Gate tests are **6/6 PASS**; `npm run typecheck:raw` PASS at zero diagnostics; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **125/125 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**; and `git diff --check` PASS. Gate 9D is next and will migrate page-specific layout/structure one page at a time while retaining the shared component layer established here.

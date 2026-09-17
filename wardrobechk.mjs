@@ -95,9 +95,9 @@ function updateSize(mine) {
 }
 
 function drawFilter() {
-  let out = "<ul class='nav nav-tabs nav-justified' id='categoryTab'>";
+  let out = "<ul class='ui-tabs ui-tabs-justified' id='categoryTab'>";
   for (const type in CATEGORY_HIERARCHY) {
-    out += '<li id="' + type + '"><a href="#" data-wardrobe-category="' + type + '">' + type + '&nbsp;&nbsp;<span class="badge">0</span></a></li>';
+    out += '<li id="' + type + '"><a href="#" data-wardrobe-category="' + type + '">' + type + '&nbsp;&nbsp;<span class="ui-badge">0</span></a></li>';
   }
   out += '</ul>';
   const container = document.getElementById('category_container');

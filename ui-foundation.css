@@ -1,0 +1,486 @@
+:root {
+  color-scheme: light;
+
+  --ui-font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ui-font-size: 14px;
+  --ui-line-height: 1.42857143;
+
+  --ui-color-text: #333333;
+  --ui-color-muted: #777777;
+  --ui-color-link: #337ab7;
+  --ui-color-link-hover: #23527c;
+  --ui-color-border: #dddddd;
+  --ui-color-border-strong: #cccccc;
+  --ui-color-surface: #ffffff;
+  --ui-color-surface-subtle: #f9f9f9;
+  --ui-color-surface-muted: #f5f5f5;
+  --ui-color-primary: #337ab7;
+  --ui-color-primary-hover: #286090;
+  --ui-color-info: #5bc0de;
+  --ui-color-success: #5cb85c;
+  --ui-color-warning-bg: #fff3cd;
+  --ui-color-warning-border: #ffeaa7;
+  --ui-color-warning-text: #856404;
+  --ui-color-danger: #d9534f;
+
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-6: 32px;
+
+  --ui-radius-sm: 3px;
+  --ui-radius-md: 4px;
+  --ui-radius-lg: 6px;
+
+  --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --ui-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.15);
+
+  --ui-control-height-sm: 30px;
+  --ui-control-height-md: 34px;
+
+  --ui-breakpoint-mobile: 650px;
+  --ui-breakpoint-compact: 1020px;
+
+  --ui-focus-ring-color: rgba(51, 122, 183, 0.45);
+  --ui-focus-ring: 0 0 0 3px var(--ui-focus-ring-color);
+}
+
+html {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size);
+  line-height: var(--ui-line-height);
+  color: var(--ui-color-text);
+  background-color: var(--ui-color-surface);
+}
+
+a {
+  color: var(--ui-color-link);
+}
+
+a:hover,
+a:focus {
+  color: var(--ui-color-link-hover);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+input,
+select,
+textarea,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ui-color-primary);
+  outline-offset: 2px;
+}
+
+[hidden],
+.ui-hidden {
+  display: none !important;
+}
+
+.ui-surface {
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+}
+
+.ui-surface-subtle {
+  background: var(--ui-color-surface-subtle);
+}
+
+.ui-muted {
+  color: var(--ui-color-muted);
+}
+
+/* Shared controls/components. Bootstrap remains loaded during Gates 9C-9D. */
+.ui-btn {
+  display: inline-block;
+  margin-bottom: 0;
+  padding: 6px 12px;
+  font-size: var(--ui-font-size);
+  font-weight: 400;
+  line-height: var(--ui-line-height);
+  color: var(--ui-color-text);
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-md);
+}
+
+.ui-btn:hover,
+.ui-btn:focus,
+.ui-btn.active {
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface-muted);
+  border-color: #adadad;
+  text-decoration: none;
+}
+
+.ui-btn-default {
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  border-color: var(--ui-color-border-strong);
+}
+
+.ui-btn-info {
+  color: #fff;
+  background: var(--ui-color-info);
+  border-color: #46b8da;
+}
+
+.ui-btn-success {
+  color: #fff;
+  background: var(--ui-color-success);
+  border-color: #4cae4c;
+}
+
+.ui-btn-sm,
+.ui-control-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-btn-xs {
+  padding: 1px 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-btn-group {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.ui-control {
+  display: inline-block;
+  padding: 6px 12px;
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-md);
+}
+
+.ui-inline-form {
+  display: block;
+}
+
+.ui-check {
+  display: inline-block;
+}
+
+.ui-tabs {
+  display: block;
+  margin: 0 0 20px;
+  padding-left: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.ui-tabs::before,
+.ui-tabs::after {
+  display: table;
+  content: " ";
+}
+
+.ui-tabs::after {
+  clear: both;
+}
+
+.ui-tabs > li {
+  position: relative;
+  display: block;
+  float: left;
+  margin-bottom: -1px;
+}
+
+.ui-tabs > li > a {
+  position: relative;
+  display: block;
+  margin-right: 2px;
+  padding: 10px 15px;
+  line-height: var(--ui-line-height);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md) var(--ui-radius-md) 0 0;
+}
+
+.ui-tabs > li > a:hover,
+.ui-tabs > li > a:focus {
+  background: var(--ui-color-surface-muted);
+  border-color: #eeeeee #eeeeee var(--ui-color-border);
+  text-decoration: none;
+}
+
+.ui-tabs > li.active > a,
+.ui-tabs > li.active > a:hover,
+.ui-tabs > li.active > a:focus {
+  color: #555555;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border);
+  border-bottom-color: transparent;
+  cursor: default;
+}
+
+.ui-tabs-justified {
+  width: 100%;
+  border-bottom: 0;
+}
+
+.ui-tabs-justified > li {
+  float: none;
+  display: table-cell;
+  width: 1%;
+}
+
+.ui-tabs-justified > li > a {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.ui-badge {
+  display: inline-block;
+  min-width: 10px;
+  padding: 3px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background: var(--ui-color-muted);
+  border-radius: 10px;
+}
+
+.ui-icon-button {
+  position: relative;
+  min-width: 26px;
+}
+
+.ui-icon-cart::before {
+  content: "🛒";
+}
+
+.ui-icon-trash::before {
+  content: "×";
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.ui-gotop {
+  float: right;
+  padding-right: 10px;
+  cursor: pointer;
+  color: var(--ui-color-primary);
+}
+
+.ui-gotop::before {
+  content: "↑";
+}
+
+/* Page-level layout primitives used by UI Gate 9D. */
+.ui-page {
+  margin: 1em;
+}
+
+.ui-page-header {
+  max-width: 800px;
+}
+
+.ui-page-section {
+  clear: both;
+  margin-block: var(--ui-space-4);
+}
+
+.ui-panel {
+  min-width: 0;
+}
+
+.ui-panel-bordered {
+  padding: var(--ui-space-2);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+}
+
+.ui-main-top,
+.ui-biguse-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-4);
+  width: 100%;
+  padding: var(--ui-space-4);
+}
+
+.ui-main-controls,
+.ui-biguse-controls {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+.ui-filter-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-3);
+}
+
+.ui-filter-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ui-filter-side {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.ui-biguse-announcement {
+  flex: 0 1 45%;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.ui-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-5);
+}
+
+.ui-cart-panel {
+  min-width: 0;
+}
+
+.ui-pull-end {
+  float: right;
+}
+
+.ui-editor {
+  width: 60%;
+  max-width: 100%;
+}
+
+.ui-cart-search {
+  width: 70%;
+  max-width: 100%;
+}
+
+.ui-inline-action {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.ui-text-center {
+  text-align: center;
+}
+
+.ui-page-title {
+  margin-top: 0;
+}
+
+.ui-material-frame {
+  width: 100%;
+}
+
+.ui-page-material {
+  margin-bottom: 150px;
+}
+
+.ui-wardrobe-compare {
+  align-items: start;
+}
+
+.ui-initially-hidden {
+  display: none;
+}
+
+.ui-preview-card {
+  position: fixed;
+  z-index: 20;
+  width: 120px;
+  min-height: 184px;
+  overflow: hidden;
+  background: var(--ui-color-surface);
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.ui-preview-title {
+  padding: var(--ui-space-1) var(--ui-space-2);
+  font-size: 18px;
+  background: var(--ui-color-surface-subtle);
+}
+
+.ui-wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-5);
+  align-items: start;
+}
+
+@media only screen and (max-width: 650px) {
+  .ui-page {
+    margin: 0.5em;
+  }
+
+  .ui-main-top,
+  .ui-biguse-top {
+    display: block;
+    padding: 0;
+  }
+
+  .ui-main-controls,
+  .ui-biguse-controls,
+  .ui-biguse-announcement {
+    width: 100%;
+  }
+
+  .ui-filter-layout {
+    display: block;
+  }
+
+  .ui-filter-main,
+  .ui-filter-side {
+    width: 100%;
+  }
+
+  .ui-split,
+  .ui-wardrobe-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-editor,
+  .ui-cart-search {
+    width: 100%;
+  }
+}

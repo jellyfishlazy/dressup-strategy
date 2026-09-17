@@ -1268,7 +1268,7 @@ function ahref(text,action,cls){
 }
 
 function imageButton(){
-	return '<button '+materialActionAttr('toimage()')+' class="btn btn-default" style="line-height: 100%;">轉為圖檔</button>';
+	return '<button '+materialActionAttr('toimage()')+' class="ui-btn ui-btn-default" style="line-height: 100%;">轉為圖檔</button>';
 }
 
 /** @param {number} [ind] */
@@ -1324,7 +1324,7 @@ function show_inv(){
 			Dom('.showCart').html('<em>↑</em>展開購物車<em>↑</em>');
 		}
 	});
-	Dom('button').addClass('btn btn-default');
+	Dom('button').addClass('ui-btn ui-btn-default');
 	Dom('button').css('line-height','100%');
 }
 
@@ -1418,7 +1418,7 @@ function refreshCart(){
 		if (cartId === undefined) continue;
 		const clothing = clothes[Number(cartId)];
 		if (!clothing) continue;
-		Dom('#cartCont').append('<button class="btn btn-xs btn-default">'+ahref(clothing.name,"genFactor("+cartId+")","search")+ahref('[×]','delCart('+cartId+')')+'</button>&ensp;');
+		Dom('#cartCont').append('<button class="ui-btn ui-btn-xs ui-btn-default">'+ahref(clothing.name,"genFactor("+cartId+")","search")+ahref('[×]','delCart('+cartId+')')+'</button>&ensp;');
 	}
 }
 
@@ -1429,7 +1429,7 @@ function clearCart(){
 
 /** @param {string} action */
 function cartButton(action){
-	return '<button class="glyphicon glyphicon-shopping-cart btn btn-xs btn-default" '+materialActionAttr(action)+'></button>'
+	return '<button class="ui-icon-button ui-icon-cart ui-btn ui-btn-xs ui-btn-default" '+materialActionAttr(action)+'></button>'
 }
 
 //below are modified from nikki.js, for custom inventory

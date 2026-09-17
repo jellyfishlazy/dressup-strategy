@@ -6,6 +6,7 @@
 		<meta charset="UTF-8">
 		<title材料需求綜合查詢</title>
 		<link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+		<link rel="stylesheet" href="ui-foundation.css">
 		<link rel="stylesheet" href="data/material_style.css">
 		<style>
 			<!--
@@ -44,9 +45,9 @@
 		<script type="module" src="material.mjs"></script>
 		<script type="text/javascript" charset="UTF-8" src="src/legacy/page-events.js"></script>
 	</head>
-	<body>
-	<div class="myframe">
-		<p class="title1">材料需求綜合查詢</p>
+	<body class="ui-page ui-page-material">
+	<div class="myframe ui-material-frame">
+		<p class="title1 ui-page-title">材料需求綜合查詢</p>
 		<p class="normal">
 			<span class="title3">更新時間：</span><span id="lastupd"></span><br>
 			<span class="title3">製作人員：</span>Rean翎
@@ -55,19 +56,19 @@
 		</p>
 		<p class="normal">
 			<span class="title3">使用說明：</span><a href="" id="aIntro">&lt;展開&gt;</a>
-			<span id="intro" style="display:none;"><br>
+			<span id="intro" class="ui-initially-hidden"><br>
 			可查詢一個部件的<b>製作材料</b>、該部件是<b>哪些衣服的材料及所需數量</b>。<br>
 			支持按關卡、按套裝、按星級、按部件-自訂查詢以及特殊屬性(tag)搜索。<br>
 			- 按套裝：可查看整個套裝的製作材料(配合購物車可一併查看染色)；最後有過關套列表。<br>
 			- 衣櫃：導入配裝器衣櫃後，部件共需數量會扣除已有成品(查看製作材料時不會扣除已有材料)。<br>
-			- 購物車：點擊<button class="glyphicon glyphicon-shopping-cart btn btn-xs btn-default" style="line-height: 100%;"></button>添加後可計算整個購物車；購物車內點擊單件可查看單件信息。
+			- 購物車：點擊<button class="ui-icon-button ui-icon-cart ui-btn ui-btn-xs ui-btn-default"></button>添加後可計算整個購物車；購物車內點擊單件可查看單件信息。
 			</span>
 		</p>
 		<hr class="mhr">
-		<p class="large" align="center"><span id="chooseScope"></span><span id="chooseLevel"></span><span id="chooseSub"></span><span id="chooseSub2"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="downloadimage" align="center"></a><a id="auto" style="display:none;"></a></p>
-		<p id="invopts" align="center"></p>
-		<p id="custInv" style="display:none;" align="center"></p><p id="custCart" style="display:none;" align="center"></p>
-		<p id="levelDropInfo" align="center"></p>
-		<p id="levelDropNote" align="center"></p>
+		<p class="large ui-text-center ui-page-section"><span id="chooseScope"></span><span id="chooseLevel"></span><span id="chooseSub"></span><span id="chooseSub2"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="downloadimage"></a><a id="auto" class="ui-initially-hidden"></a></p>
+		<p id="invopts" class="ui-text-center"></p>
+		<p id="custInv" class="ui-text-center ui-initially-hidden"></p><p id="custCart" class="ui-text-center ui-initially-hidden"></p>
+		<p id="levelDropInfo" class="ui-text-center ui-page-section"></p>
+		<p id="levelDropNote" class="ui-text-center"></p>
 	</body>
 </html>
