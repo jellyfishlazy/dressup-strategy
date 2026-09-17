@@ -1,4 +1,4 @@
-import { FEATURES, global, shoppingCart, clothesSet as legacyClothesSet, clothes as legacyClothes, accMul, accSumScore, accCateNum, loadNew, load, MyClothes, loadFromStorage, save, calcDependencies } from './model.mjs';
+import { FEATURES, global, shoppingCart, clothesSet as modelClothesSet, clothes as modelClothes, accMul, accSumScore, accCateNum, loadNew, load, MyClothes, loadFromStorage, save, calcDependencies } from './model.mjs';
 import { drawTable, button_search, clothesNameTd_Search } from './ui.mjs';
 import { initOnekey } from './onekeystrategy.mjs';
 import { shareWardrobe } from './sharewardrobe.mjs';
@@ -15,11 +15,11 @@ import { shareWardrobe } from './sharewardrobe.mjs';
 /** @typedef {string | number | null | undefined} CategorySelection */
 /** @typedef {(base: string, weight: number, tag: string) => (criteria: Criteria) => ScoreBonus} BonusFactory */
 
-// Consume model's deliberately loose exports locally; preserve collection identity.
+// Reuse the typed model collections directly while preserving collection identity.
 /** @type {NikkiClothing[]} */
-const clothes = legacyClothes;
+const clothes = modelClothes;
 /** @type {Record<string, Record<string, NikkiClothing>>} */
-const clothesSet = legacyClothesSet;
+const clothesSet = modelClothesSet;
 
 /** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
 const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
@@ -38,8 +38,8 @@ const clothesNotice = /** @type {typeof globalThis & { clothesNotice: string }} 
 const levelNotice = /** @type {typeof globalThis & { levelNotice: string }} */ (globalThis).levelNotice;
 const lastVersion = /** @type {typeof globalThis & { lastVersion: string }} */ (globalThis).lastVersion;
 const menuFixed = /** @type {typeof globalThis & { menuFixed: ((id: string) => void) | undefined }} */ (globalThis).menuFixed;
-// BigUse injects its legacy draw/filter/category callbacks through this callable seam.
-/** @typedef {(...args: any[]) => any} RuntimeHook */
+// BigUse injects its draw/filter/category callbacks through these three stable callable seams.
+/** @typedef {(...args: never[]) => unknown} RuntimeHook */
 /** @type {Record<'drawTable' | 'chooseAccessories' | 'switchCate', RuntimeHook | null>} */
 const runtimeHooks = { drawTable: null, chooseAccessories: null, switchCate: null };
 
@@ -56,17 +56,20 @@ function configureRuntimeHooks(hooks = {}) {
 
 /** @param {Parameters<typeof drawTable>} args */
 function invokeDrawTable(...args) {
-	return (runtimeHooks.drawTable || drawTable)(...args);
+	const hook = runtimeHooks.drawTable;
+	return hook ? /** @type {typeof drawTable} */ (hook)(...args) : drawTable(...args);
 }
 
 /** @param {[accfilters: Criteria]} args */
 function invokeChooseAccessories(...args) {
-	return (runtimeHooks.chooseAccessories || chooseAccessories)(...args);
+	const hook = runtimeHooks.chooseAccessories;
+	return hook ? /** @type {typeof chooseAccessories} */ (hook)(...args) : chooseAccessories(...args);
 }
 
 /** @param {[category: CategorySelection]} args */
 function invokeSwitchCate(...args) {
-	return (runtimeHooks.switchCate || switchCate)(...args);
+	const hook = runtimeHooks.switchCate;
+	return hook ? /** @type {typeof switchCate} */ (hook)(...args) : switchCate(...args);
 }
 // Ivan's Workshop
 
@@ -87,8 +90,8 @@ var categoryHierarchy = function () {
 }
 ();
 
-// Material still consumes dynamic hierarchy entries; the alias keeps object identity.
-/** @type {Record<string, any>} */
+// Public hierarchy keeps object identity with the typed category map.
+/** @type {Record<string, string[]>} */
 const CATEGORY_HIERARCHY = categoryHierarchy;
 
 /** @param {string} type @param {string} id */

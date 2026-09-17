@@ -10,10 +10,8 @@
     return function (event) {
       if (event && event.preventDefault && event.currentTarget && event.currentTarget.tagName === 'A') event.preventDefault();
       if (root.MainActions && typeof root.MainActions.run === 'function') {
-        var result = root.MainActions.run(name);
-        if (typeof result !== 'undefined') return result;
+        return root.MainActions.run(name);
       }
-      if (typeof root[name] === 'function') return root[name]();
     };
   }
   function syncBootstrapButtons() {

@@ -5,12 +5,12 @@ import { p, pspan, getStrCriteria, getstrTag } from './onekeystrategy.mjs';
 /** @typedef {Record<string, any>} LegacyDict */
 /** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
 const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
-const category = /** @type {typeof globalThis & { category: any }} */ (globalThis).category;
-const skipCategory = /** @type {typeof globalThis & { skipCategory: any }} */ (globalThis).skipCategory;
-const repelCates = /** @type {typeof globalThis & { repelCates: any }} */ (globalThis).repelCates;
+const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
+const skipCategory = /** @type {typeof globalThis & { skipCategory: string[] }} */ (globalThis).skipCategory;
+const repelCates = /** @type {typeof globalThis & { repelCates: string[][] }} */ (globalThis).repelCates;
 const Flist = /** @type {typeof globalThis & { Flist: LegacyDict }} */ (globalThis).Flist;
 const allThemes = /** @type {typeof globalThis & { allThemes: LegacyDict }} */ (globalThis).allThemes;
-const clone = /** @type {typeof globalThis & { clone: (value: any) => any }} */ (globalThis).clone;
+const clone = /** @type {typeof globalThis & { clone: <T>(value: T) => T }} */ (globalThis).clone;
 var limitRet = 15; //maximum return when search by keywords
 var lanSteps = 5;
 /** @type {any[]} */
@@ -34,11 +34,12 @@ function lanStrategy_init(){
 	//gen all suitSet that user have
 	suitSet = {};
 	for (var i in clothes) {
-		if (!clothes[i].isSuit) continue;
-		var setName = clothes[i].isSuit;
+		var clothing = clothes[i];
+		if (!clothing || !clothing.isSuit) continue;
+		var setName = clothing.isSuit;
 		//exclude those with "染","套"
 		if (setName.indexOf('·染')>0||setName.indexOf('·套')>0||setName.indexOf('·基')>0) continue;
-		var type = clothes[i].type.type;
+		var type = clothing.type.type;
 
 		if (suitSet[setName] == null){
 			suitSet[setName] = {};
@@ -47,18 +48,20 @@ function lanStrategy_init(){
 			suitSet[setName]['acc'] = {};
 			suitSet[setName]['missing'] = false;
 		}
-		if (!lanOwnChk(clothes[i],lanOwn)) suitSet[setName]['missing'] = true;
-		if (isAcc(clothes[i])) {
+		if (!lanOwnChk(clothing,lanOwn)) suitSet[setName]['missing'] = true;
+		if (isAcc(clothing)) {
 			if (!suitSet[setName]['acc'][type]) suitSet[setName]['acc'][type] = {};
-			suitSet[setName]['acc'][type]['0'] = clothes[i];
-		}else suitSet[setName]['clothes'][type] = clothes[i];
+			suitSet[setName]['acc'][type]['0'] = clothing;
+		}else suitSet[setName]['clothes'][type] = clothing;
 	}
 
 	//gen all wordSet
 	wordSet = {};
 	for (var i in clothes){
-		var name = clothes[i].name;
-		var type = clothes[i].type.type;
+		var clothing = clothes[i];
+		if (!clothing) continue;
+		var name = clothing.name;
+		var type = clothing.type.type;
 		var matchStr = [];
 		for (var j=0; j<name.length; j++){ //get name string
 			for (var k=1; k<=2; k++){
@@ -77,23 +80,23 @@ function lanStrategy_init(){
 				}
 				wordSet[str]['count'] += 1;
 
-				if (!lanOwnChk(clothes[i], lanOwn)) continue;
-				if (clothes[i].isF) continue;
-				var sumScore = Math.round(clothes[i].sumScore);
-				var tmpScore = Math.round(clothes[i].tmpScore);
-				var bonus = Math.round(clothes[i].bonusScore).toString();
+				if (!lanOwnChk(clothing, lanOwn)) continue;
+				if (clothing.isF) continue;
+				var sumScore = Math.round(/** @type {number} */ (clothing.sumScore));
+				var tmpScore = Math.round(/** @type {number} */ (clothing.tmpScore));
+				var bonus = Math.round(/** @type {number} */ (clothing.bonusScore)).toString();
 				if (isAcc_c(type)){
 					if (wordSet[str]['acc'][type] == null)
 						wordSet[str]['acc'][type] = {};
 					if (wordSet[str]['acc'][type][bonus] == null)
-						wordSet[str]['acc'][type][bonus] = clothes[i];
+						wordSet[str]['acc'][type][bonus] = clothing;
 					else if (tmpScore > wordSet[str]['acc'][type][bonus].tmpScore)
-						wordSet[str]['acc'][type][bonus] = clothes[i];
+						wordSet[str]['acc'][type][bonus] = clothing;
 				}else{
 					if (wordSet[str]['clothes'][type] == null)
-						wordSet[str]['clothes'][type] = clothes[i];
+						wordSet[str]['clothes'][type] = clothing;
 					else if (sumScore > wordSet[str]['clothes'][type].sumScore)
-						wordSet[str]['clothes'][type] = clothes[i];
+						wordSet[str]['clothes'][type] = clothing;
 				}
 				if (wordSet[str]['rawScore'][type] == null) {
 					wordSet[str]['rawScore'][type] = sumScore;
@@ -113,12 +116,14 @@ function lanStrategy_init(){
 	//gen all tagCate
 	tagSet = {};
 	for (var i in clothes){
-		if (!lanOwnChk(clothes[i], lanOwn)) continue;
-		if (clothes[i].isF) continue;
-		var mainType = clothes[i].type.mainType;
+		var clothing = clothes[i];
+		if (!clothing) continue;
+		if (!lanOwnChk(clothing, lanOwn)) continue;
+		if (clothing.isF) continue;
+		var mainType = clothing.type.mainType;
 		if (mainType!='襪子'&&mainType!='飾品') continue; //skip unrelated
-		var type = clothes[i].type.type;
-		var tags = clothes[i].tags;
+		var type = clothing.type.type;
+		var tags = clothing.tags;
 		for (var tagIndex in tags){
 			if (!tags[tagIndex]) continue;
 			//if (tags[tagIndex].indexOf('+')>=0) continue; //skip 螢光之靈
@@ -132,21 +137,21 @@ function lanStrategy_init(){
 				tagSet[tagCate]['typeCount'] = {};
 				tagSet[tagCate]['count'] = 0;
 			}
-			var sumScore = Math.round(clothes[i].sumScore);
-			var tmpScore = Math.round(clothes[i].tmpScore);
-			var bonus = Math.round(clothes[i].bonusScore).toString();
+			var sumScore = Math.round(/** @type {number} */ (clothing.sumScore));
+			var tmpScore = Math.round(/** @type {number} */ (clothing.tmpScore));
+			var bonus = Math.round(/** @type {number} */ (clothing.bonusScore)).toString();
 			if (isAcc_c(type)){
 				if (tagSet[tagCate]['acc'][type] == null)
 					tagSet[tagCate]['acc'][type] = {};
 				if (tagSet[tagCate]['acc'][type][bonus] == null)
-					tagSet[tagCate]['acc'][type][bonus] = clothes[i];
+					tagSet[tagCate]['acc'][type][bonus] = clothing;
 				else if (tmpScore > tagSet[tagCate]['acc'][type][bonus].tmpScore)
-					tagSet[tagCate]['acc'][type][bonus] = clothes[i];
+					tagSet[tagCate]['acc'][type][bonus] = clothing;
 			}else{
 				if (tagSet[tagCate]['clothes'][type] == null)
-					tagSet[tagCate]['clothes'][type] = clothes[i];
+					tagSet[tagCate]['clothes'][type] = clothing;
 				else if (sumScore > tagSet[tagCate]['clothes'][type].sumScore)
-					tagSet[tagCate]['clothes'][type] = clothes[i];
+					tagSet[tagCate]['clothes'][type] = clothing;
 			}
 
 			if (tagSet[tagCate]['typeCount'][type] == null) tagSet[tagCate]['typeCount'][type] = 0;
@@ -174,11 +179,13 @@ function lanStrategy(){
 	//calculate all clothes
 	allScores = {};
 	for (var i in clothes) {//calc each clothes, put to allScores[type], and sort
-		//if (lanOwnChk(clothes[i], lanOwn)) {
-			clothes[i].calc(criteria);
-			if (clothes[i].isF) continue;
-			if (!allScores[clothes[i].type.type]) allScores[clothes[i].type.type] = [];
-			allScores[clothes[i].type.type].push(clothes[i]);
+		var clothing = clothes[i];
+		if (!clothing) continue;
+		//if (lanOwnChk(clothing, lanOwn)) {
+			clothing.calc(criteria);
+			if (clothing.isF) continue;
+			if (!allScores[clothing.type.type]) allScores[clothing.type.type] = [];
+			allScores[clothing.type.type].push(clothing);
 		//}
 	}
 	for (var i in allScores) allScores[i].sort(function(/** @type {any} */ a, /** @type {any} */ b){return isAccSumScore(b) - isAccSumScore(a);});
@@ -233,10 +240,14 @@ function lanStrategy_recalc(n){
 				var clothesType = cl.type.type;
 				lazyKeywords[wordArray[0]['name']][clothesType] = cl;
 				for (var j in repelCates){ //check repelCates before push into lazySet
-					if (clothesType==repelCates[j][0]) {
-						for (var k=1; k<repelCates[j].length; k++) if (lazySet[repelCates[j][k]]) delete lazySet[repelCates[j][k]];
-					}else if (Dom.inArray(clothesType,repelCates[j])>0) {
-						if (lazySet[repelCates[j][0]]) delete lazySet[repelCates[j][0]];
+					var repelGroup = repelCates[j];
+					if (!repelGroup || repelGroup.length === 0) continue;
+					var primaryType = repelGroup[0];
+					if (!primaryType) continue;
+					if (clothesType==primaryType) {
+						for (var k=1; k<repelGroup.length; k++) { var repelType = repelGroup[k]; if (repelType && lazySet[repelType]) delete lazySet[repelType]; }
+					}else if (Dom.inArray(clothesType,repelGroup)>0) {
+						if (lazySet[primaryType]) delete lazySet[primaryType];
 					}
 				}
 				lazySet[clothesType] = cl;
@@ -392,11 +403,13 @@ function lanStrategy_print(lazySet){
 
 		if (i.indexOf('套裝·')!=0) {
 			for (var c in category){ //sort by category
-				if (lazyKeywords[i][category[c]]) {
+				var categoryName = category[c];
+				if (categoryName === undefined) continue;
+				if (lazyKeywords[i][categoryName]) {
 					if (i.indexOf('+')>0) {
-						var type = category[c].substr(Math.max(category[c].indexOf('-'),category[c].indexOf('·'))+1);
-						categoryContent.append(pspan_id('('+type+')'+lazyKeywords[i][category[c]].name,"clothes",lazyKeywords[i][category[c]].longid));
-					}else categoryContent.append(pspan_id(lazyKeywords[i][category[c]].name,"clothes",lazyKeywords[i][category[c]].longid));
+						var categorySubType = categoryName.substr(Math.max(categoryName.indexOf('-'),categoryName.indexOf('·'))+1);
+						categoryContent.append(pspan_id('(' + categorySubType + ')'+lazyKeywords[i][categoryName].name,"clothes",lazyKeywords[i][categoryName].longid));
+					}else categoryContent.append(pspan_id(lazyKeywords[i][categoryName].name,"clothes",lazyKeywords[i][categoryName].longid));
 					categoryContent.append(pspan(' | ',"nm"));
 				}
 			}
@@ -508,27 +521,35 @@ function evalSets(resultObj,existObj){
 		//remove repelCates and calc score
 		resultObj[str]['score'] = 0;
 		for (var j in repelCates){
+			var repelGroup = repelCates[j];
+			if (!repelGroup || repelGroup.length === 0) continue;
+			var primaryType = repelGroup[0];
+			if (!primaryType) continue;
 			/** @type {[number, number]} */
 			var sumFirst = [0,0]; //count, score
 			/** @type {[number, number]} */
 			var sumOthers = [0,0];
-			for (var k in repelCates[j]){
-				if (resultObj[str]['typeScore'][repelCates[j][k]]){
-					var score = resultObj[str]['typeScore'][repelCates[j][k]];
+			for (var k in repelGroup){
+				var repelType = repelGroup[k];
+				if (!repelType) continue;
+				if (resultObj[str]['typeScore'][repelType]){
+					var score = resultObj[str]['typeScore'][repelType];
 					if (Number(k)==0) { sumFirst[0]++; sumFirst[1] += score;}
 					else { sumOthers[0]++; sumOthers[1] += score; }
 				}
 			}
 			if (sumFirst[0]==0 || sumOthers[0]==0) continue;
 			if (sumFirst[1] < sumOthers[1]) {
-				if (resultObj[str]['typeScore'][repelCates[j][0]]){
-					delete resultObj[str]['result'][repelCates[j][0]];
-					delete resultObj[str]['typeScore'][repelCates[j][0]];
+				if (resultObj[str]['typeScore'][primaryType]){
+					delete resultObj[str]['result'][primaryType];
+					delete resultObj[str]['typeScore'][primaryType];
 				}
-			}else for (let removeIndex=1; removeIndex<repelCates[j].length; removeIndex++) {
-				if (resultObj[str]['typeScore'][repelCates[j][removeIndex]]){
-					delete resultObj[str]['result'][repelCates[j][removeIndex]];
-					delete resultObj[str]['typeScore'][repelCates[j][removeIndex]];
+			}else for (let removeIndex=1; removeIndex<repelGroup.length; removeIndex++) {
+				var removeType = repelGroup[removeIndex];
+				if (!removeType) continue;
+				if (resultObj[str]['typeScore'][removeType]){
+					delete resultObj[str]['result'][removeType];
+					delete resultObj[str]['typeScore'][removeType];
 				}
 			}
 		}

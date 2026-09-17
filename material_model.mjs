@@ -21,6 +21,7 @@ const pattern_extra = /** @type {typeof globalThis & { pattern_extra: any[][] | 
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringGlobalState} ScoringGlobalState */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ClothingDependency} ClothingDependency */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
+/** @typedef {ScoringClothing & { longid: string, set: string, exDep: string, stars: string | number }} MaterialClothing */
 /** @typedef {import('./src/domain/scoring/types.d.ts').Criteria} Criteria */
 /** @typedef {import('./src/domain/scoring/types.d.ts').RawScoreMap} RawScoreMap */
 /** @typedef {import('./src/domain/wardrobe/types.d.ts').WardrobeRow} WardrobeRow */
@@ -29,7 +30,7 @@ const pattern_extra = /** @type {typeof globalThis & { pattern_extra: any[][] | 
 /** @typedef {import('./src/domain/shopping-cart/types.d.ts').MaterialShoppingCart<ScoringClothing>} MaterialCart */
 /** @type {FeatureName[]} */
 var FEATURES = ["simple", "cute", "active", "pure", "cool"];
-/** @type {LegacyDict} */
+/** @type {Record<string, [FeatureName, import('./src/domain/scoring/types.d.ts').FeatureSign]>} */
 var CHINESE_TO_FEATURES = {
 	"簡約":["simple","+"],
 	"華麗":["simple","-"],
@@ -53,7 +54,7 @@ var global = {
 // parses a csv row into object
 // Clothes: name, type, id, stars, gorgeous, simple, elegant, active, mature, cute, sexy, pure, cool, warm, extra, source, set
 //          0     1     2   3      4         5       6        7       8       9     10    11    12    13    14     15      16
-/** @param {WardrobeRow} csv @returns {any} */
+/** @param {WardrobeRow} csv @returns {MaterialClothing} */
 var Clothes = function(csv) {
   var item = rowToWardrobeItem(csv);
   var theType = typeInfo[item.type];
@@ -98,7 +99,7 @@ var Clothes = function(csv) {
           active[0], active[1], pure[0], pure[1], cool[0],
           cool[1], extra, source, set, version];
     },
-    addDep: function(/** @type {string} */ sourceType, /** @type {number} */ depNum, /** @type {any} */ c) {
+    addDep: function(/** @type {string} */ sourceType, /** @type {number} */ depNum, /** @type {MaterialClothing} */ c) {
 		var depinfo = {};
 		depinfo.sourceType = sourceType;
 		depinfo.depNum = depNum;
@@ -216,20 +217,20 @@ var Clothes = function(csv) {
 
       //螢光之靈
       if(this.type && "螢光之靈" == this.type.type && this.tags != null){
-        var lights = this.tags[0].split("+");
-        var lightKey = lights[0];
-        if(2 == lights.length && lightKey && CHINESE_TO_FEATURES[lightKey]){
-          var lightBonus = CHINESE_TO_FEATURES[lightKey];
+        var lights = /** @type {string} */ (this.tags[0]).split("+");
+        var lightFilter = /** @type {[FeatureName, import('./src/domain/scoring/types.d.ts').FeatureSign]} */ (CHINESE_TO_FEATURES[/** @type {string} */ (lights[0])]);
+        var lightScore = Number(lights[1]);
+        if(2 == lights.length && lightFilter){
           //skills handling
-          if(filters.highscore1==lightBonus[0]) lights[1]=Math.round(lights[1] * 1.27);
-          if(filters.highscore2==lightBonus[0]) lights[1]=Math.round(lights[1] * 1.778);
-          if("-" == lightBonus[1]){
-            this.bonusByCategory.scores[lightBonus[0]][1] += lights[1] * 1;
-            if(0 > filters[lightBonus[0]]) this.bonusScore += lights[1] * 1;
+          if(filters.highscore1==lightFilter[0]) lightScore=Math.round(lightScore * 1.27);
+          if(filters.highscore2==lightFilter[0]) lightScore=Math.round(lightScore * 1.778);
+          if("-" == lightFilter[1]){
+            this.bonusByCategory.scores[lightFilter[0]][1] += lightScore;
+            if(0 > (filters[lightFilter[0]] ?? 0)) this.bonusScore += lightScore;
           }
-          if("+" == lightBonus[1]){
-            this.bonusByCategory.scores[lightBonus[0]][0] += lights[1] * 1;
-            if(0 < filters[lightBonus[0]]) this.bonusScore += lights[1] * 1;
+          if("+" == lightFilter[1]){
+            this.bonusByCategory.scores[lightFilter[0]][0] += lightScore;
+            if(0 < (filters[lightFilter[0]] ?? 0)) this.bonusScore += lightScore;
           }
         }
       }
@@ -317,9 +318,9 @@ function MyClothes() {
   });
 }
 
-/** @type {any[]} */
+/** @type {MaterialClothing[]} */
 var clothes = function() {
-  /** @type {any[]} */
+  /** @type {MaterialClothing[]} */
   var ret = [];
   for (const row of wardrobe) {
 //console.log(row);
@@ -328,16 +329,16 @@ var clothes = function() {
   return ret;
 }();
 
-/** @type {LegacyDict} */
+/** @type {Record<string, Record<string, MaterialClothing>>} */
 var clothesSet = function() {
-  /** @type {LegacyDict} */
+  /** @type {Record<string, Record<string, MaterialClothing>>} */
   var ret = {};
   for (var i in clothes) {
-    var t = clothes[i].type.mainType;
-    if (!ret[t]) {
-      ret[t] = {};
-    }
-    ret[t][clothes[i].id] = clothes[i];
+    var clothing = clothes[i];
+    if (!clothing) continue;
+    var t = clothing.type.mainType;
+    var group = ret[t] ?? (ret[t] = {});
+    group[clothing.id] = clothing;
   }
   return ret;
 }();
@@ -547,19 +548,19 @@ function calcDependencies() {
   for (var i in pattern) {
     var recipe = pattern[i];
     if (!recipe) continue;
-    var target = clothesSet[recipe[0]][recipe[1]];
-    var source = clothesSet[recipe[2]][recipe[3]];
-    if (!target) continue;
+    var target = clothesSet[recipe[0]]?.[recipe[1]];
+    var source = clothesSet[recipe[2]]?.[recipe[3]];
+    if (!target || !source) continue;
     source.addDep(recipe[5], recipe[4], target);
   }
   if (pattern_extra){
 	for (var i in pattern_extra){
 		var recipe = pattern_extra[i];
 		if (!recipe) continue;
-		var source = clothesSet[recipe[0]][recipe[1]];
-		var target = recipe[2];
+		var source = clothesSet[recipe[0]]?.[recipe[1]];
+		var extraTarget = recipe[2];
 		if (!source) continue;
-		source.exDep += (source.exDep.length>0 ? ',' : '') + target;
+		source.exDep += (source.exDep.length>0 ? ',' : '') + extraTarget;
 	}
   }
 }
@@ -568,9 +569,11 @@ function calcDependencies() {
 function load(myClothes) {
   var cs = myClothes.split(",");
   for (var i in clothes) {
-    clothes[i].own = false;
-    if (cs.indexOf(clothes[i].name) >= 0) {
-      clothes[i].own = true;
+    var clothing = clothes[i];
+    if (!clothing) continue;
+    clothing.own = false;
+    if (cs.indexOf(clothing.name) >= 0) {
+      clothing.own = true;
     }
   }
   var mine = MyClothes();

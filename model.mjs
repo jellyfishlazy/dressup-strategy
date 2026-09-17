@@ -18,7 +18,7 @@ const pattern = /** @type {typeof globalThis & { pattern: [string, string, strin
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringGlobalState} ScoringGlobalState */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ClothingDependency} ClothingDependency */
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing} ScoringClothing */
-/** @typedef {ScoringClothing & { isSuit: unknown }} ModelClothing */
+/** @typedef {ScoringClothing & { isSuit: string }} ModelClothing */
 /** @typedef {import('./src/domain/inventory/types.d.ts').Inventory<ScoringClothing>} ClothesInventory */
 /** @typedef {import('./src/domain/shopping-cart/types.d.ts').MatcherShoppingCart<ScoringClothing>} MatcherCart */
 /** @type {FeatureName[]} */
@@ -87,7 +87,7 @@ var Clothes = function(csv) {
     tags: item.tags.split(/[\/,，]/).map(function (/** @type {string} */ value) { return value.trim(); }).filter(Boolean),
     tagsRaw: item.tags,
     source: item.source.replace(/抽·/g,"").replace(/設·/g,"").replace(/設·圖/g,"設計圖"),
-	isSuit: item.suit,
+	isSuit: /** @type {string} */ (item.suit),
 	version: item.version,
     deps: /** @type {ClothingDependency[]} */ ([]),
     toCsv: function() {
@@ -355,11 +355,9 @@ var typedClothesSet = function() {
   return ret;
 }();
 
-// Gate 8F-8 staged legacy boundary: keep collection items loose until consumer gates.
-// ponytail: aliases share the typed collections; remove the any boundary as consumers migrate.
-/** @type {any[]} */
+/** @type {ModelClothing[]} */
 var clothes = typedClothes;
-/** @type {Record<string, any>} */
+/** @type {Record<string, Record<string, ModelClothing>>} */
 var clothesSet = typedClothesSet;
 
 /** @returns {MatcherCart} */

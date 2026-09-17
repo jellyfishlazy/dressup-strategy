@@ -61,16 +61,16 @@ test('Gate 8F-7 preserves one-key strategy categories and scoring contracts', ()
   assert.match(strategy, /src\/domain\/scoring\/types\.d\.ts/);
 });
 
-test('Gate 8F-8 enforces model internals while retaining loose legacy collections until consumer gates', () => {
+test('Gate 8F-8 model internals remain typed after Gate 9B retires loose collection exports', () => {
 
   const model = read('model.mjs');
-  assert.match(model, /@typedef \{ScoringClothing & \{ isSuit: unknown \}\} ModelClothing/);
+  assert.match(model, /@typedef \{ScoringClothing & \{ isSuit: string \}\} ModelClothing/);
   assert.match(model, /@returns \{ModelClothing\}/);
   assert.match(model, /@type \{ModelClothing\[\]\}/);
   assert.match(model, /@type \{Record<string, Record<string, ModelClothing>>\}/);
-  // These public aliases deliberately retain legacy any; direct assignment preserves identity.
-  assert.match(model, /@type \{any\[\]\} \*\/\s*var clothes = typedClothes;/);
-  assert.match(model, /@type \{Record<string, any>\} \*\/\s*var clothesSet = typedClothesSet;/);
+  assert.match(model, /@type \{ModelClothing\[\]\} \*\/\s*var clothes = typedClothes;/);
+  assert.match(model, /@type \{Record<string, Record<string, ModelClothing>>\} \*\/\s*var clothesSet = typedClothesSet;/);
+  assert.doesNotMatch(model, /@type \{any\[\]\} \*\/\s*var clothes = typedClothes/);
   assert.match(model, /for \(var i in typedClothes\)/);
   assert.match(model, /var clothing = typedClothes\[i\]/);
   assert.match(model, /var target = typedClothesSet\[recipe\[0\]\]/);
@@ -89,14 +89,16 @@ test('Gate 8F-9 preserves lazy strategy contracts and tag cleanup', () => {
   assert.match(lazy, /tagSet\[i\]\['count'\] -= tagSet\[i\]\['typeCount'\]\[typeName\]/);
 });
 
-test('Gate 8F-10 preserves material model contracts and feature iteration', () => {
+test('Gate 8F-10 material contracts remain intact after Gate 9B collection tightening', () => {
 
   const materialModel = read('material_model.mjs');
   assert.match(materialModel, /src\/domain\/wardrobe\/types\.d\.ts/);
   assert.match(materialModel, /src\/domain\/scoring\/types\.d\.ts/);
   assert.match(materialModel, /@typedef \{Record<string, any>\} LegacyDict/);
-  assert.match(materialModel, /@type \{any\[\]\} \*\/\s*var clothes = function/);
-  assert.match(materialModel, /@type \{LegacyDict\} \*\/\s*var clothesSet = function/);
+  assert.match(materialModel, /@returns \{MaterialClothing\}/);
+  assert.match(materialModel, /@type \{MaterialClothing\[\]\} \*\/\s*var clothes = function/);
+  assert.match(materialModel, /@type \{Record<string, Record<string, MaterialClothing>>\} \*\/\s*var clothesSet = function/);
+  assert.doesNotMatch(materialModel, /@type \{any\[\]\} \*\/\s*var clothes = function/);
   assert.match(materialModel, /for \(const c of FEATURES\)/);
 });
 
@@ -151,10 +153,10 @@ test('inventory size aggregation reads the actual persisted subtype key', () => 
 
 test('Gate 8F-12 enforces Nikki with local typed collections and guarded reads', () => {
   const source = read('nikki.mjs');
-  assert.match(source, /@type \{NikkiClothing\[\]\} \*\/\s*const clothes = legacyClothes;/);
+  assert.match(source, /@type \{NikkiClothing\[\]\} \*\/\s*const clothes = modelClothes;/);
   assert.match(source, /@type \{Record<string, Record<string, NikkiClothing>>\}/);
   assert.match(source, /@type \{Record<string, string\[\]>\}/);
-  assert.match(source, /@type \{Record<string, any>\} \*\/\s*const CATEGORY_HIERARCHY = categoryHierarchy;/);
+  assert.match(source, /@type \{Record<string, string\[\]>\} \*\/\s*const CATEGORY_HIERARCHY = categoryHierarchy;/);
   assert.match(source, /allThemes: Record<string, NikkiLevel>/);
   assert.match(source, /@type \{Criteria\}/);
   assert.match(source, /const clothing = clothes\[i\];\s*if \(!clothing\) continue;/);
@@ -169,9 +171,9 @@ test('Gate 8F-12 enforces Nikki with local typed collections and guarded reads',
 
 test('Gate 8F-13 enforces Material with local clothing, state and rendering boundaries', () => {
   const source = read('material.mjs');
-  assert.match(source, /@type \{MaterialClothing\[\]\} \*\/\s*const clothes = legacyClothes;/);
+  assert.match(source, /@type \{MaterialClothing\[\]\} \*\/\s*const clothes = modelClothes;/);
   assert.match(source, /@typedef \{Record<string, any>\} LegacyDict/);
-  assert.match(source, /@type \{LegacyDict\} \*\/\s*const clothesSet = legacyClothesSet;/);
+  assert.match(source, /@type \{LegacyDict\} \*\/\s*const clothesSet = modelClothesSet;/);
   assert.match(source, /@type \{number\[\]\} \*\/\s*var reqCnt=/);
   assert.match(source, /@type \{MaterialId\[\]\} \*\/\s*var cartCont=/);
   assert.match(source, /@typedef \{\[MaterialClothing, string, string\]\} StarDrop/);

@@ -1,29 +1,50 @@
-﻿import { clothes as legacyClothes, clothesSet as legacyClothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
+﻿import { clothes as modelClothes, clothesSet as modelClothesSet, calcDependencies, loadFromStorage, loadNew, load, save } from './material_model.mjs';
 
 /** @typedef {import('./src/domain/scoring/types.d.ts').ScoringClothing & { set: string, stars: string | number }} MaterialClothing */
 /** @typedef {Record<string, any>} LegacyDict */
 /** @typedef {[MaterialClothing, string, string]} StarDrop */
 /** @typedef {string | number} MaterialId */
+/** @typedef {[string, string, string, string, string | number, string]} MaterialPatternRow */
+/** @typedef {[string, string]} MaterialSetCategoryRow */
+/** @typedef {[string, string, string, string, number]} MaterialConvertRow */
+/** @typedef {[string, string, string, number]} MaterialConstructRow */
+/** @typedef {[string, string, number, string, number?]} MaterialMerchantRow */
+/** @typedef {[number, number]} MaterialConvertPrice */
+/** @typedef {[string, string, number]} MaterialPatternPriceRow */
 
-// Local views retain the model collections' identity; recipe tables remain legacy dictionaries.
+// Typed model collections keep their identity; recipe algorithms retain explicit dense legacy views.
 /** @type {MaterialClothing[]} */
-const clothes = legacyClothes;
+const clothes = modelClothes;
 /** @type {LegacyDict} */
-const clothesSet = legacyClothesSet;
+const clothesSet = modelClothesSet;
 
 /** @type {import('./src/legacy/native-dom-types.d.ts').DomFacade} */
 const Dom = /** @type {typeof globalThis & { Dom: import('./src/legacy/native-dom-types.d.ts').DomFacade }} */ (globalThis).Dom;
-const MaterialActions = /** @type {typeof globalThis & { MaterialActions: { register(actions: Record<string, (...args: any[]) => any>): void } }} */ (globalThis).MaterialActions;
+const MaterialActions = /** @type {typeof globalThis & { MaterialActions: { register(actions: Record<string, (...args: never[]) => unknown>): void } }} */ (globalThis).MaterialActions;
 const html2canvas = /** @type {typeof globalThis & { html2canvas: (element: HTMLElement, options: { onrendered(canvas: HTMLCanvasElement): void }) => void }} */ (globalThis).html2canvas;
 const category = /** @type {typeof globalThis & { category: string[] }} */ (globalThis).category;
-const pattern = /** @type {typeof globalThis & { pattern: LegacyDict }} */ (globalThis).pattern;
-const setcategory = /** @type {typeof globalThis & { setcategory: LegacyDict }} */ (globalThis).setcategory;
-const convert = /** @type {typeof globalThis & { convert: LegacyDict }} */ (globalThis).convert;
-const construct = /** @type {typeof globalThis & { construct: LegacyDict }} */ (globalThis).construct;
-const merchant = /** @type {typeof globalThis & { merchant: LegacyDict }} */ (globalThis).merchant;
-const convertPrice = /** @type {typeof globalThis & { convertPrice: LegacyDict }} */ (globalThis).convertPrice;
+const patternSource = /** @type {typeof globalThis & { pattern: MaterialPatternRow[] }} */ (globalThis).pattern;
+/** @type {LegacyDict} */
+const pattern = patternSource;
+const setcategorySource = /** @type {typeof globalThis & { setcategory: MaterialSetCategoryRow[] }} */ (globalThis).setcategory;
+/** @type {LegacyDict} */
+const setcategory = setcategorySource;
+const convertSource = /** @type {typeof globalThis & { convert: MaterialConvertRow[] }} */ (globalThis).convert;
+/** @type {LegacyDict} */
+const convert = convertSource;
+const constructSource = /** @type {typeof globalThis & { construct: MaterialConstructRow[] }} */ (globalThis).construct;
+/** @type {LegacyDict} */
+const construct = constructSource;
+const merchantSource = /** @type {typeof globalThis & { merchant: MaterialMerchantRow[] }} */ (globalThis).merchant;
+/** @type {LegacyDict} */
+const merchant = merchantSource;
+const convertPriceSource = /** @type {typeof globalThis & { convertPrice: Record<string, MaterialConvertPrice> }} */ (globalThis).convertPrice;
+/** @type {LegacyDict} */
+const convertPrice = convertPriceSource;
 const constructMaterialName = /** @type {typeof globalThis & { constructMaterialName: string[] }} */ (globalThis).constructMaterialName;
-const patternPrice = /** @type {typeof globalThis & { patternPrice: LegacyDict }} */ (globalThis).patternPrice;
+const patternPriceSource = /** @type {typeof globalThis & { patternPrice: MaterialPatternPriceRow[] }} */ (globalThis).patternPrice;
+/** @type {LegacyDict} */
+const patternPrice = patternPriceSource;
 var highlight=['星之海','韶顏傾城','格萊斯','冰風戰歌','白櫻戀歌'];
 var highlight_style=['xzh','syqc','gls','bfzg','bylg'];
 

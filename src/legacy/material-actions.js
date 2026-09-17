@@ -50,9 +50,9 @@
     if (!action) return;
     var match = /^([A-Za-z_$][\w$]*)\s*\((.*)\)\s*$/.exec(action);
     if (!match) throw new Error('Invalid material action: ' + action);
-    var fn = registry[match[1]] || root[match[1]];
+    var fn = registry[match[1]];
     if (typeof fn !== 'function') throw new Error('Unknown material action: ' + match[1]);
-    return fn.apply(root, parseArgs(match[2]));
+    return fn.apply(null, parseArgs(match[2]));
   }
 
   function bind() {

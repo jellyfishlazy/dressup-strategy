@@ -1,4 +1,4 @@
-// Small native-DOM facade used only by the migrated main matcher runtime.
+// Small native-DOM facade shared by the active matcher, BigUse, and Material runtimes.
 // It intentionally implements the narrow operations the legacy scripts need,
 // without loading jQuery or exposing a global `$`/`jQuery` alias.
 (function (root) {
