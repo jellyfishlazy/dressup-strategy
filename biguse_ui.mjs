@@ -1,6 +1,6 @@
 import { clothes } from './model.mjs';
 import { td, render } from './ui.mjs';
-import { goTop, toggleInventory, criteria, byCategoryAndScore } from './nikki.mjs';
+import { goTop, toggleInventory, criteria, byCategoryAndScore, currentCategory } from './nikki.mjs';
 import { shoppingCart1, shoppingCart2 } from './biguse_model.mjs';
 import * as BigUseDomain from './src/domain/biguse/index.mjs';
 
@@ -16,6 +16,7 @@ const Dom = /** @type {typeof globalThis & { Dom: DomFacade }} */ (globalThis).D
 const NativeAutocomplete = /** @type {typeof globalThis & { NativeAutocomplete: Autocomplete }} */ (globalThis).NativeAutocomplete;
 const wardrobe2 = /** @type {typeof globalThis & { wardrobe2: Record<string, [string, string, string]> }} */ (globalThis).wardrobe2;
 const color = /** @type {typeof globalThis & { color: Record<string, [string, string]> }} */ (globalThis).color;
+const BIGUSE_RENDER_CHUNK = 500;
 /**
  * @param {DomCollection} $row
  */
@@ -160,6 +161,49 @@ function rowBiguse(piece, isShoppingCart, index) {
 }
 
 /**
+ * @param {DomCollection} $list
+ * @param {ScoringClothing[]} datas
+ * @param {number} start
+ * @param {number} end
+ * @param {boolean} isShoppingCart
+ * @param {number} index
+ */
+function appendBiguseRows($list, datas, start, end, isShoppingCart, index) {
+	for (var i = start; i < end; i++) {
+		const piece = datas[i];
+		if (!piece) continue;
+		var $row = rowBiguse(piece, isShoppingCart, index);
+		if (isShoppingCart) {
+			var $copyTd = $row.find('.table-td').eq(0);
+			if ($copyTd.length > 0) $copyTd.append(copyButton());
+		}
+		$list.append($row);
+	}
+}
+
+/**
+ * @param {DomCollection} $list
+ * @param {ScoringClothing[]} datas
+ * @param {number} rendered
+ * @param {boolean} isShoppingCart
+ * @param {number} index
+ */
+function loadMoreControl($list, datas, rendered, isShoppingCart, index) {
+	var $wrap = Dom("<div>").addClass("biguse-load-more ui-text-center ui-page-section");
+	var $button = Dom("<button>")
+		.addClass("ui-btn ui-btn-default")
+		.text("載入更多（" + rendered + " / " + datas.length + "）");
+	$button.click(function () {
+		var next = Math.min(rendered + BIGUSE_RENDER_CHUNK, datas.length);
+		appendBiguseRows($list, datas, rendered, next, isShoppingCart, index);
+		$wrap.remove();
+		if (next < datas.length) $list.parent().append(loadMoreControl($list, datas, next, isShoppingCart, index));
+	});
+	$wrap.append($button);
+	return $wrap;
+}
+
+/**
  * @param {ScoringClothing[]} datas
  * @param {boolean} isShoppingCart
  * @param {number} index
@@ -169,18 +213,9 @@ function listBiguse(datas, isShoppingCart, index) {
 	if (isShoppingCart) {
 		$list.append(rowBiguse(BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2).totalScore, isShoppingCart, index));
 	}
-	for (var i in datas) {
-		var $row = rowBiguse(/** @type {ScoringClothing} */ (datas[i]), isShoppingCart, index);
-		// 在 shoppingCart 中為所有數據行的第一個 table-td（複製按鈕欄位）添加複製按鈕
-		// 總分行（第一行）不需要按鈕，所以從 i >= 0 開始（因為總分行已經在前面添加了）
-		if (isShoppingCart) {
-			var $copyTd = $row.find('.table-td').eq(0);
-			if ($copyTd.length > 0) {
-				$copyTd.append(copyButton());
-			}
-		}
-		$list.append($row);
-	}
+	var chunked = !isShoppingCart && currentCategory === 'switchall';
+	var end = chunked ? Math.min(datas.length, BIGUSE_RENDER_CHUNK) : datas.length;
+	appendBiguseRows($list, datas, 0, end, isShoppingCart, index);
 	return $list;
 }
 
@@ -270,7 +305,11 @@ function drawTable(data, divId, isShoppingCart, index) {
 		var $table = Dom('#' + divId);
 		$table.empty();
 		$table.append(theadBiguse(isShoppingCart));
-		$table.append(listBiguse(data, isShoppingCart, index));
+		var $list = listBiguse(data, isShoppingCart, index);
+		$table.append($list);
+		if (!isShoppingCart && currentCategory === 'switchall' && data.length > BIGUSE_RENDER_CHUNK) {
+			$table.append(loadMoreControl($list, data, BIGUSE_RENDER_CHUNK, isShoppingCart, index));
+		}
 		return;
 	}
 	var $table = Dom('#' + divId + "1");

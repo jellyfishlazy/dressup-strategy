@@ -12,6 +12,7 @@ const here = resolve(fileURLToPath(import.meta.url), '..');
 const moduleRoot = resolve(here, '..');
 const root = resolve(moduleRoot, '..');
 const port = Number(process.env.PORT) || 8000;
+const host = '127.0.0.1';
 
 const MIME = {
 	'.html': 'text/html; charset=utf-8',
@@ -34,6 +35,11 @@ const MIME = {
 
 http.createServer((req, res) => {
 	let urlPath = decodeURIComponent(req.url.split('?')[0]);
+	if (urlPath === '/__dressup_health') {
+		res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+		res.end(JSON.stringify({ app: 'dressup-strategy', root }));
+		return;
+	}
 	if (urlPath === '/' || urlPath === '') urlPath = '/cn-search/index.html';
 	if (urlPath.endsWith('/')) urlPath += 'index.html';
 	const filePath = resolve(root, '.' + urlPath);
@@ -44,7 +50,9 @@ http.createServer((req, res) => {
 	const mime = MIME[extname(filePath).toLowerCase()] || 'application/octet-stream';
 	res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'no-store' });
 	res.end(readFileSync(filePath));
-}).listen(port, () => {
-	console.log('Dev server listening at http://localhost:' + port + '/cn-search/');
+}).listen(port, host, () => {
+	console.log('Dev server listening on http://' + host + ':' + port);
+	console.log('  Main: http://' + host + ':' + port + '/index.html');
+	console.log('  CN Search: http://' + host + ':' + port + '/cn-search/index.html');
 	console.log('  Repo root: ' + root);
 });

@@ -17,7 +17,8 @@
     "test:browser": "playwright test",
     "validate:data": "node scripts/validate-data.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run validate:data",
-    "build:cn-index": "npm run build:cn-index --workspace cn-search"
+    "build:cn-index": "npm run build:cn-index --workspace cn-search",
+    "start:main": "node scripts/launch-main.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

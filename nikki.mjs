@@ -122,7 +122,8 @@ function toggleInventory(type, id, _triggerElement) {
 	const clothing = clothesSet[type]?.[id];
 	if (!clothing) return;
 	var checked = !clothing.own;
-	checked ? Dom('#clickable-' + type + id).addClass('own') : Dom('#clickable-' + type + id).removeClass("own");
+	const clickable = document.getElementById('clickable-' + type + id);
+	if (clickable) clickable.classList.toggle('own', checked);
 	clothing.own = checked;
 	saveAndUpdate();
 }
@@ -623,8 +624,11 @@ function switchCate(c) {
 	currentCategory = c;
 	Dom("ul#categoryTab li").removeClass("active");
 	Dom("#category_container div").removeClass("active");
-	Dom("#" + c).addClass("active");
-	Dom("#category-" + c).addClass("active");
+	const categoryId = String(c);
+	const tab = document.getElementById(categoryId);
+	const panel = document.getElementById("category-" + categoryId);
+	if (tab) tab.classList.add("active");
+	if (panel) panel.classList.add("active");
 	onChangeUiFilter();
 	ReDrawcloneHeaderRow();
 	return false;
@@ -772,7 +776,9 @@ function updateSize(mine) {
 		if (ownedIds) subcount[type] = (subcount[type] || 0) + ownedIds.length;
 	}
 	for (var c in subcount) {
-		Dom("#" + c + ">a span").text(subcount[c]);
+		const tab = document.getElementById(c);
+		const badge = tab?.querySelector('a span');
+		if (badge) badge.textContent = String(subcount[c]);
 	}
 }
 
@@ -976,8 +982,8 @@ function autogenLimit(){
 			}
 		}
 	}
-	Dom(".1d27").removeClass("active");
-	Dom(".1d778").removeClass("active");
+	Dom(".highscore-1d27").removeClass("active");
+	Dom(".highscore-1d778").removeClass("active");
 	Dom('#' + boosts[0] + "1d27").addClass("active");
 	Dom('#' + boosts[1] + "1d778").addClass("active");
 	onChangeCriteria();
@@ -1011,11 +1017,11 @@ function initEvent() {
 	});
 	Dom(".highscore-link").click(function () {
 		var has = Dom(this).hasClass("active");
-		if(Dom(this).hasClass("1d27")){
-			Dom(".1d27").removeClass("active");
+		if(Dom(this).hasClass("highscore-1d27")){
+			Dom(".highscore-1d27").removeClass("active");
 		}
-		if(Dom(this).hasClass("1d778")){
-			Dom(".1d778").removeClass("active");
+		if(Dom(this).hasClass("highscore-1d778")){
+			Dom(".highscore-1d778").removeClass("active");
 		}
 		if(!has){
 			Dom(this).addClass("active");
@@ -1167,18 +1173,20 @@ function filterClotherHTML(btn){
 
 /** @param {DomCollection} obj @param {number} type @param {string} cls @param {string} str @returns {boolean} */
 function filterLoop(obj, type, cls, str){
-	if(filterCompare(obj, type, ".source:first", "定")
-		|| filterCompare(obj, type, ".source:first", "進")){
-		var id = obj.find(".source:first").text().replace(/(定|進)([0-9]+)[^0-9]*/, "$2");
-		var $source = Dom("#clickable-" + obj.find(".category:first").text().split("-")[0] + id).parent();
-		if(filterCompare($source, type, cls, str)){
-			return false;
-		}
-		else{
-			return filterLoop($source, type, cls, str);
-		}
+	if (type !== 2 && type !== -2) return true;
+	var sourceText = obj.find(".source:first").text();
+	var sourceMatch = sourceText.match(/(?:定|進)([0-9]+)/);
+	if (!sourceMatch) return true;
+	var id = sourceMatch[1];
+	var mainType = obj.find(".category:first").text().split("-")[0] ?? '';
+	if (!mainType || !id) return true;
+	var sourceNode = document.getElementById("clickable-" + mainType + id);
+	if (!sourceNode) return true;
+	var $source = Dom(sourceNode).parent();
+	if(filterCompare($source, type, cls, str)){
+		return false;
 	}
-	return true;
+	return filterLoop($source, type, cls, str);
 }
 
 /** @param {DomCollection} obj @param {number} type @param {string} cls @param {string} str */

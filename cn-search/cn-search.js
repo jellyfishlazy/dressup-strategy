@@ -17,9 +17,9 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 //     category map. Categories differ by vocabulary, not just characters,
 //     so OpenCC is not reliable for the join key.
 //   - Display fields are taken from TW when a match exists; otherwise the
-//     CN strings use a TW lexicon built from data/wardrobe.js (trad?imp key)
-//     so wording matches the project (e.g. ?餃 vs ?駁?), then OpenCC fallback.
-//     Anchors unify Han-hyphen-Han??and ??餃/?駁????嗥敶?so CN matches tw2cn(TW).
+//     CN strings use a TW lexicon built from data/wardrobe.js (trad→simp key)
+//     so wording matches the project (e.g. 登入 vs 登錄), then OpenCC fallback.
+//     Anchors unify Han-hyphen-Han→· and 限时登入/登陆→限时登录 so CN matches tw2cn(TW).
 //   - Search matches each filter token against a haystack of both the TW
 //     and the original CN strings, so users can type either form.
 
@@ -125,7 +125,7 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 	}
 
 	function init(data) {
-		setStatus('閫??銝凌?);
+		setStatus('解析中…');
 		var lookup = buildTwLookup(globalThis.wardrobe);
 		var twByKey = lookup.slim;
 		fullTwByKey = lookup.full;
@@ -141,15 +141,15 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 		populateCategoryOptions();
 		initManualEntry();
 		var schemaNote = (data.schema && data.schema < 2)
-			? '?|?蝝Ｗ??? (schema=' + data.schema + ')嚗??? build ???豢??冽??'
+			? '　|　索引舊版 (schema=' + data.schema + ')，請重跑 build 才能加入陸服獨有項目'
 			: '';
 		var tagsTwNote = (data.schema && data.schema < 3)
-			? '?|?撱箄降?? npm run build:cn-index 隞亙神?亙??朣?蝐?tagsTw'
+			? '　|　建議重跑 npm run build:cn-index 以寫入台服對齊標籤 tagsTw'
 			: '';
 		var openccNote = openccLoaded
 			? ''
-			: '?|?霅血?嚗penCC ?芾??伐?CDN ?航鋡急?嚗?蝪∠?頧?????朣?銝迤蝣?;
-		setStatus('?豢?鞈??湔: ' + (data.lastUpdated || '?') + '?|???' + merged.length + ' 蝑? + schemaNote + tagsTwNote + openccNote);
+			: '　|　警告：OpenCC 未載入（CDN 可能被擋）；簡繁轉換與語料對齊將不正確';
+		setStatus('陸服資料更新: ' + (data.lastUpdated || '?') + '　|　共 ' + merged.length + ' 筆' + schemaNote + tagsTwNote + openccNote);
 		refresh();
 	}
 
@@ -237,13 +237,13 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 			else if (results[i].reason === 'dup') dup++;
 			else miss++;
 		}
-		var msg = '? ' + added + ' 蝑?;
-		if (dup) msg += '嚗??銴?' + dup;
-		if (miss) msg += '嚗 fullRow ' + miss;
+		var msg = '加入 ' + added + ' 筆';
+		if (dup) msg += '，略過重複 ' + dup;
+		if (miss) msg += '，無 fullRow ' + miss;
 		showToast(msg);
 	}
 
-	// Per-row '嚗?
+	// Per-row '＋'
 	tbody.addEventListener('click', function (ev) {
 		var btn = ev.target.closest && ev.target.closest('.btn-add');
 		if (!btn || btn.disabled) return;
@@ -252,19 +252,19 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 		var result = addToStaging(m);
 		if (result.ok) {
 			renderStaging();
-			showToast(m && m.name ? ('撌脣??伐?' + m.name) : '撌脣???);
+			showToast(m && m.name ? ('已加入：' + m.name) : '已加入');
 		} else if (result.reason === 'dup') {
-			showToast('撌脣?怠??');
+			showToast('已在暫存區');
 		} else {
-			showToast('閰脩?蝻?fullRow嚗??? build');
+			showToast('該筆缺 fullRow，請重跑 build');
 		}
 	});
 
-	// '嚗??
+	// '＋全部'
 	btnAddAll.addEventListener('click', function () {
-		if (!lastMatched.length) { showToast('瘝?蝚血?????); return; }
+		if (!lastMatched.length) { showToast('沒有符合的項目'); return; }
 		if (lastMatched.length > 500 &&
-			!window.confirm('撠???' + lastMatched.length + ' 蝑?怠??嚗Ⅱ摰?')) return;
+			!window.confirm('將加入 ' + lastMatched.length + ' 筆至暫存區，確定？')) return;
 		var results = [];
 		for (var i = 0; i < lastMatched.length; i++) results.push(addToStaging(lastMatched[i]));
 		renderStaging();
@@ -280,22 +280,22 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 	});
 
 	btnCopyStaging.addEventListener('click', function () {
-		if (!staging.length) { showToast('?怠???舐征??); return; }
+		if (!staging.length) { showToast('暫存區是空的'); return; }
 		copyText(makeStagingSnippet(staging))
-			.then(function () { showToast('撌脰?鋆?' + staging.length + ' 蝑?芾票蝪?); })
-			.catch(function () { showToast('銴ˊ憭望?嚗??寧??頛?畾萸?); });
+			.then(function () { showToast('已複製 ' + staging.length + ' 筆到剪貼簿'); })
+			.catch(function () { showToast('複製失敗，請改用「下載片段」'); });
 	});
 
 	btnDownloadStaging.addEventListener('click', function () {
-		if (!staging.length) { showToast('?怠???舐征??); return; }
+		if (!staging.length) { showToast('暫存區是空的'); return; }
 		downloadSnippet();
 	});
 
 	btnClearStaging.addEventListener('click', function () {
 		if (!staging.length) return;
-		if (!window.confirm('皜征?怠?? ' + staging.length + ' 蝑?')) return;
+		if (!window.confirm('清空暫存區 ' + staging.length + ' 筆？')) return;
 		clearStaging();
-		showToast('撌脫?蝛箸摮?);
+		showToast('已清空暫存');
 	});
 
 	renderStaging();
@@ -369,10 +369,10 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 		var id = manualIdEl.value.trim();
 		var stars = manualStarsEl.value;
 
-		if (!name) { showToast('隢撓?亙?蝔?); manualNameEl.focus(); return; }
-		if (!type) { showToast('隢????); manualTypeEl.focus(); return; }
-		if (!id) { showToast('隢撓?亦楊??); manualIdEl.focus(); return; }
-		if (!stars) { showToast('隢??蝝?); manualStarsEl.focus(); return; }
+		if (!name) { showToast('請輸入名稱'); manualNameEl.focus(); return; }
+		if (!type) { showToast('請選擇類別'); manualTypeEl.focus(); return; }
+		if (!id) { showToast('請輸入編號'); manualIdEl.focus(); return; }
+		if (!stars) { showToast('請選擇星級'); manualStarsEl.focus(); return; }
 
 		var row = new Array(WARDROBE_FIELD_COUNT);
 		for (var z = 0; z < WARDROBE_FIELD_COUNT; z++) row[z] = '';
@@ -389,7 +389,7 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 				inp.classList.add('invalid');
 				inp.focus();
 				var labelEl = inp.parentNode && inp.parentNode.querySelector('label');
-				showToast('撅祆扼? + (labelEl ? labelEl.textContent : '?') + '???迂 SS/S/A/B/C ?征??);
+				showToast('屬性「' + (labelEl ? labelEl.textContent : '?') + '」僅允許 SS/S/A/B/C 或空白');
 				return;
 			}
 			inp.classList.remove('invalid');
@@ -404,19 +404,19 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 
 		var key = type + '|' + id;
 		if (stagingKeys[key]) {
-			showToast('?怠??撌脫??詨?憿 + 蝺刻?');
+			showToast('暫存區已有相同類別 + 編號');
 			return;
 		}
 		if (mergedByKey[key]) {
 			var existing = mergedByKey[key];
-			var existingLabel = existing.name || '(?芰)';
-			if (!window.confirm('蝝Ｗ?銝剖歇摮?詨?憿 + 蝺刻?嚗? + existingLabel + ' (' + key + ')\n隞?隞交????憓?怠?嚗?)) return;
+			var existingLabel = existing.name || '(未知)';
+			if (!window.confirm('索引中已存在相同類別 + 編號：' + existingLabel + ' (' + key + ')\n仍要以手動資料新增至暫存？')) return;
 		}
 
 		staging.push({ key: key, row: row });
 		stagingKeys[key] = true;
 		renderStaging();
-		showToast('撌脫??憓?' + name);
+		showToast('已手動新增：' + name);
 		resetManualForm(false);
 		manualNameEl.focus();
 	}
@@ -453,7 +453,7 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 		refresh();
 	});
 
-	setStatus('霈??揣撘葉??);
+	setStatus('讀取陸服索引中…');
 	fetch('data/cn_search_index.json')
 		.then(function (resp) {
 			if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
@@ -461,11 +461,11 @@ import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual
 		})
 		.then(init)
 		.catch(function (err) {
-			setStatus('霈?仃??' + err.message);
+			setStatus('讀取失敗：' + err.message);
 			countEl.innerHTML =
-				'<span class="notice">?⊥?霈??data/cn_search_index.json??蝣箄?嚗? +
-				'<br>1. 撌脣銵?<code>node scripts/build-cn-search-index.mjs</code> ?Ｙ?蝝Ｗ?瑼? +
-				'<br>2. ?? HTTP 隡箸??券???銝?湔 file:// ??嚗?靘?<code>npx serve .</code>?? +
+				'<span class="notice">無法讀取 data/cn_search_index.json。請確認：' +
+				'<br>1. 已執行 <code>node scripts/build-cn-search-index.mjs</code> 產生索引檔。' +
+				'<br>2. 透過 HTTP 伺服器開啟（不可直接 file:// 開啟），例：<code>npx serve .</code>。' +
 				'</span>';
 		});
 })();

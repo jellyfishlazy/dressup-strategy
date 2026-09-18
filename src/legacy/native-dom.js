@@ -159,12 +159,45 @@
     return new NativeDomCollection(this.nodes.map(function (node) { return node.cloneNode(true); }));
   };
   NativeDomCollection.prototype.remove = function () { return this.each(function () { if (this.remove) this.remove(); }); };
-  NativeDomCollection.prototype.show = function () { return this.each(function () { this.style.display = ''; }); };
-  NativeDomCollection.prototype.hide = function () { return this.each(function () { this.style.display = 'none'; }); };
+
+  var displayMemory = new WeakMap();
+  var defaultDisplayCache = Object.create(null);
+
+  function defaultDisplay(element) {
+    var tagName = element.tagName ? element.tagName.toLowerCase() : 'div';
+    if (defaultDisplayCache[tagName]) return defaultDisplayCache[tagName];
+    if (!document.body) return 'block';
+    var probe = document.createElement(tagName);
+    document.body.appendChild(probe);
+    var display = getComputedStyle(probe).display;
+    probe.remove();
+    if (!display || display === 'none') display = 'block';
+    defaultDisplayCache[tagName] = display;
+    return display;
+  }
+
+  function showElement(element) {
+    if (!element || !element.style) return;
+    if (element.style.display === 'none') {
+      element.style.display = displayMemory.has(element) ? displayMemory.get(element) : '';
+    }
+    if (getComputedStyle(element).display === 'none') {
+      element.style.display = defaultDisplay(element);
+    }
+  }
+
+  function hideElement(element) {
+    if (!element || !element.style) return;
+    if (getComputedStyle(element).display !== 'none') displayMemory.set(element, element.style.display);
+    element.style.display = 'none';
+  }
+
+  NativeDomCollection.prototype.show = function () { return this.each(function () { showElement(this); }); };
+  NativeDomCollection.prototype.hide = function () { return this.each(function () { hideElement(this); }); };
   NativeDomCollection.prototype.toggle = function () {
     return this.each(function () {
-      var hidden = getComputedStyle(this).display === 'none';
-      this.style.display = hidden ? '' : 'none';
+      if (getComputedStyle(this).display === 'none') showElement(this);
+      else hideElement(this);
     });
   };
   NativeDomCollection.prototype.is = function (selector) {

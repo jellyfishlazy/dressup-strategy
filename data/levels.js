@@ -944,8 +944,9 @@ function featureBasedScoringFactory(bonus, multiplier){
 	return function(criteria, clothes) {
 		var total = 0;
 		var byFeature = {};
-		for (var i in FEATURES) {
-			var f = FEATURES[i];
+		var scoringFeatures = ["simple", "cute", "active", "pure", "cool"];
+		for (var i = 0; i < scoringFeatures.length; i++) {
+			var f = scoringFeatures[i];
 			var addon = Math.abs(criteria[f] * clothes.type.score[bonus] * multiplier);
 			byFeature[f] = addon;
 			total += addon;

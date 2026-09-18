@@ -16,8 +16,11 @@ function switchCate(c) {
 	setCurrentCategory(c);
 	Dom("ul#categoryTab li").removeClass("active");
 	Dom("#category_container div").removeClass("active");
-	Dom("#" + c).addClass("active");
-	Dom("#category-" + c).addClass("active");
+	const categoryId = String(c);
+	const tab = document.getElementById(categoryId);
+	const panel = document.getElementById("category-" + categoryId);
+	if (tab) tab.classList.add("active");
+	if (panel) panel.classList.add("active");
 	onChangeUiFilter();
 	changeFrontFilterDiv(c);
 	return false;

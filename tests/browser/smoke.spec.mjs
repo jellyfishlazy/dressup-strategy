@@ -431,6 +431,156 @@ test('UI Gate 9F-5 keeps the 650px responsive boundary stable across all UI surf
   await auxiliary.close();
 });
 
+test('Gate 10H-A keeps Main selector-sensitive workflows error-free', async ({ page }) => {
+  test.setTimeout(120_000);
+  const failures = collectBrowserFailures(page);
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => page.locator('#categoryTab li').count()).toBeGreaterThan(1);
+
+  const sample = await page.evaluate(async () => {
+    const { clothes } = await import('/model.mjs');
+    const named = clothes.find(piece => piece?.name);
+    const suited = clothes.find(piece => piece?.isSuit);
+    return {
+      name: named?.name || '',
+      suit: suited?.isSuit || '',
+    };
+  });
+  expect(sample.name.length).toBeGreaterThan(0);
+
+  await page.locator('#searchResultInput').fill(sample.name.slice(0, 2));
+  await page.locator('#btn-search-result').click();
+  await expect(page.locator('#searchResultList .search').first()).toBeVisible();
+
+  await page.locator('#searchResultInput').fill(sample.name.slice(0, 2));
+  await page.locator('#searchResultInput').press('Enter');
+  await expect(page.locator('#searchResultList .search').first()).toBeVisible();
+
+  if (sample.suit) {
+    await page.locator('#searchResultInput').fill(sample.suit);
+    await page.locator('#btn-search-result').click();
+    const suitResult = page.locator('.searchResultSet').first();
+    await expect(suitResult).toBeVisible();
+    await suitResult.click();
+    await expect(page.locator('#searchResultList .search').first()).toBeVisible();
+  }
+
+  await page.locator('#categoryTab a[data-switch-cate]').first().click();
+  await page.locator('input.fliter[value="highscore"]').click();
+  await page.waitForTimeout(50);
+
+  if (await page.locator('#showmore').getAttribute('isshowmore') === '1') {
+    await page.locator('#showmore').click();
+  }
+  for (const label of [
+    '少女染/進',
+    '公主染/進',
+    '店染/進',
+    '設計圖染/進',
+    '活動',
+    '夢境',
+    '謎之屋限定染/進',
+  ]) {
+    await page.getByRole('button', { name: '全部', exact: true }).click();
+    await page.getByRole('button', { name: label, exact: true }).click();
+  }
+
+  await expectNoFailures(failures);
+});
+
+test('Gate 10H-B restores CSS-hidden UI through shared show/hide/toggle semantics', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  const highscoreLink = page.locator('.highscore-link').first();
+  await expect(highscoreLink).toBeHidden();
+  await page.locator('input.fliter[value="highscore"]').click();
+  await expect(highscoreLink).toBeVisible();
+  await page.locator('input.fliter[value="highscore"]').click();
+  await expect(highscoreLink).toBeHidden();
+
+  await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#imgModel')).toBeHidden();
+  const previewCell = page.locator('#clothes .table-body .table-td.image').first();
+  await previewCell.click();
+  await expect(page.locator('#imgModel')).toBeVisible();
+  await page.locator('#imgInfo').click();
+  await expect(page.locator('#imgModel')).toBeHidden();
+  await previewCell.click();
+  await expect(page.locator('#imgModel')).toBeVisible();
+
+  await expect(page.locator('#update_history')).toBeHidden();
+  await page.locator('#show_history').click();
+  await expect(page.locator('#update_history')).toBeVisible();
+  await expect(page.locator('#show_history')).toBeHidden();
+
+  await page.goto('/material.html', { waitUntil: 'domcontentloaded' });
+  const inventoryPanel = page.locator('#custInv');
+  const cartPanel = page.locator('#custCart');
+  await expect(inventoryPanel).toBeHidden();
+  await expect(cartPanel).toBeHidden();
+
+  await page.locator('a.showInv').click();
+  await expect(inventoryPanel).toBeVisible();
+  await page.locator('a.showInv').click();
+  await expect(inventoryPanel).toBeHidden();
+  await page.locator('a.showInv').click();
+  await expect(inventoryPanel).toBeVisible();
+
+  await page.locator('a.showCart').click();
+  await expect(cartPanel).toBeVisible();
+  await page.locator('a.showCart').click();
+  await expect(cartPanel).toBeHidden();
+  await page.locator('a.showCart').click();
+  await expect(cartPanel).toBeVisible();
+
+  await expectNoFailures(failures);
+});
+
+test('Gate 10H-C keyboard activation dispatches exactly one click per Enter or Space', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+
+  const showMore = page.locator('#showmore');
+  await expect(showMore).toHaveAttribute('role', 'button');
+  await expect(showMore).toHaveAttribute('tabindex', '0');
+  await expect(showMore).toHaveAttribute('isshowmore', '1');
+
+  await showMore.evaluate(element => {
+    globalThis.__gate10hShowMoreClicks = 0;
+    element.addEventListener('click', () => { globalThis.__gate10hShowMoreClicks += 1; });
+  });
+  await showMore.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => globalThis.__gate10hShowMoreClicks)).toBe(1);
+  await expect(showMore).toHaveAttribute('isshowmore', '0');
+
+  await page.keyboard.press('Space');
+  await expect.poll(() => page.evaluate(() => globalThis.__gate10hShowMoreClicks)).toBe(2);
+  await expect(showMore).toHaveAttribute('isshowmore', '1');
+
+  await page.locator('input.fliter[value="highscore"]').click();
+  const highscore = page.locator('.highscore-link').first();
+  await expect(highscore).toBeVisible();
+  await expect(highscore).toHaveAttribute('role', 'button');
+  await expect(highscore).toHaveAttribute('tabindex', '0');
+
+  await highscore.evaluate(element => {
+    globalThis.__gate10hHighscoreClicks = 0;
+    element.addEventListener('click', () => { globalThis.__gate10hHighscoreClicks += 1; });
+  });
+  await highscore.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => globalThis.__gate10hHighscoreClicks)).toBe(1);
+  await expect(highscore).toHaveClass(/active/);
+
+  await page.keyboard.press('Space');
+  await expect.poll(() => page.evaluate(() => globalThis.__gate10hHighscoreClicks)).toBe(2);
+  await expect(highscore).not.toHaveClass(/active/);
+
+  await expectNoFailures(failures);
+});
+
 test('UI Gate 9G visual closeout keeps BigUse mobile A/B actions aligned and non-overlapping', async ({ page }) => {
   const failures = collectBrowserFailures(page);
   await page.setViewportSize({ width: 390, height: 844 });
