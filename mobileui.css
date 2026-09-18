@@ -1,24 +1,8 @@
-input[type=checkbox], input[type=radio] {
-    margin: 4px 0 0;
-}
-
 /************************/
 div.fliter_form_div {
 	margin-bottom: 1em;
 }
 /************************/
-div.fliter_option .ui-check{
-    display: inline-block;
-    margin-top: 0;
-    margin-bottom: 0;
-    vertical-align: middle;
-}
-.fliter_form_div_right .ui-check{
-    display: inline-block;
-    margin-top: 0;
-    margin-bottom: 0;
-    vertical-align: middle;
-}
 .ui-tabs.ui-tabs-justified>li{
 	float:left;
 	width: auto;

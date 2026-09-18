@@ -191,3 +191,286 @@ test('UI Gate 9E runs without Bootstrap CSS and preserves project-owned button b
   expect(baseline).toEqual({ bodyFontSize: '14px', linkDecoration: 'none' });
   await expectNoFailures(failures);
 });
+
+test('UI Gate 9F-2 keeps typography and shared controls visually consistent', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+
+  const buttonMetrics = await page.locator('#onekey').evaluate(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    return { height: style.height, minHeight: style.minHeight, fontSize: style.fontSize };
+  });
+  expect(buttonMetrics).toEqual({ height: '34px', minHeight: '34px', fontSize: '14px' });
+
+  const controlMetrics = await page.locator('#searchResultInput').evaluate(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    return { height: style.height, minHeight: style.minHeight, fontSize: style.fontSize };
+  });
+  expect(controlMetrics).toEqual({ height: '30px', minHeight: '30px', fontSize: '12px' });
+
+  const checkWeight = await page.locator('.ui-check > label').first().evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).fontWeight);
+  expect(checkWeight).toBe('400');
+
+  const group = page.locator('.ui-btn-group').first();
+  const groupRadii = await group.locator('.ui-btn').evaluateAll(elements => elements.map(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    return [style.borderTopLeftRadius, style.borderTopRightRadius];
+  }));
+  expect(groupRadii[0]).toEqual(['4px', '0px']);
+  expect(groupRadii.at(-1)).toEqual(['0px', '4px']);
+
+  const infoButton = page.locator('.front_filter_option.ui-btn-info').first();
+  await infoButton.hover();
+  await expect.poll(async () => infoButton.evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).backgroundColor)).toBe('rgb(49, 176, 213)');
+
+  const oneKey = page.locator('#onekey');
+  await oneKey.evaluate(element => { element.disabled = true; });
+  const disabledStyle = await oneKey.evaluate(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    return { cursor: style.cursor, opacity: style.opacity };
+  });
+  expect(disabledStyle).toEqual({ cursor: 'not-allowed', opacity: '0.65' });
+
+  const fieldsetStyle = await page.locator('fieldset').first().evaluate(element => {
+    const style = element.ownerDocument.defaultView.getComputedStyle(element);
+    const legend = element.querySelector('legend');
+    if (!legend) throw new Error('expected fieldset legend');
+    return {
+      borderStyle: style.borderTopStyle,
+      borderRadius: style.borderTopLeftRadius,
+      legendFontSize: element.ownerDocument.defaultView.getComputedStyle(legend).fontSize,
+    };
+  });
+  expect(fieldsetStyle).toEqual({ borderStyle: 'solid', borderRadius: '4px', legendFontSize: '14px' });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileControlHeight = await page.locator('#searchResultInput').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).height);
+  expect(mobileControlHeight).toBe('30px');
+  await expectNoFailures(failures);
+});
+
+test('UI Gate 9F-3 keeps Main and BigUse responsive without clipping or horizontal overflow', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  const widths = [1280, 1024, 768, 390];
+
+  for (const url of ['/index.html', '/biguse.html']) {
+    for (const width of widths) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await expect.poll(async () => page.locator('#categoryTab li').count()).toBeGreaterThan(1);
+
+      const fitsViewport = await page.locator('html').evaluate(root => root.scrollWidth <= root.ownerDocument.defaultView.innerWidth);
+      expect(fitsViewport, `${url} fits ${width}px viewport`).toBe(true);
+
+      const tabsFit = await page.locator('.ui-tabs').evaluate(element => element.scrollWidth <= element.clientWidth);
+      expect(tabsFit, `${url} tabs fit ${width}px viewport`).toBe(true);
+
+      if (url === '/index.html') {
+        const weightsFit = await page.locator('.weightContainer').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth));
+        expect(weightsFit, `Main weight controls fit ${width}px viewport`).toBe(true);
+
+        if (width === 390) {
+          const themeFits = await page.locator('.ui-main-theme-controls').evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            return element.scrollWidth <= element.clientWidth && rect.right <= element.ownerDocument.defaultView.innerWidth;
+          });
+          expect(themeFits).toBe(true);
+        }
+      } else {
+        const cartSizing = await page.locator('#shoppingCartContainerA').evaluate(panel => {
+          const input = panel.querySelector('.ui-cart-search');
+          if (!input) throw new Error('expected cart search input');
+          const panelWidth = panel.getBoundingClientRect().width;
+          const inputWidth = input.getBoundingClientRect().width;
+          return Math.abs(panelWidth - inputWidth) <= 1;
+        });
+        expect(cartSizing, `BigUse cart search fills panel at ${width}px`).toBe(true);
+      }
+    }
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
+  const query = await page.evaluate(async () => {
+    const { clothes } = await import('/model.mjs');
+    return (clothes[0]?.name || '').slice(0, 2);
+  });
+  await page.locator('#autocomplete1').fill(query);
+  await expect(page.locator('.native-autocomplete-suggestions .autocomplete-suggestion').first()).toBeVisible();
+  const suggestionFits = await page.locator('.native-autocomplete-suggestions').evaluateAll(elements => {
+    const element = elements.find(node => node.ownerDocument.defaultView.getComputedStyle(node).display !== 'none');
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = element.ownerDocument.defaultView.innerWidth;
+    return rect.left >= 0 && rect.right <= viewportWidth;
+  });
+  expect(suggestionFits).toBe(true);
+
+  const previewFits = await page.locator('#imgModel').evaluate(element => {
+    element.style.display = 'block';
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = element.ownerDocument.defaultView.innerWidth;
+    return rect.left >= 0 && rect.right <= viewportWidth && rect.top >= 0;
+  });
+  expect(previewFits).toBe(true);
+
+  await expectNoFailures(failures);
+});
+
+test('UI Gate 9F-4 keeps Material, Wardrobe Check and auxiliary layouts responsive', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  const widths = [1280, 1024, 768, 390];
+
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/material.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#selectScope')).toBeVisible();
+    const materialFits = await page.locator('html').evaluate(root => root.scrollWidth <= root.ownerDocument.defaultView.innerWidth);
+    expect(materialFits, `Material fits ${width}px viewport`).toBe(true);
+    const materialOverflow = await page.locator('#levelDropInfo').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).overflowX);
+    expect(materialOverflow).toBe('auto');
+
+    await page.goto('/wardrobechk.html', { waitUntil: 'domcontentloaded' });
+    await expect.poll(async () => page.locator('#categoryTab li').count()).toBeGreaterThan(1);
+    const wardrobeFits = await page.locator('html').evaluate(root => root.scrollWidth <= root.ownerDocument.defaultView.innerWidth);
+    expect(wardrobeFits, `Wardrobe Check fits ${width}px viewport`).toBe(true);
+    const tabsFit = await page.locator('.ui-tabs').evaluate(element => element.scrollWidth <= element.clientWidth);
+    expect(tabsFit, `Wardrobe tabs fit ${width}px viewport`).toBe(true);
+    const columns = await page.locator('.ui-wardrobe-grid').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    expect(columns).toBe(width <= 650 ? 1 : 2);
+  }
+
+  await expectNoFailures(failures);
+
+  const auxiliary = await page.context().newPage();
+  for (const width of widths) {
+    await auxiliary.setViewportSize({ width, height: 900 });
+    await auxiliary.goto('/cn-search/index.html', { waitUntil: 'domcontentloaded' });
+    await auxiliary.locator('#manual-entry').evaluate(element => { element.open = true; });
+
+    const auxiliaryFits = await auxiliary.locator('html').evaluate(root => root.scrollWidth <= root.ownerDocument.defaultView.innerWidth);
+    expect(auxiliaryFits, `auxiliary search fits ${width}px viewport`).toBe(true);
+    const attributesFit = await auxiliary.locator('.manual-attrs').evaluate(element => element.scrollWidth <= element.clientWidth);
+    expect(attributesFit, `auxiliary manual attributes fit ${width}px viewport`).toBe(true);
+    const resultsBehavior = await auxiliary.locator('.results-wrap').evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      const style = element.ownerDocument.defaultView.getComputedStyle(element);
+      return { right: rect.right, viewport: element.ownerDocument.defaultView.innerWidth, overflowX: style.overflowX };
+    });
+    expect(resultsBehavior.right).toBeLessThanOrEqual(resultsBehavior.viewport);
+    expect(resultsBehavior.overflowX).toBe('auto');
+
+    if (width === 390) {
+      const mobileColumns = await auxiliary.locator('.manual-attrs').evaluate(element => element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length);
+      expect(mobileColumns).toBe(2);
+      const groupsFill = await auxiliary.locator('.manual-grid .filter-group').evaluateAll(elements => elements.every(element => element.getBoundingClientRect().width >= 300));
+      expect(groupsFill).toBe(true);
+    }
+  }
+  await auxiliary.close();
+});
+
+test('UI Gate 9F-5 keeps the 650px responsive boundary stable across all UI surfaces', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  const widths = [651, 650, 649];
+
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+
+    await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+    const mainState = await page.locator('.ui-main-top').evaluate(element => ({
+      documentFits: element.ownerDocument.documentElement.scrollWidth <= element.ownerDocument.defaultView.innerWidth,
+      display: element.ownerDocument.defaultView.getComputedStyle(element).display,
+    }));
+    expect(mainState.documentFits).toBe(true);
+    expect(mainState.display).toBe(width <= 650 ? 'block' : 'flex');
+
+    await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
+    const biguseState = await page.locator('#shoppingCartCompare').evaluate(element => ({
+      documentFits: element.ownerDocument.documentElement.scrollWidth <= element.ownerDocument.defaultView.innerWidth,
+      columns: element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length,
+    }));
+    expect(biguseState.documentFits).toBe(true);
+    expect(biguseState.columns).toBe(width <= 650 ? 1 : 2);
+
+    await page.goto('/material.html', { waitUntil: 'domcontentloaded' });
+    const materialFits = await page.locator('html').evaluate(root => root.scrollWidth <= root.ownerDocument.defaultView.innerWidth);
+    expect(materialFits).toBe(true);
+
+    await page.goto('/wardrobechk.html', { waitUntil: 'domcontentloaded' });
+    const wardrobeState = await page.locator('.ui-wardrobe-grid').evaluate(element => ({
+      documentFits: element.ownerDocument.documentElement.scrollWidth <= element.ownerDocument.defaultView.innerWidth,
+      columns: element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length,
+      tabsFit: (() => {
+        const tabs = element.ownerDocument.querySelector('.ui-tabs');
+        return !!tabs && tabs.scrollWidth <= tabs.clientWidth;
+      })(),
+    }));
+    expect(wardrobeState.documentFits).toBe(true);
+    expect(wardrobeState.columns).toBe(width <= 650 ? 1 : 2);
+    expect(wardrobeState.tabsFit).toBe(true);
+  }
+
+  await expectNoFailures(failures);
+
+  const auxiliary = await page.context().newPage();
+  for (const width of widths) {
+    await auxiliary.setViewportSize({ width, height: 900 });
+    await auxiliary.goto('/cn-search/index.html', { waitUntil: 'domcontentloaded' });
+    await auxiliary.locator('#manual-entry').evaluate(element => { element.open = true; });
+    const auxiliaryState = await auxiliary.locator('.manual-attrs').evaluate(element => ({
+      documentFits: element.ownerDocument.documentElement.scrollWidth <= element.ownerDocument.defaultView.innerWidth,
+      columns: element.ownerDocument.defaultView.getComputedStyle(element).gridTemplateColumns.split(' ').length,
+      contentFits: element.scrollWidth <= element.clientWidth,
+    }));
+    expect(auxiliaryState.documentFits).toBe(true);
+    expect(auxiliaryState.contentFits).toBe(true);
+    expect(auxiliaryState.columns).toBe(width <= 650 ? 2 : 5);
+  }
+  await auxiliary.close();
+});
+
+test('UI Gate 9G visual closeout keeps BigUse mobile A/B actions aligned and non-overlapping', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/biguse.html', { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => page.locator('#categoryTab li').count()).toBeGreaterThan(1);
+
+  const rows = await page.locator('#clothes .table-row').evaluateAll(elements => elements.slice(0, 12).map(row => {
+    const rowRect = row.getBoundingClientRect();
+    const buttons = [...row.querySelectorAll('.table-td.icon .ui-btn')].map(button => {
+      const rect = button.getBoundingClientRect();
+      return {
+        text: button.textContent?.trim() || '',
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      };
+    });
+    return {
+      row: { left: rowRect.left, top: rowRect.top, right: rowRect.right, bottom: rowRect.bottom },
+      buttons,
+    };
+  }));
+
+  let lastBottom = -Infinity;
+  for (const row of rows) {
+    if (row.buttons.length !== 2) continue;
+    const [first, second] = row.buttons;
+    expect([first.text, second.text]).toEqual(['A', 'B']);
+    expect(Math.abs(first.top - second.top)).toBeLessThanOrEqual(1);
+    expect(first.right).toBeLessThanOrEqual(second.left);
+    expect(first.top).toBeGreaterThanOrEqual(row.row.top);
+    expect(first.bottom).toBeLessThanOrEqual(row.row.bottom);
+    expect(second.top).toBeGreaterThanOrEqual(row.row.top);
+    expect(second.bottom).toBeLessThanOrEqual(row.row.bottom);
+    expect(first.top).toBeGreaterThanOrEqual(lastBottom);
+    lastBottom = Math.max(first.bottom, second.bottom);
+  }
+
+  const screenshot = await page.screenshot({ type: 'jpeg', quality: 45 });
+  expect(screenshot.byteLength).toBeGreaterThan(10_000);
+  await expectNoFailures(failures);
+});

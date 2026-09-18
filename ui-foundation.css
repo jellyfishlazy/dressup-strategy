@@ -2,8 +2,12 @@
   color-scheme: light;
 
   --ui-font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ui-font-size-sm: 12px;
   --ui-font-size: 14px;
+  --ui-font-size-lg: 18px;
+  --ui-line-height-tight: 1.25;
   --ui-line-height: 1.42857143;
+  --ui-line-height-relaxed: 1.6;
 
   --ui-color-text: #333333;
   --ui-color-muted: #777777;
@@ -40,8 +44,8 @@
   --ui-control-height-sm: 30px;
   --ui-control-height-md: 34px;
 
+  /* Canonical responsive boundary. Media queries keep the 650px literal because custom properties cannot drive @media conditions. */
   --ui-breakpoint-mobile: 650px;
-  --ui-breakpoint-compact: 1020px;
 
   --ui-focus-ring-color: rgba(51, 122, 183, 0.45);
   --ui-focus-ring: 0 0 0 3px var(--ui-focus-ring-color);
@@ -68,7 +72,7 @@ body {
 }
 
 p {
-  margin: 0 0 10px;
+  margin: 0 0 var(--ui-space-3);
 }
 
 a {
@@ -89,9 +93,9 @@ img {
 }
 
 hr {
+  clear: both;
   height: 0;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin: var(--ui-space-5) 0;
   border: 0;
   border-top: 1px solid #eeeeee;
 }
@@ -136,7 +140,9 @@ input {
 input[type="checkbox"],
 input[type="radio"] {
   box-sizing: border-box;
+  margin: 4px 0 0;
   padding: 0;
+  vertical-align: middle;
 }
 
 textarea {
@@ -146,17 +152,32 @@ textarea {
 fieldset {
   min-width: 0;
   margin: 0;
+  padding: 0.35em 0.625em 0.75em;
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-md);
 }
 
 legend {
-  padding: 0;
+  width: auto;
+  margin-bottom: 0;
+  padding: 0 var(--ui-space-1);
+  font-size: var(--ui-font-size);
+  line-height: inherit;
+  color: inherit;
+  border: 0;
 }
 
 label {
   display: inline-block;
   max-width: 100%;
-  margin-bottom: 5px;
+  margin-bottom: var(--ui-space-1);
   font-weight: 700;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #999999;
+  opacity: 1;
 }
 
 table {
@@ -211,6 +232,7 @@ a {
 
 .ui-btn {
   display: inline-block;
+  min-height: var(--ui-control-height-md);
   margin-bottom: 0;
   padding: 6px 12px;
   font-size: var(--ui-font-size);
@@ -226,6 +248,7 @@ a {
   background: var(--ui-color-surface);
   border: 1px solid var(--ui-color-border-strong);
   border-radius: var(--ui-radius-md);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ui-btn:hover,
@@ -249,23 +272,41 @@ a {
   border-color: #46b8da;
 }
 
+.ui-btn-info:hover,
+.ui-btn-info:focus,
+.ui-btn-info.active {
+  color: #fff;
+  background: #31b0d5;
+  border-color: #269abc;
+}
+
 .ui-btn-success {
   color: #fff;
   background: var(--ui-color-success);
   border-color: #4cae4c;
 }
 
+.ui-btn-success:hover,
+.ui-btn-success:focus,
+.ui-btn-success.active {
+  color: #fff;
+  background: #449d44;
+  border-color: #398439;
+}
+
 .ui-btn-sm,
-.ui-control-sm {
+.ui-control.ui-control-sm {
+  min-height: var(--ui-control-height-sm);
   padding: 5px 10px;
-  font-size: 12px;
+  font-size: var(--ui-font-size-sm);
   line-height: 1.5;
   border-radius: var(--ui-radius-sm);
 }
 
 .ui-btn-xs {
+  min-height: 22px;
   padding: 1px 5px;
-  font-size: 12px;
+  font-size: var(--ui-font-size-sm);
   line-height: 1.5;
   border-radius: var(--ui-radius-sm);
 }
@@ -276,13 +317,47 @@ a {
   vertical-align: middle;
 }
 
+.ui-btn-group > .ui-btn {
+  border-radius: 0;
+}
+
+.ui-btn-group > .ui-btn + .ui-btn {
+  margin-left: -1px;
+}
+
+.ui-btn-group > .ui-btn:first-child {
+  border-radius: var(--ui-radius-md) 0 0 var(--ui-radius-md);
+}
+
+.ui-btn-group > .ui-btn:last-child {
+  border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
+}
+
 .ui-control {
   display: inline-block;
+  min-height: var(--ui-control-height-md);
   padding: 6px 12px;
+  line-height: var(--ui-line-height);
   color: var(--ui-color-text);
+  vertical-align: middle;
   background: var(--ui-color-surface);
   border: 1px solid var(--ui-color-border-strong);
   border-radius: var(--ui-radius-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-btn:focus-visible,
+.ui-control:focus-visible {
+  outline: 0;
+  border-color: var(--ui-color-primary);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.ui-btn:disabled,
+.ui-btn[aria-disabled="true"],
+.ui-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .ui-inline-form {
@@ -291,6 +366,18 @@ a {
 
 .ui-check {
   display: inline-block;
+  vertical-align: middle;
+}
+
+.ui-check > label {
+  margin-bottom: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.ui-check input[type="checkbox"],
+.ui-check input[type="radio"] {
+  margin: 0 var(--ui-space-1) 0 0;
 }
 
 .ui-tabs {
@@ -365,7 +452,7 @@ a {
   display: inline-block;
   min-width: 10px;
   padding: 3px 7px;
-  font-size: 12px;
+  font-size: var(--ui-font-size-sm);
   font-weight: 700;
   line-height: 1;
   color: #fff;
@@ -457,6 +544,15 @@ a {
   min-width: 0;
 }
 
+.ui-page-main .ui-filter-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(280px, 2fr);
+}
+
+.ui-main-theme-controls {
+  max-width: 100%;
+}
+
 .ui-biguse-announcement {
   flex: 0 1 45%;
   max-height: 280px;
@@ -487,6 +583,13 @@ a {
   max-width: 100%;
 }
 
+.ui-page-biguse .ui-cart-search {
+  display: block;
+  clear: both;
+  width: 100%;
+  margin-top: var(--ui-space-2);
+}
+
 .ui-inline-action {
   display: inline-block;
   cursor: pointer;
@@ -506,6 +609,30 @@ a {
 
 .ui-page-material {
   margin-bottom: 150px;
+}
+
+.ui-page-material #levelDropInfo,
+.ui-page-material #levelDropNote,
+.ui-page-material #custCart,
+.ui-page-material #custInv {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ui-page-material #myClothes {
+  width: 60%;
+  max-width: 100%;
+}
+
+.ui-page-wardrobe .ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ui-page-wardrobe .ui-tabs-justified > li {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: max-content;
 }
 
 .ui-wardrobe-compare {
@@ -530,8 +657,37 @@ a {
 
 .ui-preview-title {
   padding: var(--ui-space-1) var(--ui-space-2);
-  font-size: 18px;
+  font-size: var(--ui-font-size-lg);
   background: var(--ui-color-surface-subtle);
+}
+
+.ui-page-biguse .ui-preview-card {
+  top: var(--ui-space-4);
+  right: var(--ui-space-4);
+  max-width: calc(100vw - (2 * var(--ui-space-4)));
+}
+
+.ui-page-main .ui-tabs,
+.ui-page-biguse .ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.ui-page-main .ui-tabs::before,
+.ui-page-main .ui-tabs::after,
+.ui-page-biguse .ui-tabs::before,
+.ui-page-biguse .ui-tabs::after {
+  display: none;
+  content: none;
+}
+
+.ui-page-main .ui-tabs-justified > li,
+.ui-page-biguse .ui-tabs-justified > li {
+  display: block;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: max-content;
 }
 
 .ui-wardrobe-grid {
@@ -558,13 +714,61 @@ a {
     width: 100%;
   }
 
-  .ui-filter-layout {
+  .ui-filter-layout,
+  .ui-page-main .ui-filter-layout {
     display: block;
+  }
+
+  .ui-page-biguse #clothes .table-row {
+    position: relative;
+    min-height: 42px;
+    padding-right: 84px;
+  }
+
+  .ui-page-biguse #clothes .table-td.icon {
+    position: absolute;
+    top: var(--ui-space-2);
+    float: none;
+    margin-top: 0;
+  }
+
+  .ui-page-biguse #clothes .table-td.icon:nth-last-child(2) {
+    right: 44px;
+  }
+
+  .ui-page-biguse #clothes .table-td.icon:last-child {
+    right: var(--ui-space-1);
   }
 
   .ui-filter-main,
   .ui-filter-side {
     width: 100%;
+  }
+
+  .ui-main-theme-controls {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .ui-main-theme-controls > select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ui-main-theme-controls > button {
+    flex: 0 0 auto;
+  }
+
+  .ui-page-main .ui-tabs-justified > li,
+  .ui-page-biguse .ui-tabs-justified > li {
+    flex: 0 0 auto;
+  }
+
+  .ui-page-biguse .ui-preview-card {
+    top: var(--ui-space-2);
+    right: var(--ui-space-2);
+    max-width: calc(100vw - (2 * var(--ui-space-2)));
   }
 
   .ui-split,
@@ -573,7 +777,8 @@ a {
   }
 
   .ui-editor,
-  .ui-cart-search {
+  .ui-cart-search,
+  .ui-page-material #myClothes {
     width: 100%;
   }
 }

@@ -32,7 +32,6 @@ test('UI Gate 9B establishes shared tokens and neutral base primitives', () => {
     '--ui-shadow-md',
     '--ui-control-height-md',
     '--ui-breakpoint-mobile',
-    '--ui-breakpoint-compact',
   ]) {
     assert.match(css, new RegExp(`${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`));
   }
@@ -121,12 +120,130 @@ test('UI Gate 9E retires Bootstrap CSS and legacy Bootstrap button hooks', () =>
   assert.match(pageEvents, /\[data-ui-buttons\]/);
 
   for (const baseline of [
-    /p\s*\{[^}]*margin:\s*0 0 10px/s,
+    /p\s*\{[^}]*margin:\s*0 0 var\(--ui-space-3\)/s,
     /a\s*\{[^}]*text-decoration:\s*none/s,
     /hr\s*\{[^}]*border-top:\s*1px solid #eeeeee/s,
     /label\s*\{[^}]*font-weight:\s*700/s,
     /\[data-ui-buttons\][^\{]*\{[^}]*clip:\s*rect\(0, 0, 0, 0\)/s,
   ]) assert.match(foundation, baseline);
+});
+
+test('UI Gate 9F-1 restores zoom and standardizes the responsive baseline', () => {
+  const responsiveEntries = [...activePages, 'cn-search/index.html'];
+  for (const file of responsiveEntries) {
+    const html = read(file);
+    assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1">/);
+    assert.doesNotMatch(html, /maximum-scale|user-scalable/);
+  }
+
+  const foundation = read('ui-foundation.css');
+  assert.match(foundation, /--ui-breakpoint-mobile:\s*650px/);
+  assert.doesNotMatch(foundation, /--ui-breakpoint-compact|1020px/);
+
+  for (const source of [foundation, read('onekeystrategy.css'), read('material.html')]) {
+    const queries = [...source.matchAll(/^@media[^\{]+/gm)].map(match => match[0]);
+    for (const query of queries) assert.match(query, /max-width:\s*650px/);
+  }
+
+  for (const file of ['index.html', 'biguse.html', 'wardrobechk.html']) {
+    assert.match(read(file), /mobileui\.css[^>]*media="only screen and \(max-width: 650px\)"/);
+  }
+});
+
+test('UI Gate 9F-2 centralizes typography, spacing and shared control states', () => {
+  const foundation = read('ui-foundation.css');
+  const style = read('style.css');
+  const mobile = read('mobileui.css');
+
+  for (const token of [
+    '--ui-font-size-sm: 12px',
+    '--ui-font-size-lg: 18px',
+    '--ui-line-height-tight: 1.25',
+    '--ui-line-height-relaxed: 1.6',
+  ]) assert.ok(foundation.includes(token), `foundation defines ${token}`);
+
+  assert.match(foundation, /\.ui-btn\s*\{[^}]*min-height:\s*var\(--ui-control-height-md\)/s);
+  assert.match(foundation, /\.ui-control\s*\{[^}]*min-height:\s*var\(--ui-control-height-md\)[^}]*vertical-align:\s*middle/s);
+  assert.match(foundation, /\.ui-btn-sm,\s*\.ui-control\.ui-control-sm\s*\{[^}]*min-height:\s*var\(--ui-control-height-sm\)/s);
+  assert.match(foundation, /\.ui-btn:focus-visible,\s*\.ui-control:focus-visible\s*\{[^}]*box-shadow:\s*var\(--ui-focus-ring\)/s);
+  assert.match(foundation, /\.ui-btn:disabled,[^}]*\.ui-control:disabled\s*\{[^}]*cursor:\s*not-allowed[^}]*opacity:\s*0\.65/s);
+  assert.match(foundation, /\.ui-btn-info:hover,[^}]*background:\s*#31b0d5/s);
+  assert.match(foundation, /\.ui-btn-success:hover,[^}]*background:\s*#449d44/s);
+  assert.match(foundation, /\.ui-btn-group > \.ui-btn \+ \.ui-btn\s*\{[^}]*margin-left:\s*-1px/s);
+  assert.match(foundation, /\.ui-check > label\s*\{[^}]*font-weight:\s*400/s);
+  assert.match(foundation, /fieldset\s*\{[^}]*border:\s*1px solid var\(--ui-color-border-strong\)/s);
+  assert.match(foundation, /legend\s*\{[^}]*font-size:\s*var\(--ui-font-size\)/s);
+
+  assert.doesNotMatch(style, /^hr\s*\{|^input\[type="checkbox"\]\s*\{|^\.ui-check\s*\{|^fieldset\s*\{|^legend\s*\{|^#filtersTop select\s*\{|^span\.ui-badge\s*\{/m);
+  assert.doesNotMatch(mobile, /^input\[type=checkbox\], input\[type=radio\]\s*\{|\.fliter_option \.ui-check\s*\{|\.fliter_form_div_right \.ui-check\s*\{/m);
+  assert.match(style, /\.notice-text\s*\{[^}]*background:\s*var\(--ui-color-warning-bg\)[^}]*padding:\s*var\(--ui-space-2\) var\(--ui-space-3\)/s);
+});
+
+test('UI Gate 9F-3 polishes Main and BigUse responsive page behavior', () => {
+  const foundation = read('ui-foundation.css');
+  const style = read('style.css');
+  const index = read('index.html');
+
+  assert.match(index, /ui-btn-group ui-main-theme-controls/);
+  assert.match(foundation, /\.ui-page-main \.ui-filter-layout\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(280px, 0\.8fr\) minmax\(280px, 2fr\)/s);
+  assert.match(style, /\.weightContainer\s*\{[^}]*overflow:\s*visible[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
+  assert.match(foundation, /\.ui-page-main \.ui-tabs,\s*\.ui-page-biguse \.ui-tabs\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
+  assert.match(foundation, /\.ui-page-main \.ui-tabs-justified > li,\s*\.ui-page-biguse \.ui-tabs-justified > li\s*\{[^}]*min-width:\s*max-content/s);
+  assert.match(foundation, /\.ui-page-biguse \.ui-cart-search\s*\{[^}]*display:\s*block[^}]*clear:\s*both[^}]*width:\s*100%/s);
+  assert.match(foundation, /\.ui-page-biguse \.ui-preview-card\s*\{[^}]*right:\s*var\(--ui-space-4\)[^}]*max-width:\s*calc\(100vw - \(2 \* var\(--ui-space-4\)\)\)/s);
+  assert.match(foundation, /@media only screen and \(max-width: 650px\)[\s\S]*\.ui-main-theme-controls\s*\{[^}]*width:\s*100%/s);
+  assert.match(foundation, /@media only screen and \(max-width: 650px\)[\s\S]*\.ui-page-main \.ui-filter-layout\s*\{[^}]*display:\s*block/s);
+});
+
+test('UI Gate 9F-4 polishes Material, Wardrobe Check and auxiliary responsive layout', () => {
+  const foundation = read('ui-foundation.css');
+  const material = read('material.html');
+  const auxiliary = read('cn-search/index.html');
+
+  assert.doesNotMatch(material, /#myClothes\s*\{\s*width:|@media only screen and \(max-width:650px\)/);
+  assert.match(foundation, /\.ui-page-material #levelDropInfo,[^}]*#custInv\s*\{[^}]*max-width:\s*100%[^}]*overflow-x:\s*auto/s);
+  assert.match(foundation, /\.ui-page-material #myClothes\s*\{[^}]*width:\s*60%[^}]*max-width:\s*100%/s);
+  assert.match(foundation, /\.ui-page-wardrobe \.ui-tabs\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
+  assert.match(foundation, /\.ui-page-wardrobe \.ui-tabs-justified > li\s*\{[^}]*width:\s*auto[^}]*min-width:\s*max-content/s);
+  assert.match(foundation, /@media only screen and \(max-width: 650px\)[\s\S]*\.ui-page-material #myClothes\s*\{[^}]*width:\s*100%/s);
+
+  assert.match(auxiliary, /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(auxiliary, /@media only screen and \(max-width: 650px\)\s*\{[\s\S]*\.manual-attrs\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+  assert.match(auxiliary, /\.filter-group, \.manual-grid \.filter-group\s*\{[^}]*flex:\s*1 1 100%[^}]*min-width:\s*0/s);
+  assert.match(auxiliary, /\.meta\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/s);
+  assert.doesNotMatch(auxiliary, /style="float:right"/);
+});
+
+test('UI Gate 9F-5 closes responsive CSS debt and inline layout residue', () => {
+  const foundation = read('ui-foundation.css');
+  const style = read('style.css');
+  const mobile = read('mobileui.css');
+  const auxiliary = read('cn-search/index.html');
+
+  for (const source of [foundation, read('onekeystrategy.css'), auxiliary]) {
+    const queries = [...source.matchAll(/^\s*@media[^\{]+/gm)].map(match => match[0]);
+    for (const query of queries) assert.match(query, /max-width:\s*650px/);
+  }
+  assert.doesNotMatch([foundation, read('onekeystrategy.css'), auxiliary, read('material.html')].join('\n'), /@media[^\{]*(?:768|1020)px/);
+
+  for (const file of activePages) {
+    const html = read(file).replace(/<!--[\s\S]*?-->/g, '');
+    assert.doesNotMatch(html, /style="[^"]*(?:width|float|position|margin|padding|max-width|min-width|font-size|overflow)[^"]*"/, `${file} has no active layout-critical inline style`);
+  }
+  assert.doesNotMatch(auxiliary, /style="[^"]*(?:width|float|position|margin|padding|max-width|min-width|font-size|color|background|overflow)[^"]*"/);
+  assert.match(auxiliary, /class="manual-section-label"/);
+
+  assert.doesNotMatch(style, /FloatMenu|ds-thread|ds-powered-by|ds-dialog-footer|\.fliter_option\s*\{\s*\}|div\.facet\s*\{\s*\}/);
+  assert.match(mobile, /\.ui-tabs\.ui-tabs-justified>li/);
+  assert.match(mobile, /\.table-head\s*\{/);
+});
+
+test('UI Gate 9G visual closeout locks the BigUse mobile action lane', () => {
+  const foundation = read('ui-foundation.css');
+  assert.match(foundation, /@media only screen and \(max-width: 650px\)[\s\S]*\.ui-page-biguse #clothes \.table-row\s*\{[^}]*position:\s*relative[^}]*min-height:\s*42px[^}]*padding-right:\s*84px/s);
+  assert.match(foundation, /\.ui-page-biguse #clothes \.table-td\.icon\s*\{[^}]*position:\s*absolute[^}]*top:\s*var\(--ui-space-2\)[^}]*float:\s*none[^}]*margin-top:\s*0/s);
+  assert.match(foundation, /\.ui-page-biguse #clothes \.table-td\.icon:nth-last-child\(2\)\s*\{[^}]*right:\s*44px/s);
+  assert.match(foundation, /\.ui-page-biguse #clothes \.table-td\.icon:last-child\s*\{[^}]*right:\s*var\(--ui-space-1\)/s);
 });
 
 test('UI Gate 9D defines shared page-level layout primitives', () => {
