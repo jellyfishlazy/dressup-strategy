@@ -35,7 +35,7 @@ function thead(isShoppingCart) {
 	$thead.append(td("版本", "th_version ui-hidden"));
 	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
-		$td_nbsp = td("回到頂部", "th_gotop ui-gotop");
+		$td_nbsp = td("回到頂部", "th_gotop ui-gotop").attr("role", "button").attr("tabindex", "0");
 		$td_nbsp.click(function () {
 			goTop();
 		});
@@ -303,7 +303,7 @@ function button_search(txt,cls1,cls2) {
  * @param {string} id
  */
 function shoppingCartButton(type, id) {
-	var $shoppingCartButton = Dom("<button>").addClass("ui-icon-button ui-icon-cart ui-btn ui-btn-default");
+	var $shoppingCartButton = Dom("<button>").addClass("ui-icon-button ui-icon-cart ui-btn ui-btn-default").attr("aria-label", "加入推薦穿戴");
 	$shoppingCartButton.click(function () {
 		shoppingCart.put(/** @type {ScoringClothing} */ (/** @type {Record<string, ScoringClothing>} */ (/** @type {Record<string, Record<string, ScoringClothing>>} */ (clothesSet)[type])[id]));
 		refreshShoppingCart();
@@ -315,7 +315,7 @@ function shoppingCartButton(type, id) {
  * @param {string} detailedType
  */
 function removeShoppingCartButton(detailedType) {
-	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default').attr("aria-label", "從推薦穿戴移除");
 	$removeShoppingCartButton.click(function () {
 		shoppingCart.remove(detailedType);
 		refreshShoppingCart();

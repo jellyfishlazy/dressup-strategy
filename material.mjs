@@ -1429,7 +1429,7 @@ function clearCart(){
 
 /** @param {string} action */
 function cartButton(action){
-	return '<button class="ui-icon-button ui-icon-cart ui-btn ui-btn-xs ui-btn-default" '+materialActionAttr(action)+'></button>'
+	return '<button class="ui-icon-button ui-icon-cart ui-btn ui-btn-xs ui-btn-default" aria-label="加入材料清單" '+materialActionAttr(action)+'></button>'
 }
 
 //below are modified from nikki.js, for custom inventory

@@ -32,6 +32,34 @@
       });
     }
   }
+  function prepareKeyboardActivators() {
+    var activators = document.querySelectorAll('.highscore-link, #showmore');
+    for (var i = 0; i < activators.length; i++) {
+      activators[i].setAttribute('role', 'button');
+      activators[i].setAttribute('tabindex', '0');
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var target = event.target && event.target.closest ? event.target.closest('[role="button"][tabindex="0"]') : null;
+      if (!target) return;
+      event.preventDefault();
+      target.click();
+    });
+  }
+  function prepareKeyboardActivators() {
+    var activators = document.querySelectorAll('.highscore-link, #showmore');
+    for (var i = 0; i < activators.length; i++) {
+      activators[i].setAttribute('role', 'button');
+      activators[i].setAttribute('tabindex', '0');
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var target = event.target && event.target.closest ? event.target.closest('[role="button"][tabindex="0"]') : null;
+      if (!target) return;
+      event.preventDefault();
+      target.click();
+    });
+  }
   function bindFilterEvents() {
     bind('theme-fliter', 'change', call('reDrawTheme'));
     bind('theme', 'change', call('changeTheme'));
@@ -74,6 +102,8 @@
   }
   function init() {
     syncUiButtons();
+    prepareKeyboardActivators();
+    prepareKeyboardActivators();
     bindFilterEvents();
     bindInventoryEvents();
     bindMainEvents();

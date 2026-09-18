@@ -354,3 +354,13 @@ Post-fix visual geometry confirms the first representative BigUse mobile rows ha
 UI Gate 9G adds static and browser regression coverage for the BigUse mobile action lane. Final validation is complete: UI modernization regression is **16/16 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **135/135 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **12/12 PASS**; and CRLF-aware `git diff --check` PASS. The auxiliary search page's pre-existing `cn-search.js` encoding/syntax defect remains explicitly outside this visual closeout and was not modified.
 
 UI modernization is therefore complete through **9A–9G**: inventory, shared foundation/components, page migration, Bootstrap CSS retirement, responsive/visual polish, cleanup, and final visual closeout are all DONE.
+
+### Gate 10 - modernization closeout
+
+Gate 10 treats the completed 9A–9G UI milestone as the integration baseline rather than starting another redesign cycle. The closeout covers full regression, accessibility/UX hardening, runtime cleanup review, and final documentation. The canonical working baseline is `fa0d6e2` on `refactor/gate8f-strictness-20260916`; data-pipeline redesign and new product features remain separate follow-up work.
+
+The accessibility pass keeps existing behavior while hardening the remaining legacy click-like controls. Main/BigUse high-score links and the show-more control are promoted to keyboard-reachable button semantics at runtime, dynamically generated “回到頂部” controls expose the same focusable role, and Enter/Space activation is handled through the existing page-event boundary. Icon-only cart/remove actions in Main, BigUse, and Material now expose accessible names without changing their visual rendering.
+
+Runtime cleanup review found no new application-level compatibility layer requiring another migration. The browser-native ESM graph, strict TypeScript configuration, project-owned UI foundation, single 650px responsive boundary, and existing static hosting model remain the supported architecture. The pre-existing auxiliary `cn-search.js` encoding/syntax defect remains explicitly outside Gate 10 and is not normalized as desired behavior.
+
+Gate 10 validation uses the existing full repository quality gate plus Playwright browser coverage, the dedicated `tests/gate10-modernization-closeout.test.mjs` regression contract, and `git diff --check`. After this closeout, future work should be planned as product/data work rather than continued modernization unless a concrete regression or architectural requirement justifies reopening the foundation.

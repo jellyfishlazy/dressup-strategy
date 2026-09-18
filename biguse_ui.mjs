@@ -82,7 +82,7 @@ function theadBiguse(isShoppingCart) {
 	$thead.append(td("編號", "th_number"));
 	var $td_nbsp = td("", "");
 	if (!isShoppingCart) {
-		$td_nbsp = td("回到頂部", "th_gotop ui-gotop");
+		$td_nbsp = td("回到頂部", "th_gotop ui-gotop").attr("role", "button").attr("tabindex", "0");
 		$td_nbsp.click(function () {
 			goTop();
 		});
@@ -235,7 +235,7 @@ function shoppingCartButton(piece, index) {
  * @param {number} index
  */
 function removeShoppingCartButton(detailedType, index) {
-	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default');
+	var $removeShoppingCartButton = Dom("<button>").addClass('ui-icon-button ui-icon-trash ui-btn ui-btn-xs ui-btn-default').attr("aria-label", "從搭配移除");
 	var tShoppingCart = BigUseDomain.cartForIndex(index, shoppingCart1, shoppingCart2);
 	$removeShoppingCartButton.click(function () {
 		tShoppingCart.remove(detailedType);
