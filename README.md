@@ -1,5 +1,19 @@
 # 搭配器（自用）
 
+## Data Pipeline
+
+Gate 11 的資料來源契約位於 [`docs/data-source-contract.md`](docs/data-source-contract.md)，機器可讀版本為 [`scripts/data-source-contract.mjs`](scripts/data-source-contract.mjs)。一般服裝更新的 canonical source 是 `data/wardrobe.js`；其他同名或近似檔案不得依檔名自行推導同步關係。
+
+Gate 11B staging 流程見 [`docs/data-staging.md`](docs/data-staging.md)。CN Search 匯出的 wardrobe snippet 可直接用 `npm run data:stage:wardrobe -- <file>` 匯入本機 `.staging/`；此步驟只驗證與產生 manifest，不修改正式資料。
+
+Gate 11C Preview / Apply 規則見 [`docs/data-preview-apply.md`](docs/data-preview-apply.md)。先用 `npm run data:preview:wardrobe -- <manifest>` 檢視 new / conflict 與欄位差異；只有顯式執行 `npm run data:apply:wardrobe -- <manifest>` 才可能寫入正式資料，conflict 另外要求 `--accept-conflicts`。
+
+Gate 11D derived rebuild 規則見 [`docs/derived-rebuild.md`](docs/derived-rebuild.md)。`npm run data:check:derived` 只檢查 freshness；`npm run data:rebuild:derived -- --changed=wardrobe` 會依 contract 重建受 wardrobe 影響且 stale 的 generated artifacts。
+
+Gate 11E Level Pipeline 規則見 [`docs/level-pipeline.md`](docs/level-pipeline.md)。關卡更新使用 JSON patch，依序執行 `data:stage:levels` → `data:preview:levels` → `data:apply:levels`；Main 與 BigUse level target 由 Gate 11A contract 明確區分。
+
+Gate 11F One-command Update 規則見 [`docs/one-command-update.md`](docs/one-command-update.md)。日常可用 `npm run data:update -- --wardrobe=<file>`、`--levels=<file>` 或兩者一起執行 staging → preview → apply → derived rebuild → regression；正式寫入仍需顯式 `--apply`，且整個 run 具有跨步驟 rollback。
+
 ## 陸服衣櫃條件搜尋
 
 獨立模組位於 [`cn-search/`](cn-search/)。

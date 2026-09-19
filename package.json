@@ -16,9 +16,19 @@
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
     "validate:data": "node scripts/validate-data.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run validate:data",
+    "validate:levels": "node scripts/validate-levels.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run validate:data && npm run validate:levels",
     "build:cn-index": "npm run build:cn-index --workspace cn-search",
-    "start:main": "node scripts/launch-main.mjs"
+    "start:main": "node scripts/launch-main.mjs",
+    "data:stage:wardrobe": "node scripts/stage-wardrobe-import.mjs",
+    "data:preview:wardrobe": "node scripts/review-wardrobe-staging.mjs",
+    "data:apply:wardrobe": "node scripts/review-wardrobe-staging.mjs --apply",
+    "data:check:derived": "node scripts/derived-rebuild.mjs --check",
+    "data:rebuild:derived": "node scripts/derived-rebuild.mjs",
+    "data:stage:levels": "node scripts/stage-level-import.mjs",
+    "data:preview:levels": "node scripts/review-level-staging.mjs",
+    "data:apply:levels": "node scripts/review-level-staging.mjs --apply",
+    "data:update": "node scripts/data-update.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

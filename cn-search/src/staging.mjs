@@ -58,7 +58,7 @@ export function buildStagingSnippet(staging, now = new Date()) {
   const header =
     '// data/wardrobe.js 片段（' + staging.length + ' 筆）\n' +
     '// 產生時間：' + now.toLocaleString() + '\n' +
-    '// 將下列各列貼到 var wardrobe = [ ... ] 內適當位置；請自行檢查編號重複。\n';
+    '// Gate 11B：可用 npm run data:stage:wardrobe -- <此檔案> 匯入 staging；不要直接修改正式 wardrobe。\n';
   return header + staging.map((entry) => rowToWardrobeLine(entry.row)).join('\n') + '\n';
 }
 

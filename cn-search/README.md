@@ -14,6 +14,16 @@
 
 關閉伺服器：工作管理員結束對應的 `node.exe` 程序。
 
+## 匯出資料進入 Gate 11 staging
+
+CN Search 下載的 wardrobe staging snippet 可直接交給根目錄的 Gate 11B importer，不需要再手動貼進 `data/wardrobe.js`：
+
+```powershell
+npm run data:stage:wardrobe -- path\to\wardrobe-staging.js
+```
+
+輸出 manifest 會放在 `.staging/wardrobe/`，並標記 new / unchanged / conflict；此步驟不會修改正式 wardrobe。完整規則見 [`../docs/data-staging.md`](../docs/data-staging.md)。
+
 ## 首次或資料更新（建索引）
 
 建索引腳本需要 `opencc-js`，由本 repository 的 npm workspace 與根目錄 lockfile 管理。
@@ -26,7 +36,7 @@
    npm ci
    ```
 
-2. **產生索引**（陸服或台服 `../data/wardrobe.js` 更新後請重跑）：
+2. **產生索引**（外部衣櫃或台服 `../data/wardrobe.js` 更新後請重跑）。Gate 11D 後建議從 repository 根目錄執行 `npm run data:rebuild:derived -- --changed=wardrobe`，由資料契約檢查 input hashes 並安全重建。舊的直接建索引方式仍保留供開發除錯：
 
    **一鍵重建**：雙擊 [`重建搜尋索引.bat`](重建搜尋索引.bat)（使用 repository 內安裝的依賴並執行建索引）。
 

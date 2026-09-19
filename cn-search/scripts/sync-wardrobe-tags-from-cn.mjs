@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findCnWardrobe } from './cn-wardrobe-source.mjs';
 import {
   CN2TW_CATEGORY,
   CN_TAG_OVERRIDE,
@@ -22,20 +23,6 @@ import { WARDROBE_FIELD_INDEX as FIELD } from '../../src/domain/wardrobe/schema.
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GLOW = /^(簡約|華麗|可愛|成熟|活潑|優雅|清純|性感|清涼|保暖)\+\d+$/;
-
-function findCnWardrobe() {
-  const candidates = [
-    process.env.CN_WARDROBE_JS,
-    join(projectRoot, 'vendor', 'nikkiup2u3-cn', 'wardrobe.js'),
-    resolve(projectRoot, '..', '..', 'nikkiup2u3_data-gh-pages', 'wardrobe.js'),
-  ].filter(Boolean);
-  for (const p of candidates) {
-    if (fs.existsSync(p) && fs.statSync(p).isFile()) return p;
-  }
-  throw new Error(
-    'CN wardrobe.js not found. Set CN_WARDROBE_JS or place nikkiup2u3_data-gh-pages next to this repo.'
-  );
-}
 
 function loadCnWardrobe(path) {
   const ctx = {};
