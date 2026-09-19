@@ -285,6 +285,12 @@ function refreshShoppingCart() {
 	invokeDrawTable(shoppingCart.toList(byCategoryAndScore), "shoppingCart", true);
 }
 
+/** @param {unknown} value @returns {string} */
+function levelHintText(value) {
+	if (Array.isArray(value)) return value.join('');
+	return value == null ? '' : String(value);
+}
+
 function drawLevelInfo() {
 	var info = "";
 	var $skill = Dom("#skillInfo");
@@ -319,19 +325,21 @@ function drawLevelInfo() {
 			}
 		}
 		if (currentLevel.hint) {
-			var notF = "";
-			if (currentLevel.hint[0] && String(currentLevel.hint[0]) != '') {
+			var hintText = levelHintText(currentLevel.hint[0]);
+			var notFText = levelHintText(currentLevel.hint[1]);
+			var isFText = levelHintText(currentLevel.hint[2]);
+			if (hintText) {
 				var $hintInfo = Dom("<font>").text("過關提示:  ").addClass("hintInfo");
-				$hint.append($hintInfo).append(currentLevel.hint[0]);
+				$hint.append($hintInfo).append(hintText);
 			}
-			if (currentLevel.hint[1] && String(currentLevel.hint[1]) != '') {
+			if (notFText) {
 				var $notF = Dom("<font>").text("可穿戴部件:  ").addClass("not_f");
-				$categoryF.append($notF).append(currentLevel.hint[1]);
+				$categoryF.append($notF).append(notFText);
 			}
 			$categoryF.append(Dom("<br>"));
-			if (currentLevel.hint[2] && String(currentLevel.hint[2]) != '') {
+			if (isFText) {
 				var $isF = Dom("<font>").text("會導致F的部件: ").addClass("is_f");
-				$categoryF.append($isF).append(currentLevel.hint[2]);
+				$categoryF.append($isF).append(isFText);
 			}
 		}
 		if (currentLevel.skills) {

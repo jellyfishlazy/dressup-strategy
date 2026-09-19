@@ -281,3 +281,18 @@ test('Gate 10H Final keeps dependency clothing names visible on Main while prese
 
   await expectNoFailures(failures);
 });
+
+
+test('Gate 11 UAT keeps level hints and skills visible after native DOM migration', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await openCleanMain(page);
+
+  await expect(page.locator('#theme option[value="關卡: I-1-1"]')).toHaveCount(1);
+  await page.locator('#theme').selectOption('關卡: I-1-1');
+
+  await expect(page.locator('#skillInfo')).toContainText('微笑');
+  await expect(page.locator('#skillInfo')).toContainText('挑剔');
+  await expect(page.locator('#categoryFInfo')).toContainText('遊園·紫');
+
+  await expectNoFailures(failures);
+});

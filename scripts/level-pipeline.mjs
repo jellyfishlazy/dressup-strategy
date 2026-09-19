@@ -857,11 +857,15 @@ export function applyLevelEntriesToSource(source, entries) {
     if (current) edits.push({ start: current.start, end: current.end, text });
     else {
       if (!additions.has(table)) {
-        const inner = source.slice(info.block.start + 1, info.block.end).trim();
+        const activeEntries = [...info.entries.values()];
+        const lastActive = activeEntries.length
+          ? activeEntries.reduce((latest, item) => item.start > latest.start ? item : latest)
+          : null;
+        const hasTrailingComma = !!lastActive && source.slice(lastActive.valueEnd, lastActive.end).includes(',');
         additions.set(table, {
-          position: info.block.end,
+          position: lastActive?.end ?? info.block.end,
           lines: [],
-          needsLeadingComma: inner.length > 0 && !inner.endsWith(','),
+          needsLeadingComma: !!lastActive && !hasTrailingComma,
         });
       }
       additions.get(table).lines.push('\t' + text);

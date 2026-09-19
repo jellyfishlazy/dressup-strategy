@@ -235,7 +235,7 @@
   function Dom(value) {
     return new NativeDomCollection(toNodes(value));
   }
-  Dom.inArray = function (value, array) { return array.indexOf(value); };
+  Dom.inArray = function (value, array) { return array == null ? -1 : array.indexOf(value); };
   Dom.each = function (collection, callback) {
     if (Array.isArray(collection) || typeof collection.length === 'number') {
       for (var i = 0; i < collection.length; i++) callback.call(collection[i], i, collection[i]);

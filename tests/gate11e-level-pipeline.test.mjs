@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   LEVEL_STAGING_FORMAT_VERSION,
+  applyLevelEntriesToSource,
   applyLevelManifestToPath,
   buildLevelPreview,
   buildLevelStagingManifest,
@@ -356,4 +357,34 @@ test('Gate 11E preview rejects manifest tampering and changed original input', (
     () => applyLevelManifestToPath(manifest, fx.targetPath),
     /manifest integrity check failed/,
   );
+});
+
+
+test('Gate 11E appends a new active property before a trailing block-comment data section', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gate11e-comment-tail-'));
+  const path = join(dir, 'levels.js');
+  const source = readFileSync('data/levels.js', 'utf8');
+  const output = applyLevelEntriesToSource(source, [
+    {
+      table: 'levelsRaw',
+      key: 'UAT-COMMENT-TAIL',
+      value: [1, 1, 1, 1, 1],
+      status: 'new',
+    },
+  ]);
+  writeFileSync(path, output, 'utf8');
+
+  assert.deepEqual(
+    validateLevelSource(path, {
+      baselineSource: 'data/levels.js',
+      strictBaseline: false,
+    }),
+    [],
+  );
+
+  const inserted = output.indexOf('"UAT-COMMENT-TAIL": [1,1,1,1,1],');
+  const commented = output.indexOf("/*'III-4-1'");
+  assert.ok(inserted > 0);
+  assert.ok(commented > inserted);
+  assert.doesNotMatch(output.slice(inserted - 4, inserted + 4), /^,s*"/);
 });
