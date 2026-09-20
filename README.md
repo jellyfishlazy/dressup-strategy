@@ -14,6 +14,18 @@ Gate 11E Level Pipeline 規則見 [`docs/level-pipeline.md`](docs/level-pipeline
 
 Gate 11F One-command Update 規則見 [`docs/one-command-update.md`](docs/one-command-update.md)。日常可用 `npm run data:update -- --wardrobe=<file>`、`--levels=<file>` 或兩者一起執行 staging → preview → apply → derived rebuild → regression；正式寫入仍需顯式 `--apply`，且整個 run 具有跨步驟 rollback。
 
+Gate 12B External Source Reader 規則見 [`docs/external-source-reader.md`](docs/external-source-reader.md)。`npm run data:inspect:external` 會唯讀解析外部 wardrobe / levels 來源，保留 20 欄服裝原始資料，並把關卡權重、filter、bonus、skills、hint 組成可搜尋的 source bundle；本階段不自動推測本地關卡對應，也不寫入正式資料。
+
+Gate 12C Game Update Session 規則見 [`docs/game-update-session.md`](docs/game-update-session.md)。`npm run data:session -- create --name="<本次更新名稱>"` 會在 `.update-workspace/` 建立可持續使用的更新 session，保存建立時的外部來源 SHA / 摘要，以及後續 Gate 12D/12E 要填入的 plan / collection 容器；可用 `current`、`list`、`show`、`activate`、`complete`、`cancel` 管理 session，且完成／取消後不再能設為 current。
+
+Gate 12D 服裝搜尋／加入本次更新規則見 [`docs/update-wardrobe.md`](docs/update-wardrobe.md)。`npm run data:session:wardrobe -- search --suit="<來源套裝名稱>"` 可搜尋目前更新綁定的來源資料；以 `add --key="<來源分類|編號>"` 逐筆或批次收集，再用 `list`／`remove` 管理清單。重複加入不會產生副本，來源 SHA 改變時拒絕搜尋／加入；完整來源列只保存在 `.update-workspace/`，不寫入正式資料。此階段提供核心 API 與 CLI，尚未接上瀏覽器按鈕，也不執行本地對應、完整度判定或 apply。
+
+Gate 12E 關卡搜尋／加入本次更新規則見 [`docs/update-levels.md`](docs/update-levels.md)。`npm run data:session:levels -- search --source-key="<levelsRaw key>"` 可搜尋目前更新綁定的來源關卡；`add --key="<levelsRaw key>"` 會把該關卡的 `levelsRaw`、`levelFilters`、`levelBonus`、skills（`addSkillsInfo`）、hint（`addHintInfo`）與匹配的 `themeFilter` 一次收進 session。來源 SHA 改變時拒絕搜尋／加入，既有清單仍可離線查看／移除；本階段不執行本地 mapping 或 apply。
+
+Gate 12F 完整度檢查規則見 [`docs/update-completeness.md`](docs/update-completeness.md)。先以 `npm run data:session:completeness -- plan-add` 明確登記本次更新預計要搬的服裝／關卡，再用 `check` 對照 Gate 12D/12E collection。報告會分開列出 planned、completed、missing 與 unplannedCollected；空 plan 不會被誤判為 100% 完成，且缺少的預計項目可在來源檔暫時離線時仍被檢查。
+
+Gate 12G 差異預覽規則見 [`docs/update-diff-preview.md`](docs/update-diff-preview.md)。`npm run data:session:diff -- preview` 會唯讀比較 Gate 12F 已規劃且 Gate 12D/12E 已收集的來源資料與目前 canonical wardrobe / Main levels，分類為 new / modified / conflict / unchanged；第一冊關卡使用已驗證的 `I-` key 規則，II/III 冊維持原 key。缺少的 plan 項目與 conflict 會成為 blocker；此階段不寫正式資料、不接受衝突、也不 apply。
+
 ## 陸服衣櫃條件搜尋
 
 獨立模組位於 [`cn-search/`](cn-search/)。

@@ -359,6 +359,10 @@ function normalizedLevelTables(path) {
   return { source, context, tables };
 }
 
+export function readNormalizedLevelTables(path) {
+  return cloneJson(normalizedLevelTables(path).tables);
+}
+
 export function resolveLevelTarget(targetId = 'main-levels') {
   const source = dataSourceById(targetId);
   if (!source || !('path' in source)) throw new Error('unknown level target: ' + targetId);

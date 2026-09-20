@@ -28,7 +28,13 @@
     "data:stage:levels": "node scripts/stage-level-import.mjs",
     "data:preview:levels": "node scripts/review-level-staging.mjs",
     "data:apply:levels": "node scripts/review-level-staging.mjs --apply",
-    "data:update": "node scripts/data-update.mjs"
+    "data:update": "node scripts/data-update.mjs",
+    "data:inspect:external": "node scripts/inspect-external-source.mjs",
+    "data:session": "node scripts/update-session-cli.mjs",
+    "data:session:wardrobe": "node scripts/update-wardrobe-cli.mjs",
+    "data:session:levels": "node scripts/update-levels-cli.mjs",
+    "data:session:completeness": "node scripts/update-completeness-cli.mjs",
+    "data:session:diff": "node scripts/update-diff-preview-cli.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

@@ -45,11 +45,20 @@ Gate 11A 實際盤點結果：
 
 `data/material_wardrobe.js` 也不是 `data/wardrobe.js` 的鏡像。它是 Material 專用資料集，目前仍有 canonical wardrobe 中不存在的 identity，因此不能用 canonical 直接覆寫。
 
+## 外部更新來源
+
+Gate 12B 將外部更新來源正式擴充為兩個唯讀 input：
+
+1. `external-cn-wardrobe`：外部 `wardrobe.js`，目前實際格式為 20 欄；Gate 12B 保留完整原始列，不直接套用本地 18 欄 validator。
+2. `external-cn-levels`：外部 `levels.js`，包含 primary level tables 與 filter / bonus / skills / hint metadata。
+
+來源解析規則與唯讀 bundle 規格見 [`external-source-reader.md`](external-source-reader.md)。外部來源本身不屬於 repository writable target。
+
 ## CN Search generated data
 
 `cn-search/data/cn_search_index.json` 有兩個邏輯輸入：
 
-1. 外部陸服 wardrobe source，由 `CN_WARDROBE_JS`、vendor 或 sibling clone 路徑解析。
+1. `external-cn-wardrobe`，由 `CN_WARDROBE_JS`、vendor 或 sibling clone 路徑解析。
 2. 正式台服 `data/wardrobe.js`，用於台服 tag / wording 對齊。
 
 Builder：

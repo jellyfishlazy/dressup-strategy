@@ -106,7 +106,14 @@ export const EXTERNAL_SOURCES = Object.freeze({
   externalCnWardrobe: Object.freeze({
     id: 'external-cn-wardrobe',
     role: 'external-input',
-    description: 'External CN wardrobe input resolved by CN_WARDROBE_JS / vendor / sibling clone lookup.',
+    format: 'external-wardrobe-20',
+    description: 'External wardrobe input resolved by CN_WARDROBE_JS / vendor / sibling clone lookup.',
+  }),
+  externalCnLevels: Object.freeze({
+    id: 'external-cn-levels',
+    role: 'external-input',
+    format: 'legacy-levels-js',
+    description: 'External level input resolved from the same data source root as wardrobe.js or CN_LEVELS_JS override.',
   }),
 });
 
@@ -114,7 +121,9 @@ export function dataSourceById(id) {
   for (const source of Object.values(DATA_SOURCES)) {
     if (source.id === id) return source;
   }
-  if (EXTERNAL_SOURCES.externalCnWardrobe.id === id) return EXTERNAL_SOURCES.externalCnWardrobe;
+  for (const source of Object.values(EXTERNAL_SOURCES)) {
+    if (source.id === id) return source;
+  }
   return null;
 }
 
