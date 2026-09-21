@@ -26,6 +26,16 @@ Gate 12F 完整度檢查規則見 [`docs/update-completeness.md`](docs/update-co
 
 Gate 12G 差異預覽規則見 [`docs/update-diff-preview.md`](docs/update-diff-preview.md)。`npm run data:session:diff -- preview` 會唯讀比較 Gate 12F 已規劃且 Gate 12D/12E 已收集的來源資料與目前 canonical wardrobe / Main levels，分類為 new / modified / conflict / unchanged；第一冊關卡使用已驗證的 `I-` key 規則，II/III 冊維持原 key。缺少的 plan 項目與 conflict 會成為 blocker；此階段不寫正式資料、不接受衝突、也不 apply。
 
+Gate 12H 衝突審查／決策保存規則見 [`docs/update-conflict-review.md`](docs/update-conflict-review.md)。`npm run data:session:review -- conflicts` 會列出 Gate 12G conflicts 與目前審查狀態；可用 `set` 保存 `keep-local`、安全的 `use-source` 或經 schema 驗證的 `manual-resolution`。每個決策綁定 conflict fingerprint 與 canonical target SHA，target 或 mapping 改變後會標記 stale，不會把舊核准偷渡到新資料。
+
+Gate 12I apply-ready staging 規則見 [`docs/update-staging.md`](docs/update-staging.md)。`npm run data:session:stage -- generate` 會把 Gate 12G 的 new / modified 與 Gate 12H 已核准 conflict 轉成 Gate 11 wardrobe / level input + manifest，並額外保存 `bundle.json` 記錄 Gate 12 決策與 Gate 11 conflict acceptance identity；`keep-local` / unchanged 會跳過。本階段只產生 `.staging/` artifacts，不寫 canonical、不 apply。
+
+Gate 12J Review / Apply 整合規則見 [`docs/update-review-apply.md`](docs/update-review-apply.md)。先用 `npm run data:session:apply -- preview` 重新跑 Gate 11 preview 並取得 `confirmFingerprint`；正式寫入需 `apply --confirm=<同一 fingerprint>`。Gate 11 conflict acceptance 只能由 Gate 12I bundle 的精確 identity 集合授權，沒有一般使用者可直接開啟的 `--accept-conflicts`；正式 apply 沿用 Gate 11F backup / rollback / derived rebuild / regression。
+
+Gate 12K Apply 後驗證／Session 收尾規則見 [`docs/update-closeout.md`](docs/update-closeout.md)。先以 `npm run data:session:closeout -- verify --report=<gate12j-report.json>` 重新核對 apply report、bundle、session fingerprint、canonical SHA/內容、generated freshness 與 repository regression；驗證成功後帶回 `closeoutFingerprint` 執行 `complete`，才會把 session 標記 completed 並清除 current pointer。
+
+Gate 12L Guided Update UI / 日常操作入口見 [`docs/guided-update-ui.md`](docs/guided-update-ui.md)。Windows 日常使用可直接雙擊 `開啟資料更新.bat`，或執行 `npm run start:update`；介面依序整合建立 Session、服裝／關卡收集、完整度、差異／衝突審查、Staging、Preview／Apply、Closeout。Privileged API 僅在主動啟動時綁定 `127.0.0.1:8127`，並使用 same-origin + 隨機 token，不掛在一般搭配器 server。
+
 ## 陸服衣櫃條件搜尋
 
 獨立模組位於 [`cn-search/`](cn-search/)。

@@ -388,3 +388,29 @@ test('Gate 11E appends a new active property before a trailing block-comment dat
   assert.ok(commented > inserted);
   assert.doesNotMatch(output.slice(inserted - 4, inserted + 4), /^,s*"/);
 });
+
+test('Gate 11E can replace the final property and append a new property in the same table', () => {
+  const fx = writeFixture();
+  const compact = fixtureSource().replace(
+    'var levelsRaw = {\n  "TEST-1": [1, 2, 3, 4, 5],\n};',
+    'var levelsRaw = {"TEST-1": [1, 2, 3, 4, 5]};',
+  );
+  writeFileSync(fx.targetPath, compact, 'utf8');
+
+  const inputText = makeInput([
+    { table: 'levelsRaw', key: 'TEST-1', value: [5, 4, 3, 2, 1] },
+    { table: 'levelsRaw', key: 'TEST-2', value: [1, 1, 1, 1, 1] },
+  ]);
+  writeFileSync(fx.inputPath, inputText, 'utf8');
+  const manifest = buildLevelStagingManifest({
+    inputText,
+    inputPath: fx.inputPath,
+    targetPathOverride: fx.targetPath,
+  });
+
+  const result = applyLevelManifestToPath(manifest, fx.targetPath, { acceptConflicts: true });
+  assert.equal(result.applied, true);
+  const output = readFileSync(fx.targetPath, 'utf8');
+  assert.doesNotMatch(output, /,,/);
+  assert.deepEqual(validateLevelSource(fx.targetPath), []);
+});

@@ -11,7 +11,7 @@ The purpose is to give later Gate 12 phases a durable answer to:
 - Which wardrobe / level items have already been collected?
 - Has this update session been completed or cancelled?
 
-Gate 12C does **not** itself collect wardrobe or level records. It establishes the container that later gates fill. Gate 12D supplies wardrobe search/collection through [update-wardrobe.md](update-wardrobe.md), Gate 12E supplies levelsRaw search plus automatic related level-data collection through [update-levels.md](update-levels.md), Gate 12F turns the plan containers into an explicit expected-item checklist through [update-completeness.md](update-completeness.md), and Gate 12G provides deterministic read-only local diff classification through [update-diff-preview.md](update-diff-preview.md). Browser controls remain later-phase work.
+Gate 12C does **not** itself collect wardrobe or level records. It establishes the container that later gates fill. Gate 12D supplies wardrobe search/collection through [update-wardrobe.md](update-wardrobe.md), Gate 12E supplies levelsRaw search plus automatic related level-data collection through [update-levels.md](update-levels.md), Gate 12F turns the plan containers into an explicit expected-item checklist through [update-completeness.md](update-completeness.md), Gate 12G provides deterministic read-only local diff classification through [update-diff-preview.md](update-diff-preview.md), Gate 12H persists conflict-review decisions through [update-conflict-review.md](update-conflict-review.md), Gate 12I generates Gate 11-compatible staging artifacts through [update-staging.md](update-staging.md), Gate 12J performs explicit reviewed preview/apply integration through [update-review-apply.md](update-review-apply.md), and Gate 12K verifies post-apply evidence and closes the session through [update-closeout.md](update-closeout.md). Browser controls remain later-phase work.
 
 ## Local workspace
 
@@ -48,6 +48,7 @@ updatedAt
 sourceSnapshot
 plan
 collection
+review (optional; created by Gate 12H when decisions are saved)
 ```
 
 Status is one of:
@@ -179,8 +180,6 @@ Gate 12C ends at reliable update-session lifecycle.
 
 It does not yet provide:
 
-- conflict resolution / approval;
-- apply;
-- user-facing browser UI.
+- No remaining backend lifecycle gap. Gate 12L provides the user-facing Guided Update UI in [guided-update-ui.md](guided-update-ui.md).
 
 Those belong to following Gate 12 phases.

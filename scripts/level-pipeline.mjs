@@ -831,6 +831,7 @@ export function applyLevelEntriesToSource(source, entries) {
   const newline = source.includes('\r\n') ? '\r\n' : '\n';
   const edits = [];
   const additions = new Map();
+  const replacedSpanStarts = new Set();
 
   for (const entry of entries) {
     if (entry.status === 'unchanged') continue;
@@ -840,12 +841,18 @@ export function applyLevelEntriesToSource(source, entries) {
       const info = themeFilterElementSpans(source);
       const current = info.elements.find(element => element.key === entry.key);
       const text = '[' + jsString(entry.key) + ', ' + jsString(entry.value) + '],';
-      if (current) edits.push({ start: current.start, end: current.end, text });
-      else {
+      if (current) {
+        replacedSpanStarts.add(current.start);
+        edits.push({ start: current.start, end: current.end, text });
+      } else {
         if (!additions.has(table)) {
           const inner = source.slice(info.block.start + 1, info.block.end).trim();
+          const lastActive = info.elements.length
+            ? info.elements.reduce((latest, item) => item.start > latest.start ? item : latest)
+            : null;
           additions.set(table, {
             position: info.block.end,
+            anchorStart: lastActive?.start ?? null,
             lines: [],
             needsLeadingComma: inner.length > 0 && !inner.endsWith(','),
           });
@@ -858,8 +865,10 @@ export function applyLevelEntriesToSource(source, entries) {
     const info = objectEntrySpans(source, table);
     const current = info.entries.get(entry.key);
     const text = jsString(entry.key) + ': ' + serializeLevelValue(table, entry.value) + ',';
-    if (current) edits.push({ start: current.start, end: current.end, text });
-    else {
+    if (current) {
+      replacedSpanStarts.add(current.start);
+      edits.push({ start: current.start, end: current.end, text });
+    } else {
       if (!additions.has(table)) {
         const activeEntries = [...info.entries.values()];
         const lastActive = activeEntries.length
@@ -868,6 +877,7 @@ export function applyLevelEntriesToSource(source, entries) {
         const hasTrailingComma = !!lastActive && source.slice(lastActive.valueEnd, lastActive.end).includes(',');
         additions.set(table, {
           position: lastActive?.end ?? info.block.end,
+          anchorStart: lastActive?.start ?? null,
           lines: [],
           needsLeadingComma: !!lastActive && !hasTrailingComma,
         });
@@ -877,7 +887,9 @@ export function applyLevelEntriesToSource(source, entries) {
   }
 
   for (const addition of additions.values()) {
-    const separator = addition.needsLeadingComma ? ',' : '';
+    const anchorWillEndWithComma = addition.anchorStart !== null
+      && replacedSpanStarts.has(addition.anchorStart);
+    const separator = addition.needsLeadingComma && !anchorWillEndWithComma ? ',' : '';
     const prefix = source[addition.position - 1] === '\n' ? '' : newline;
     edits.push({
       start: addition.position,

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guided Update｜資料更新</title>
+  <link rel="stylesheet" href="/ui-foundation.css">
+  <link rel="stylesheet" href="/guided-update/guided-update.css">
+</head>
+<body class="ui-page gu-page">
+  <header class="gu-header">
+    <div>
+      <p class="gu-eyebrow">Local Data Workflow</p>
+      <h1 class="ui-page-title">Guided Update</h1>
+      <p class="ui-muted">從來源收集、差異審查到 Apply 與收尾，依序完成一次遊戲資料更新。</p>
+    </div>
+    <div class="gu-header-actions">
+      <span id="server-status" class="gu-status gu-status-neutral">連線中</span>
+      <button id="refresh-state" class="ui-btn ui-btn-default" type="button">重新整理</button>
+    </div>
+  </header>
+
+  <div id="global-error" class="gu-alert gu-alert-danger" role="alert" hidden></div>
+  <div id="global-success" class="gu-alert gu-alert-success" role="status" hidden></div>
+
+  <nav class="gu-stepbar" aria-label="更新流程">
+    <a href="#step-session"><span>1</span>建立更新</a>
+    <a href="#step-collect"><span>2</span>收集資料</a>
+    <a href="#step-completeness"><span>3</span>完整度</a>
+    <a href="#step-review"><span>4</span>差異審查</a>
+    <a href="#step-apply"><span>5</span>Preview / Apply</a>
+    <a href="#step-closeout"><span>6</span>驗證完成</a>
+  </nav>
+
+  <main class="gu-flow">
+    <section id="step-session" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 1</p>
+          <h2>建立本次更新</h2>
+        </div>
+        <span id="session-badge" class="gu-badge">尚未建立</span>
+      </div>
+
+      <div id="source-readiness" class="gu-source-readiness" role="status"></div>
+
+      <div id="current-session" class="gu-session-current" hidden></div>
+
+      <form id="create-session-form" class="gu-form">
+        <label>
+          更新名稱
+          <input id="session-name" class="ui-control" type="text" required maxlength="120"
+                 placeholder="例如：2026-09 月資料更新">
+        </label>
+        <label>
+          備註
+          <input id="session-note" class="ui-control" type="text" maxlength="300"
+                 placeholder="可留空">
+        </label>
+        <button id="create-session-button" class="ui-btn ui-btn-success" type="submit">建立本次更新</button>
+      </form>
+
+      <details class="gu-history">
+        <summary>歷史更新紀錄</summary>
+        <div id="session-list" class="gu-list"></div>
+      </details>
+    </section>
+
+    <section id="step-collect" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 2</p>
+          <h2>搜尋並加入本次更新</h2>
+        </div>
+        <span id="collection-badge" class="gu-badge">0 項</span>
+      </div>
+      <p class="gu-help">「加入本次更新」會同時列入預計清單並收集來源資料。搜尋與加入都使用目前 Session 鎖定的來源版本。</p>
+
+      <div class="gu-collection-grid">
+        <section class="gu-subcard">
+          <div class="gu-subcard-title">
+            <h3>服裝</h3>
+            <span id="wardrobe-count" class="gu-count">0</span>
+          </div>
+          <form id="wardrobe-search-form" class="gu-search-row">
+            <input id="wardrobe-query" class="ui-control" type="search" placeholder="名稱、分類、套裝、來源、標籤">
+            <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+          </form>
+          <div id="wardrobe-results" class="gu-results gu-empty">尚未搜尋</div>
+          <div class="gu-selected-block">
+            <h4>本次已加入</h4>
+            <div id="wardrobe-selected" class="gu-selected-list gu-empty">尚無服裝</div>
+          </div>
+        </section>
+
+        <section class="gu-subcard">
+          <div class="gu-subcard-title">
+            <h3>關卡</h3>
+            <span id="levels-count" class="gu-count">0</span>
+          </div>
+          <form id="levels-search-form" class="gu-search-row">
+            <input id="levels-query" class="ui-control" type="search" placeholder="關卡 key、名稱、主題">
+            <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+          </form>
+          <div id="levels-results" class="gu-results gu-empty">尚未搜尋</div>
+          <div class="gu-selected-block">
+            <h4>本次已加入</h4>
+            <div id="levels-selected" class="gu-selected-list gu-empty">尚無關卡</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="step-completeness" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 3</p>
+          <h2>完整度檢查</h2>
+        </div>
+        <span id="completeness-badge" class="gu-badge">未檢查</span>
+      </div>
+      <div class="gu-actions">
+        <button id="check-completeness" class="ui-btn ui-btn-default" type="button">重新檢查</button>
+      </div>
+      <div id="completeness-summary" class="gu-metrics">
+        <div><strong>0</strong><span>預計</span></div>
+        <div><strong>0</strong><span>已收集</span></div>
+        <div><strong>0</strong><span>缺少</span></div>
+        <div><strong>－</strong><span>完成率</span></div>
+      </div>
+      <div id="missing-items" class="gu-list gu-empty">尚未檢查</div>
+    </section>
+
+    <section id="step-review" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 4</p>
+          <h2>差異預覽與衝突審查</h2>
+        </div>
+        <span id="review-badge" class="gu-badge">未執行</span>
+      </div>
+      <div class="gu-actions">
+        <button id="run-diff" class="ui-btn ui-btn-default" type="button">產生差異預覽</button>
+        <button id="refresh-review" class="ui-btn ui-btn-default" type="button">重新讀取審查狀態</button>
+      </div>
+      <div id="diff-summary" class="gu-metrics gu-metrics-five">
+        <div><strong>0</strong><span>新增</span></div>
+        <div><strong>0</strong><span>修改</span></div>
+        <div><strong>0</strong><span>衝突</span></div>
+        <div><strong>0</strong><span>無變更</span></div>
+        <div><strong>0</strong><span>總計</span></div>
+      </div>
+      <div id="conflict-list" class="gu-conflicts gu-empty">尚未產生差異預覽</div>
+    </section>
+
+    <section id="step-apply" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 5</p>
+          <h2>Staging / Preview / Apply</h2>
+        </div>
+        <span id="apply-badge" class="gu-badge">尚未 Preview</span>
+      </div>
+      <div class="gu-actions">
+        <button id="generate-stage" class="ui-btn ui-btn-default" type="button">產生 Staging</button>
+        <button id="preview-apply" class="ui-btn ui-btn-info" type="button">執行 Preview</button>
+        <button id="execute-apply" class="ui-btn ui-btn-success" type="button" disabled>正式 Apply</button>
+      </div>
+      <div id="apply-summary" class="gu-output gu-empty">先完成差異審查，再執行 Preview。</div>
+      <div id="apply-fingerprint-wrap" class="gu-fingerprint" hidden>
+        <span>確認 Fingerprint</span>
+        <code id="apply-fingerprint"></code>
+      </div>
+    </section>
+
+    <section id="step-closeout" class="gu-card">
+      <div class="gu-card-header">
+        <div>
+          <p class="gu-step-label">Step 6</p>
+          <h2>Apply 後驗證與完成</h2>
+        </div>
+        <span id="closeout-badge" class="gu-badge">尚未驗證</span>
+      </div>
+      <div class="gu-actions">
+        <button id="verify-closeout" class="ui-btn ui-btn-info" type="button">驗證 Apply 結果</button>
+        <button id="complete-closeout" class="ui-btn ui-btn-success" type="button" disabled>完成本次更新</button>
+      </div>
+      <div id="closeout-summary" class="gu-output gu-empty">成功 Apply 後再進行驗證。</div>
+      <div id="closeout-fingerprint-wrap" class="gu-fingerprint" hidden>
+        <span>Closeout Fingerprint</span>
+        <code id="closeout-fingerprint"></code>
+      </div>
+    </section>
+  </main>
+
+  <section class="gu-card gu-log-card">
+    <div class="gu-card-header">
+      <div>
+        <p class="gu-step-label">Activity</p>
+        <h2>操作紀錄</h2>
+      </div>
+      <button id="clear-log" class="ui-btn ui-btn-xs ui-btn-default" type="button">清除</button>
+    </div>
+    <ol id="activity-log" class="gu-log"></ol>
+  </section>
+
+  <script type="module" src="/guided-update/app.mjs"></script>
+</body>
+</html>

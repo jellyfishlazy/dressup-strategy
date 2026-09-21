@@ -152,6 +152,58 @@ export function sessionValidationErrors(session) {
     if (!Array.isArray(session.collection.levels)) errors.push('collection.levels must be an array');
   }
 
+  if (session.review !== undefined) {
+    const review = session.review;
+    if (!review || typeof review !== 'object' || Array.isArray(review)) {
+      errors.push('review must be an object');
+    } else {
+      if (review.formatVersion !== 1) errors.push('invalid review formatVersion');
+      if (review.kind !== 'gate12-conflict-review') errors.push('invalid review kind');
+      if (!Array.isArray(review.conflictDecisions)) {
+        errors.push('review.conflictDecisions must be an array');
+      } else {
+        const seen = new Set();
+        for (const decision of review.conflictDecisions) {
+          if (!decision || typeof decision !== 'object' || Array.isArray(decision)) {
+            errors.push('invalid conflict decision record');
+            continue;
+          }
+          const identity = String(decision.domain) + '|' + String(decision.sourceKey);
+          if (seen.has(identity)) errors.push('duplicate conflict decision: ' + identity);
+          seen.add(identity);
+          if (decision.formatVersion !== 1 || decision.kind !== 'gate12-conflict-decision') {
+            errors.push('invalid conflict decision kind/version: ' + identity);
+          }
+          if (!['wardrobe', 'levels'].includes(decision.domain)) errors.push('invalid conflict decision domain: ' + identity);
+          if (typeof decision.sourceKey !== 'string' || !decision.sourceKey.trim()) errors.push('invalid conflict decision sourceKey: ' + identity);
+          if (!['keep-local', 'use-source', 'manual-resolution'].includes(decision.decision)) errors.push('invalid conflict decision value: ' + identity);
+          if (typeof decision.previewFingerprint !== 'string' || !/^[0-9a-f]{64}$/i.test(decision.previewFingerprint)) errors.push('invalid conflict decision fingerprint: ' + identity);
+          if (typeof decision.targetSha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(decision.targetSha256)) errors.push('invalid conflict decision target hash: ' + identity);
+          if (!Number.isFinite(Date.parse(decision.decidedAt))) errors.push('invalid conflict decision timestamp: ' + identity);
+        }
+      }
+    }
+  }
+
+  if (session.closeout !== undefined) {
+    const closeout = session.closeout;
+    if (!closeout || typeof closeout !== 'object' || Array.isArray(closeout)) {
+      errors.push('closeout must be an object');
+    } else {
+      if (closeout.formatVersion !== 1) errors.push('invalid closeout formatVersion');
+      if (closeout.kind !== 'gate12-closeout-summary') errors.push('invalid closeout kind');
+      for (const key of ['generationFingerprint', 'closeoutFingerprint']) {
+        if (typeof closeout[key] !== 'string' || !/^[0-9a-f]{64}$/i.test(closeout[key])) {
+          errors.push('invalid closeout ' + key);
+        }
+      }
+      if (typeof closeout.reportPath !== 'string' || !closeout.reportPath.trim()) {
+        errors.push('invalid closeout reportPath');
+      }
+      if (!Number.isFinite(Date.parse(closeout.verifiedAt))) errors.push('invalid closeout verifiedAt');
+    }
+  }
+
   if (session.status === 'completed' && !Number.isFinite(Date.parse(session.completedAt))) {
     errors.push('completed session requires completedAt');
   }
@@ -303,12 +355,18 @@ function clearCurrentIfMatches(id, workspace) {
 export function completeUpdateSession(id, {
   workspace = DEFAULT_UPDATE_WORKSPACE,
   now = new Date(),
+  expectedUpdatedAt = null,
+  closeout = null,
 } = {}) {
   const root = resolve(workspace);
   const session = loadUpdateSession(id, { workspace: root });
   if (session.status !== 'draft') throw new Error('only draft sessions can be completed: ' + id);
+  if (expectedUpdatedAt !== null && session.updatedAt !== expectedUpdatedAt) {
+    throw new Error('update session changed after closeout verification; re-verify before completing');
+  }
   session.status = 'completed';
   session.completedAt = now.toISOString();
+  if (closeout !== null) session.closeout = cloneJson(closeout);
   const saved = saveUpdateSession(session, { workspace: root, now });
   clearCurrentIfMatches(id, root);
   return saved;

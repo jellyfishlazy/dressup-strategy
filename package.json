@@ -20,6 +20,7 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run validate:data && npm run validate:levels",
     "build:cn-index": "npm run build:cn-index --workspace cn-search",
     "start:main": "node scripts/launch-main.mjs",
+    "start:update": "node scripts/launch-guided-update.mjs",
     "data:stage:wardrobe": "node scripts/stage-wardrobe-import.mjs",
     "data:preview:wardrobe": "node scripts/review-wardrobe-staging.mjs",
     "data:apply:wardrobe": "node scripts/review-wardrobe-staging.mjs --apply",
@@ -34,7 +35,11 @@
     "data:session:wardrobe": "node scripts/update-wardrobe-cli.mjs",
     "data:session:levels": "node scripts/update-levels-cli.mjs",
     "data:session:completeness": "node scripts/update-completeness-cli.mjs",
-    "data:session:diff": "node scripts/update-diff-preview-cli.mjs"
+    "data:session:diff": "node scripts/update-diff-preview-cli.mjs",
+    "data:session:review": "node scripts/update-conflict-review-cli.mjs",
+    "data:session:stage": "node scripts/update-staging-cli.mjs",
+    "data:session:apply": "node scripts/update-review-apply-cli.mjs",
+    "data:session:closeout": "node scripts/update-closeout-cli.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

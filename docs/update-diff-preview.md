@@ -367,4 +367,4 @@ It does not:
 - rebuild derived artifacts;
 - provide browser UI controls.
 
-Those remain later Gate 12 phases.
+Conflict review and durable decisions are now supplied by Gate 12H in [update-conflict-review.md](update-conflict-review.md). Apply-ready staging generation, formal apply and browser controls remain later Gate 12 phases.
