@@ -1,402 +1,214 @@
-# 搭配器（自用）
+# Dressup Strategy（自用）
 
-## Data Pipeline
+這是一個以瀏覽器為主的《奇跡暖暖》搭配／資料工具專案，包含主搭配器、BigUse、材料查詢、衣櫃比對、外部資料搜尋，以及本機 Guided Update 資料更新流程。
 
-Gate 11 的資料來源契約位於 [`docs/data-source-contract.md`](docs/data-source-contract.md)，機器可讀版本為 [`scripts/data-source-contract.mjs`](scripts/data-source-contract.mjs)。一般服裝更新的 canonical source 是 `data/wardrobe.js`；其他同名或近似檔案不得依檔名自行推導同步關係。
+目前日常開發分支為 `development`；`main` 保留作為穩定基準，不直接承接日常開發變更。
 
-Gate 11B staging 流程見 [`docs/data-staging.md`](docs/data-staging.md)。CN Search 匯出的 wardrobe snippet 可直接用 `npm run data:stage:wardrobe -- <file>` 匯入本機 `.staging/`；此步驟只驗證與產生 manifest，不修改正式資料。
+## 快速開始
 
-Gate 11C Preview / Apply 規則見 [`docs/data-preview-apply.md`](docs/data-preview-apply.md)。先用 `npm run data:preview:wardrobe -- <manifest>` 檢視 new / conflict 與欄位差異；只有顯式執行 `npm run data:apply:wardrobe -- <manifest>` 才可能寫入正式資料，conflict 另外要求 `--accept-conflicts`。
+### 搭配器
 
-Gate 11D derived rebuild 規則見 [`docs/derived-rebuild.md`](docs/derived-rebuild.md)。`npm run data:check:derived` 只檢查 freshness；`npm run data:rebuild:derived -- --changed=wardrobe` 會依 contract 重建受 wardrobe 影響且 stale 的 generated artifacts。
+Windows 可直接雙擊：
 
-Gate 11E Level Pipeline 規則見 [`docs/level-pipeline.md`](docs/level-pipeline.md)。關卡更新使用 JSON patch，依序執行 `data:stage:levels` → `data:preview:levels` → `data:apply:levels`；Main 與 BigUse level target 由 Gate 11A contract 明確區分。
+```text
+開啟搭配器.bat
+```
 
-Gate 11F One-command Update 規則見 [`docs/one-command-update.md`](docs/one-command-update.md)。日常可用 `npm run data:update -- --wardrobe=<file>`、`--levels=<file>` 或兩者一起執行 staging → preview → apply → derived rebuild → regression；正式寫入仍需顯式 `--apply`，且整個 run 具有跨步驟 rollback。
+或執行：
 
-Gate 12B External Source Reader 規則見 [`docs/external-source-reader.md`](docs/external-source-reader.md)。`npm run data:inspect:external` 會唯讀解析外部 wardrobe / levels 來源，保留 20 欄服裝原始資料，並把關卡權重、filter、bonus、skills、hint 組成可搜尋的 source bundle；本階段不自動推測本地關卡對應，也不寫入正式資料。
+```powershell
+npm run start:main
+```
 
-Gate 12C Game Update Session 規則見 [`docs/game-update-session.md`](docs/game-update-session.md)。`npm run data:session -- create --name="<本次更新名稱>"` 會在 `.update-workspace/` 建立可持續使用的更新 session，保存建立時的外部來源 SHA / 摘要，以及後續 Gate 12D/12E 要填入的 plan / collection 容器；可用 `current`、`list`、`show`、`activate`、`complete`、`cancel` 管理 session，且完成／取消後不再能設為 current。
+### 資料更新
 
-Gate 12D 服裝搜尋／加入本次更新規則見 [`docs/update-wardrobe.md`](docs/update-wardrobe.md)。`npm run data:session:wardrobe -- search --suit="<來源套裝名稱>"` 可搜尋目前更新綁定的來源資料；以 `add --key="<來源分類|編號>"` 逐筆或批次收集，再用 `list`／`remove` 管理清單。重複加入不會產生副本，來源 SHA 改變時拒絕搜尋／加入；完整來源列只保存在 `.update-workspace/`，不寫入正式資料。此階段提供核心 API 與 CLI，尚未接上瀏覽器按鈕，也不執行本地對應、完整度判定或 apply。
+日常資料更新建議直接使用 Guided Update，不需要手動記住 Gate 12 的 CLI 流程。
 
-Gate 12E 關卡搜尋／加入本次更新規則見 [`docs/update-levels.md`](docs/update-levels.md)。`npm run data:session:levels -- search --source-key="<levelsRaw key>"` 可搜尋目前更新綁定的來源關卡；`add --key="<levelsRaw key>"` 會把該關卡的 `levelsRaw`、`levelFilters`、`levelBonus`、skills（`addSkillsInfo`）、hint（`addHintInfo`）與匹配的 `themeFilter` 一次收進 session。來源 SHA 改變時拒絕搜尋／加入，既有清單仍可離線查看／移除；本階段不執行本地 mapping 或 apply。
+Windows 雙擊：
 
-Gate 12F 完整度檢查規則見 [`docs/update-completeness.md`](docs/update-completeness.md)。先以 `npm run data:session:completeness -- plan-add` 明確登記本次更新預計要搬的服裝／關卡，再用 `check` 對照 Gate 12D/12E collection。報告會分開列出 planned、completed、missing 與 unplannedCollected；空 plan 不會被誤判為 100% 完成，且缺少的預計項目可在來源檔暫時離線時仍被檢查。
+```text
+開啟資料更新.bat
+```
 
-Gate 12G 差異預覽規則見 [`docs/update-diff-preview.md`](docs/update-diff-preview.md)。`npm run data:session:diff -- preview` 會唯讀比較 Gate 12F 已規劃且 Gate 12D/12E 已收集的來源資料與目前 canonical wardrobe / Main levels，分類為 new / modified / conflict / unchanged；第一冊關卡使用已驗證的 `I-` key 規則，II/III 冊維持原 key。缺少的 plan 項目與 conflict 會成為 blocker；此階段不寫正式資料、不接受衝突、也不 apply。
+或執行：
 
-Gate 12H 衝突審查／決策保存規則見 [`docs/update-conflict-review.md`](docs/update-conflict-review.md)。`npm run data:session:review -- conflicts` 會列出 Gate 12G conflicts 與目前審查狀態；可用 `set` 保存 `keep-local`、安全的 `use-source` 或經 schema 驗證的 `manual-resolution`。每個決策綁定 conflict fingerprint 與 canonical target SHA，target 或 mapping 改變後會標記 stale，不會把舊核准偷渡到新資料。
+```powershell
+npm run start:update
+```
 
-Gate 12I apply-ready staging 規則見 [`docs/update-staging.md`](docs/update-staging.md)。`npm run data:session:stage -- generate` 會把 Gate 12G 的 new / modified 與 Gate 12H 已核准 conflict 轉成 Gate 11 wardrobe / level input + manifest，並額外保存 `bundle.json` 記錄 Gate 12 決策與 Gate 11 conflict acceptance identity；`keep-local` / unchanged 會跳過。本階段只產生 `.staging/` artifacts，不寫 canonical、不 apply。
+預設會開啟本機介面：
 
-Gate 12J Review / Apply 整合規則見 [`docs/update-review-apply.md`](docs/update-review-apply.md)。先用 `npm run data:session:apply -- preview` 重新跑 Gate 11 preview 並取得 `confirmFingerprint`；正式寫入需 `apply --confirm=<同一 fingerprint>`。Gate 11 conflict acceptance 只能由 Gate 12I bundle 的精確 identity 集合授權，沒有一般使用者可直接開啟的 `--accept-conflicts`；正式 apply 沿用 Gate 11F backup / rollback / derived rebuild / regression。
+```text
+http://127.0.0.1:8127/guided-update/
+```
 
-Gate 12K Apply 後驗證／Session 收尾規則見 [`docs/update-closeout.md`](docs/update-closeout.md)。先以 `npm run data:session:closeout -- verify --report=<gate12j-report.json>` 重新核對 apply report、bundle、session fingerprint、canonical SHA/內容、generated freshness 與 repository regression；驗證成功後帶回 `closeoutFingerprint` 執行 `complete`，才會把 session 標記 completed 並清除 current pointer。
+### 外部服裝資料搜尋
 
-Gate 12L Guided Update UI / 日常操作入口見 [`docs/guided-update-ui.md`](docs/guided-update-ui.md)。Windows 日常使用可直接雙擊 `開啟資料更新.bat`，或執行 `npm run start:update`；介面依序整合建立 Session、服裝／關卡收集、完整度、差異／衝突審查、Staging、Preview／Apply、Closeout。Privileged API 僅在主動啟動時綁定 `127.0.0.1:8127`，並使用 same-origin + 隨機 token，不掛在一般搭配器 server。
+獨立搜尋工具位於 [`cn-search/`](cn-search/)。
 
-## 陸服衣櫃條件搜尋
+Windows 日常使用：
 
-獨立模組位於 [`cn-search/`](cn-search/)。
+```text
+cn-search/開啟陸服搜尋.bat
+```
 
-- **日常**：雙擊 `cn-search/開啟陸服搜尋.bat`（不需 npm install）
-- **建索引**：repository 的 npm workspace 管理 opencc-js，詳見 [`cn-search/README.md`](cn-search/README.md)
+詳細說明見 [`cn-search/README.md`](cn-search/README.md)。
 
-## Development / Gate 1
+## 主要功能
 
-Use Node.js 24. Modernized page runtimes use browser-native ES modules while remaining legacy compatibility scripts stay explicit; there is no bundler.
-All existing HTML paths and the repository-root GitHub Pages site are unchanged.
-Deployed pages need no npm server. Local CN search still needs HTTP to load JSON;
-its existing launcher works without installing development dependencies.
+| 功能 | 入口 | 用途 |
+| --- | --- | --- |
+| 主搭配器 | `index.html` | 關卡搭配、分數與衣櫃操作 |
+| BigUse | `biguse.html` | A/B 搭配比較與相關工具 |
+| Material | `material.html` | 材料、製作與需求查詢 |
+| Wardrobe Check | `wardrobechk.html` | 衣櫃資料比對 |
+| Guided Update | `guided-update/` | 本機資料更新、審查、Apply 與 Closeout |
+| 外部服裝搜尋 | `cn-search/` | 搜尋外部 wardrobe 資料與輔助索引 |
 
-From the repository root:
+## Guided Update
 
-```sh
+Guided Update 將 Gate 12 的完整資料更新 lifecycle 包成單一操作介面：
+
+```text
+建立更新
+→ 搜尋／加入服裝與關卡
+→ 完整度檢查
+→ 差異預覽／衝突審查
+→ Staging
+→ Preview
+→ Apply
+→ Apply 後驗證
+→ 完成本次更新
+```
+
+重要安全邊界：
+
+- Apply 前必須先完成 Preview。
+- Apply 綁定當次 generation fingerprint。
+- 衝突只能使用 Gate 12H 已保存的決策。
+- Gate 11F 仍負責 backup、rollback、derived rebuild 與 regression。
+- Closeout 會再次驗證 canonical data、generated freshness 與 repository regression。
+- Privileged API 只在主動啟動 Guided Update 時綁定 `127.0.0.1`，不掛在一般靜態頁面 server。
+
+完整操作與安全設計見 [`docs/guided-update-ui.md`](docs/guided-update-ui.md)。
+
+## 開發環境
+
+需要：
+
+```text
+Node.js 24
+npm
+```
+
+第一次安裝：
+
+```powershell
 npm ci
-npm run lint
-npm run typecheck
-npm test
-npm run validate:data
+```
+
+主要品質檢查：
+
+```powershell
 npm run check
 ```
 
-The root `package-lock.json` locks development dependencies for the repository
-and its `cn-search` workspace. CI installs them with `npm ci --ignore-scripts`
-and runs `npm run check`.
-Do not maintain a separate lockfile in `cn-search/`.
+此指令會依序執行：
 
-Tests use Node's built-in test runner: VM-loaded `tool.js` cloning plus ESM `model.mjs`
-accessory scoring / identity formatting, CN tag mappings, repository OpenCC
-resolution, and validator rejection cases. They do not assert known legacy bugs
-as desired application behavior or claim browser/UI coverage.
-
-Lint covers `tool.js`, `cn-search/scripts/*.mjs`, `src/domain/wardrobe/*.mjs`, `scripts/*.mjs`, tests and ESLint
-configuration. Rules catch undefined identifiers, accidental global assignments,
-duplicate arguments/keys, unreachable code and invalid typeof comparisons.
-Excluded at Gate 1: all other root browser scripts (including model/scoring/UI,
-which use cross-script globals), `cn-search/cn-search.js`, inline HTML scripts,
-generated data, vendor libraries (`jquery*`, `bootstrap/`, `knockout.js`,
-`html2canvas.js`), and the older root `scripts/` audit/migration utilities.
-These require separate review; a passing lint check is not whole-site coverage.
-
-The validator executes repository-owned data in a timeout-limited VM and checks
-non-empty wardrobe arrays, exactly 18 fields, non-empty string name/type/id, and
-duplicate `(type,id)` identities independently in `wardrobe.js`,
-`data/wardrobe.js`, `data/biguse_wardrobe.js`, and `data/material_wardrobe.js`.
-`biguse_wardrobe.js` is application code, not another wardrobe array.
-VM loading is for trusted repository data, not untrusted uploads.
-
-`scripts/known-wardrobe-duplicates.json` records the exact rows for 6 existing
-duplicate groups in the root wardrobe and 11 in the material wardrobe. These are
-documented data debt, not endorsements of duplicate identities. The validator
-reports them on every run and rejects new/changed duplicate groups and stale
-exceptions. Fix duplicates upstream in a separate data ticket, then remove the
-corresponding baseline entry; do not regenerate this baseline to hide failures.
-No generated wardrobe data is changed by checks.
-
-Gate 3 adds the ESM boundary in `src/domain/wardrobe/`: `schema.mjs` defines
-the ordered fields, named indexes and row width; `adapter.mjs` exports
-`rowToWardrobeItem` / `wardrobeItemToRow`. Items expose named properties with
-the ten raw grades grouped under `ratings`. Tags, source, suit, version and
-string IDs (including leading zeroes) pass through unchanged, without scoring,
-splitting or normalization. The adapter checks row width and non-empty string
-identities, sharing those checks with the validator; other values remain opaque.
-The validator and maintained CN tooling use the shared schema. Raw persisted
-and generated rows still have exactly the same 18 fields. Classic browser
-scripts retain their existing model and behavior. Regression tests cover the
-schema and exact round-trips of all four repository wardrobe arrays.
-
-Gate 4 modularizes the CN search page with native browser ES Modules under
-`cn-search/src/`. Category mapping, lexicon/normalization, search merge/filter,
-staging serialization, and manual-entry data rules are separated from the DOM
-orchestration in `cn-search/cn-search.js`. No bundler or runtime server is added;
-the same static GitHub Pages deployment remains valid. CN-search domain modules
-are covered by Node regression tests and share Gate 3's wardrobe schema.
-
-Gate 5A originally introduced thin classic wardrobe/inventory compatibility bridges so the main matcher could adopt named wardrobe fields without a full module migration. That bridge preserved the existing `mainType:id,id|` inventory format, `myClothesNew` key, legacy fallback, and cookie fallback while removing numeric wardrobe indexes from model construction. Gates 7B–7E later moved every active consumer to the canonical ESM boundaries and retired those classic bridge files entirely.
-
-Gate 5B migrates BigUse away from reverse-adapting `Clothes` through `toCsv()` and `clothesSet` lookups. The BigUse domain owns A/B cart selection, the established ±10% score comparison rule, and legacy image-id derivation from named `Clothes` fields. Gate 7A later made `src/domain/biguse/index.mjs` the canonical browser entry and Gate 7E retired the old classic runtime bridge. BigUse buttons/autocomplete pass the actual `Clothes` object into the selected cart, while rendering reads named type/id data.
-
-Gate 5C originally migrated Wardrobe Check and Material tools onto the same wardrobe/inventory boundaries while both were still classic scripts. Those entry points have since moved to direct ESM imports in Gates 7B/7C. Gate 5D consolidates duplicated inventory behavior into the shared inventory domain and centralizes localStorage/cookie fallback in `readBrowser()` / `writeBrowser()`. Later ESM gates consume that shared boundary directly, and Gate 7E removes the final BigUse compatibility chain. ESLint covers the modernized runtimes so accidental globals fail CI.
-
-Gate 6A removes the legacy pieces that can be retired without rewriting the application UI. Active HTML entry points no longer use inline event handlers; `src/legacy/page-events.js` owns native DOM event binding and reproduces the Bootstrap 3 button-toggle behavior used by the matcher pages. Bootstrap JavaScript 3.3.5 and inherited Google Analytics are removed, while Bootstrap CSS remains to preserve layout/classes. Wardrobe Check is jQuery-free.
-
-Gate 6B removes the main matcher's jQuery runtime dependency. `index.html` uses `src/legacy/native-dom.js`, a repository-owned native DOM facade, instead of `jquery.js`; the then-classic Main runtime was migrated to `.mjs` in Gate 7D and the classic copies were deleted in Gate 7E. The sticky-header helpers formerly hidden inside `jquery.freezeheader.js` were reimplemented with native DOM APIs, allowing that plugin file to be retired as well.
-
-Gate 6C removes BigUse's remaining jQuery dependency. `biguse.html` reuses `src/legacy/native-dom.js` and loads `src/legacy/native-autocomplete.js` instead of `jquery.js` / `jquery.autocomplete.min.js`; the old autocomplete plugin is retired and its missing CSS reference is removed. BigUse name matching remains regression-tested through the canonical ESM domain, and Gate 7E migrates the remaining BigUse runtime to `biguse*.mjs`.
-
-Gate 6D removes Material's remaining jQuery dependency and the unused Knockout load. Material uses the shared native DOM facade plus `src/legacy/material-actions.js`; generated links/selects use delegated `data-material-action` / `data-material-change` bindings instead of inline handlers, and the retired `jquery.js` / `knockout.js` vendor files are removed from the repository. Gate 7C later migrates the Material runtime itself to ESM while preserving this delegated event boundary.
-
-Gate 7-Prep adds a Playwright browser smoke harness before the ESM migration begins. `tests/browser/smoke.spec.mjs` boots the main matcher, BigUse, Material, and Wardrobe Check through the same static dev server used by local tooling; page errors, console errors, and same-origin HTTP failures fail the smoke gate. Each page also performs one small user-path assertion so a successful HTTP response alone cannot masquerade as a working runtime. The harness caught and fixed a native-DOM compatibility regression where `.attr(name, undefined)` incorrectly broke method chaining. Run it locally with `npm run test:browser`. CI installs Chromium and runs the smoke suite after the existing Node/data quality gate.
-
-Gate 7A adds browser-native ESM domain entries without changing page runtime at that stage. `src/domain/wardrobe/index.mjs` re-exports the canonical schema/adapter, while `src/domain/inventory/index.mjs` and `src/domain/biguse/index.mjs` expose ESM versions of the existing domain boundaries. Node parity tests lock their behavior to the temporary classic bridges, including legacy inventory serialization/error behavior and BigUse score/image/autocomplete semantics. The Playwright smoke suite also imports all three entries directly from the static server, proving that GitHub-Pages-style hosting serves the module graph correctly.
-
-Gate 7B makes Wardrobe Check the first active page to consume those ESM APIs directly. `wardrobechk.html` now loads `wardrobechk.mjs` with `type="module"` and no longer loads the wardrobe/inventory classic bridges. The module imports `rowToWardrobeItem`, `createInventory`, and `readBrowser` directly, and generated category links use native event listeners rather than global inline handlers. Browser smoke asserts the page boots while `WardrobeDomain` and `InventoryDomain` remain absent from `globalThis`, reducing the classic bridge consumer set from three entry chains to two.
-
-Gate 7C migrates Material's model/UI chain to ESM. `material.html` loads `material.mjs`; `material.mjs` imports `material_model.mjs`, and the model imports the wardrobe/inventory ESM entries directly. The old `material.js` / `material_model.js` files are retired. Material's generated actions use an explicit `MaterialActions.register()` registry so module-scoped functions do not need to be leaked back onto `window`. The migration also removes two classic-script assumptions exposed by ESM strict/deferred execution: shopping-cart initialization no longer relies on top-level `this`, and app startup occurs only after module state/action registration is complete.
-
-Gate 7D migrates the Main Matcher runtime to a single browser-native `main.mjs` entry. The model imports wardrobe/inventory ESM APIs directly, UI/controller/strategy/support files are explicit modules, and the pure `accMul()` helper moves from controller ownership into `model.mjs` to avoid a model-to-controller cycle. Main page events use an explicit `MainActions.register()` registry rather than leaking module functions back onto `window`. At the end of Gate 7D, BigUse temporarily remained on the old classic Main chain because it relied on late-binding function overrides; Gate 7E removes that final compatibility dependency.
-
-Gate 7E migrates BigUse to `biguse.mjs`, `biguse_model.mjs`, `biguse_ui.mjs`, and `biguse_nikki.mjs`. The former load-order overrides for `drawTable`, `chooseAccessories`, and `switchCate` are now explicit runtime hooks configured by the BigUse entry before shared Main initialization. BigUse imports the canonical Main and BigUse ESM APIs directly, while its A/B cart buttons and autocomplete remain behavior-compatible. With all active pages on ESM boundaries, the old root Main/BigUse `.js` compatibility files and `src/domain/{wardrobe,inventory,biguse}/runtime.js` bridges are deleted. Browser smoke asserts BigUse boots with no `WardrobeDomain`, `InventoryDomain`, or `BigUseDomain` globals.
-
-Gate 8A adds TypeScript 7 in check-only mode without converting runtime files to `.ts` or adding a bundler. `tsconfig.json` uses `allowJs`, `checkJs`, and `noEmit` over the active browser ESM application graph with strict mode deliberately deferred. The first baseline contains 76 known diagnostics, primarily string/number reuse, inferred variable-type conflicts, DOM narrowing, and a few legacy API/signature issues. `npm run typecheck` compares current diagnostics against the committed `typecheck-baseline.json`; any new, resolved, or changed diagnostic fails until the baseline change is deliberately reviewed with `npm run typecheck:update`. `npm run typecheck:raw` exposes the underlying `tsc` failures directly. `npm run check` includes the baseline-aware typecheck, so CI enforces that the TypeScript debt cannot silently grow while later Gate 8 batches reduce it.
-
-Gate 8B adds explicit type contracts to the canonical `wardrobe`, `inventory`, and `biguse` domains while keeping runtime files as browser-native `.mjs`. Wardrobe types lock the 18-column row shape, identity fields, and named rating keys; non-identity persisted values remain intentionally opaque until the model/scoring gate refines their normalized runtime meaning. Inventory types cover serialized state, generic inventory instances, storage/cookie boundaries, and browser storage compatibility. BigUse types cover score comparisons, piece identity, and autocomplete suggestions. Domain implementation files use JSDoc type imports only, so no `.d.ts` file is loaded at runtime. The inventory cookie expiry path now uses the standard `Date.toUTCString()` API, reducing the TypeScript baseline from 76 to 75 diagnostics with zero diagnostics remaining under `src/domain/**`.
-
-Gate 8C adds shared model/scoring contracts in `src/domain/scoring/types.d.ts` for feature names, rating tuples, clothes types, criteria/bonus shapes, score buckets, and scoring clothing dependencies. Both `model.mjs` and `material_model.mjs` consume those contracts through JSDoc type imports while remaining browser-native `.mjs`. The migration removes legacy `var` index reuse that made one variable alternate between string keys and numeric loop indexes, replaces implicit `toFixed()` string coercion with explicit numeric conversion, and keeps rating conversion semantics explicit through `Number(...)`/string lookup boundaries. The TypeScript baseline drops from 75 to 57 diagnostics, with zero diagnostics remaining in either model file. Gate 8C validation is `npm run check` PASS with 87/87 Node tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS. Gate 8D can therefore focus on inventory/shopping-cart typing without inheriting unresolved model diagnostics.
-
-Gate 8D adds `src/domain/shopping-cart/types.d.ts` with explicit cart map, total-summary, comparator, matcher-cart, and Material-cart contracts. Main and Material inventory factories now expose concrete `Inventory<ScoringClothing>` JSDoc boundaries; Main/BigUse carts use the matcher contract while Material keeps its existing count-style `contains()` and nullable initialization summary instead of pretending both implementations are identical. Wardrobe Check also exposes a concrete inventory item/instance type. The legacy third UI argument accepted by `toggleInventory()` is now explicit and optional, removing the three existing TypeScript call-signature diagnostics without changing behavior. The TypeScript baseline drops from 57 to 54 diagnostics; remaining DOM narrowing and unrelated controller/UI diagnostics are deferred to Gate 8E. Gate 8D validation is `npm run check` PASS with 91/91 Node tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS.
-
-Gate 8E clears the remaining non-strict application diagnostics across `material.mjs`, `nikki.mjs`, `clock.mjs`, `sharewardrobe.mjs`, `onekeystrategy.mjs`, `onekeystrategy_lan.mjs`, and `wardrobechk.mjs`, with regression coverage in `tests/gate8e-ui-app-typing.test.mjs` and the baseline updated in `typecheck-baseline.json`. DOM reads are narrowed to their concrete element types, `for...in` indexes are converted or renamed where numeric intent is required, boolean state no longer relies on bitwise assignment, legacy Date usage moves to `getFullYear()`, and share/clock helpers make string-number conversion explicit. Material and lazy-strategy loops keep their established behavior while removing function-scoped `var` type collisions. `npm run typecheck:raw` now exits successfully with zero diagnostics and the committed baseline is empty. Gate 8E validation is `npm run check` PASS with 95/95 Node tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS. No generated wardrobe data or active HTML entry point is changed. Gate 8F can therefore focus exclusively on enabling stricter compiler options rather than paying down pre-existing non-strict diagnostics.
-
-Gate 8F-1 enables runtime/null strictness while deliberately leaving implicit-`any` migration for later sub-gates. `tsconfig.json` keeps `strict: false` and `noImplicitAny: false`, but now enables `strictNullChecks`, `strictFunctionTypes`, `strictBindCallApply`, and `useUnknownInCatchVariables`. The branch also adds a type-only native DOM facade contract so event callbacks receive contextual element types without changing browser runtime loading, and preserves the empty TypeScript baseline. Strictness probes exposed and fixed several concrete legacy defects during this work: lazy-strategy tag cleanup now decrements the current `tagSet[i]` entry instead of a stale `tagCate`, bulk inventory emptiness checks use `Object.keys(...)` rather than nonexistent object `.length`, and inventory size aggregation reads the actual persisted subtype key. Full `noImplicitAny` remains separate follow-up work rather than being silently bundled into Gate 8F-1. Gate 8F-1 validation is `npm run check` PASS with 101/101 Node tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS and a zero-diagnostic TypeScript baseline.
-
-Gate 8F-2 enables `noUncheckedIndexedAccess` on the same active ESM graph while keeping `strict: false` and `noImplicitAny: false`. The index-safety work prepared during Gate 8F-1 replaces unchecked array/map reads with local guards, `for...of` iteration, tuple typing, and explicit fallbacks across inventory, wardrobe check, scoring/cart validation, Material, Nikki, share encoding, and lazy-strategy code. No new diagnostic baseline is introduced: `npm run typecheck` remains at zero known diagnostics. Gate 8F-2 validation is `npm run check` PASS with 102/102 Node tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS. The gate therefore hardens array/map access without mixing in the separate implicit-`any` migration planned for later Gate 8F sub-gates.
-
-Gate 8F-3 enables `exactOptionalPropertyTypes` while retaining the same deliberate `strict: false` / `noImplicitAny: false` boundary. The active ESM graph required no runtime changes for this compiler option after the earlier domain/model/UI contract work: a fresh probe and the committed configuration both remain at zero TypeScript diagnostics. Regression coverage now asserts the option stays enabled independently of later implicit-`any` work. Gate 8F-3 validation is `npm run check` PASS with the TypeScript baseline still empty, 103/103 Node regression tests passing, all four wardrobe validators at zero errors, and Playwright browser smoke 5/5 PASS.
-
-Gate 8F-4 enables `noImplicitThis` across the active ESM graph while continuing to defer the much larger `noImplicitAny` migration. A fresh compiler probe with `noImplicitThis` enabled reports zero diagnostics, so this gate requires no runtime edits and simply makes accidental implicit `this` usage a compiler error. Regression coverage locks the option on while preserving `strict: false`, `noImplicitAny: false`, and the empty TypeScript baseline. Gate 8F-4 validation is `npm run check` PASS with 104/104 Node regression tests and all four wardrobe validators at zero errors, plus Playwright browser smoke 5/5 PASS.
-
-Gate 8F-5 begins the staged `noImplicitAny` migration with the canonical `src/domain/**` graph rather than enabling the option across the entire legacy application at once. `tsconfig.no-implicit-any.json` extends the main check-only configuration, enables `noImplicitAny`, and initially scopes enforcement to domain modules; `npm run check` now runs this stricter subgraph gate in CI. The remaining domain diagnostics were limited to two untyped browser codec fallbacks and one unchecked BigUse image-prefix key, all fixed with type-only JSDoc/narrowing and no behavioral change. The main `tsconfig.json` intentionally keeps `noImplicitAny: false` until later sub-gates absorb the legacy application/UI graph. Gate 8F-5 validation is `npm run check` PASS with the strict domain subgraph at zero diagnostics, the global TypeScript baseline still empty, 105/105 Node regression tests passing, all four wardrobe validators at zero errors, and Playwright browser smoke 5/5 PASS.
-
-Gate 8F-6 expands staged `noImplicitAny` enforcement from the canonical domain graph to eight smaller application/UI boundaries: `clock.mjs`, `main.mjs`, `biguse.mjs`, `biguse_nikki.mjs`, `sharewardrobe.mjs`, `wardrobechk.mjs`, `biguse_ui.mjs`, and `ui.mjs`. Because those modules import larger legacy files that are reserved for later sub-gates, the staged checker now type-checks the full active ESM graph with `noImplicitAny: true` but fails CI only for diagnostics belonging to already-migrated files; this preserves real imported types without accidentally absorbing the remaining legacy graph into Gate 8F-6. The initial 91 diagnostics in these eight boundaries are reduced to zero with JSDoc contracts, browser-global typing, dictionary/tuple narrowing, and index guards while preserving runtime behavior and existing source-level regression contracts. Gate 8F-6 validation is `npm run check` PASS with the global TypeScript baseline still empty, the staged strict scope at zero diagnostics, 106/106 Node regression tests passing, all four wardrobe validators at zero errors, and Playwright browser smoke 5/5 PASS. The remaining application graph stays outside staged enforcement for later `noImplicitAny` gates.
-
-Gate 8F-7 adds `onekeystrategy.mjs` to staged `noImplicitAny` enforcement as a deliberately single-file batch rather than absorbing the larger model/controller/material graphs. The file started with 69 strict diagnostics and now reaches zero through JSDoc contracts for scoring/criteria/browser globals, explicit result/category dictionaries, and guarded indexed reads while keeping the existing strategy rendering flow and category keys intact. The staged strict scope is now `src/domain/**` plus nine application/UI modules, with 927 diagnostics remaining outside enforcement for later gates. Gate 8F-7 validation is `npm run check` PASS with the global TypeScript baseline still empty, 107/107 Node regression tests passing, all four wardrobe validators at zero errors, and Playwright browser smoke 5/5 PASS. A direct browser probe also clicks the one-key strategy control and confirms the strategy panel renders without page or console errors.
-
-Gate 8F-8 adds `model.mjs` to staged `noImplicitAny` enforcement as a single-file model batch. The file begins with 75 strict diagnostics and reaches zero through typed browser globals, explicit model/factory contracts, local `ModelClothing` state, FeatureName-safe score-map iteration, guarded indexed reads, and typed shopping-cart/inventory boundaries. Because the not-yet-migrated controller and lazy-strategy consumers still depend on the model's historically loose collection surface, internal work uses strict `typedClothes` / `typedClothesSet` collections while exported `clothes` / `clothesSet` remain narrow legacy `any` aliases that reference those same objects without copies or runtime changes. This keeps the global TypeScript baseline at zero instead of leaking 85 premature diagnostics into later consumer gates. The staged scope is now `src/domain/**` plus ten application/UI modules, with 771 diagnostics remaining outside enforcement. Gate 8F-8 validation is `npm run check` PASS with 108/108 Node regression tests, all four wardrobe validators at zero errors, the main TypeScript baseline at zero, the staged strict scope at zero diagnostics, and Playwright browser smoke 5/5 PASS.
-
-Gate 8F-9 adds `onekeystrategy_lan.mjs` to staged `noImplicitAny` enforcement as a single-file lazy-strategy batch. The file starts with 148 diagnostics and reaches zero by typing browser globals, function/callback parameters, state arrays, and dynamic strategy maps while deliberately keeping the historically flexible keyword/tag/result objects behind a local explicit `LegacyDict = Record<string, any>` seam. This gate therefore removes implicit `any` without pretending the legacy dynamic dictionaries are a newly designed structural model, and it preserves the Gate 8F-1 tag cleanup fix that decrements `tagSet[i]` rather than the stale category key. The staged scope is now `src/domain/**` plus eleven application/UI modules, with 623 diagnostics remaining outside enforcement. Gate 8F-9 validation is `npm run check` PASS with 109/109 Node regression tests, all four wardrobe validators at zero errors, the main TypeScript baseline at zero, the staged strict scope at zero diagnostics, and Playwright browser smoke 5/5 PASS. A direct browser probe also enables the lazy-strategy filter, runs the one-key strategy action, renders the strategy panel successfully, and reports no page or console errors.
-
-Gate 8F-10 adds `material_model.mjs` to staged `noImplicitAny` enforcement as a single-file Material model batch. The file starts with 82 diagnostics and reaches zero by typing browser-global boundaries, wardrobe rows, scoring criteria/raw-score callbacks, numeric helpers, and Material model function parameters; score-bucket iteration now uses the canonical feature list instead of unconstrained string keys, and nullable level/bonus/pattern reads are narrowed locally. The still-unmigrated `material.mjs` consumer remains deferred: exported `clothes` and `clothesSet` intentionally retain explicit loose legacy collection seams while deterministic model internals consume the existing wardrobe/scoring/inventory/cart contracts. This keeps the main TypeScript baseline at zero and avoids pulling the Material UI migration into this gate. The staged scope is now `src/domain/**` plus twelve application/UI modules, with 385 diagnostics remaining outside enforcement. Gate 8F-10 validation is `npm run check` PASS with 110/110 Node regression tests, all four wardrobe validators at zero errors, the main TypeScript baseline at zero, the staged strict scope at zero diagnostics, and Playwright browser smoke 5/5 PASS including the Material page boot/dynamic-scope smoke.
-
-Gate 8F-11 extends staged `noImplicitAny` enforcement to the complete `cn-search/src/**` graph rather than listing individual search modules. The five previously-untyped search files begin with 54 diagnostics and reach zero through explicit wardrobe-row, search-dependency, staging-entry, manual-input, and rendering contracts; category-map indexing is narrowed through a typed lookup boundary, staging collections become explicit, and result rendering guards indexed row reads under `noUncheckedIndexedAccess`. The checker now treats both `src/domain/**` and `cn-search/src/**` as directory-wide enforced graphs while retaining the twelve already-migrated root application/UI modules. Gate 8F-11 validation is `npm run check` PASS with 111/111 Node regression tests, all four wardrobe validators at zero errors, the main TypeScript baseline at zero, the staged strict scope at zero diagnostics, and Playwright browser smoke 5/5 PASS. The remaining not-yet-enforced application graph reports 331 diagnostics for later gates.
-
-Gate 8F-12 adds only `nikki.mjs` to staged `noImplicitAny` enforcement. A fresh probe confirmed 138 Nikki diagnostics (browser globals, untyped parameters/hooks, and inferred dictionaries/arrays) plus 193 in Material. Nikki reaches zero through local scoring/level/inventory contracts, typed views of the model's deliberately loose clothing collections, explicit browser-global contracts, and guarded indexed reads. The exported category hierarchy retains a narrow legacy compatibility alias for Material while Nikki uses its typed internal dictionary; both aliases preserve object identity. Legacy level hints and omitted bonuses retain their existing runtime semantics. The existing inventory fixes remain locked: bulk emptiness uses `Object.keys(clotheslist)`, and subtype counts read `mine.mine[c]`. The enforced scope is now `src/domain/**` + `cn-search/src/**` + thirteen root application/UI modules, with exactly 193 diagnostics remaining outside scope, all in unchanged `material.mjs`. Targeted validation: `npm run typecheck` PASS at zero; `npm run typecheck:no-implicit-any` PASS; ESLint on the three changed JavaScript files PASS; 55/55 Node tests PASS across Gate 8F, 8E, 8D, 7D, 7E, main inventory (5A), main UI (6B), and baseline suites. Full `npm run check` and browser tests were not run for this gate. Gate 8F-13 and Final remain pending; no commit or push was performed.
-
-CI checks PRs targeting main, main pushes and manual runs. Deployment requires a
-successful quality job **and** `refs/heads/main` (never a pull request). The deploy
-job checks out a fresh root static site, so npm dependencies are not uploaded.
-The external CN source/index rebuild is not a deployment prerequisite: the
-existing generated index remains the deployed asset. To rebuild it deliberately:
-
-```sh
-npm run build:cn-index
+```text
+ESLint
+TypeScript baseline check
+Node regression tests
+Wardrobe validation
+Level validation
 ```
 
-Provide `CN_WARDROBE_JS` or use the existing CN source discovery paths documented
-in `cn-search/README.md`. No sibling npm dependency directory is used.
+瀏覽器測試另外執行：
 
-Gate 8F-13 adds only `material.mjs` to staged `noImplicitAny` enforcement. The fresh probe found exactly 193 Material diagnostics: 12 browser-global accesses, 58 untyped parameters, 94 inferred array/state diagnostics, 11 dynamic-index diagnostics, 13 unchecked reads, four string/number assignments, and one conflicting redeclaration. Material now reaches zero through local clothing views, typed numeric/cart/chapter state, rendering tuples and callbacks, explicit browser globals, and guarded indexed reads; dynamic recipe/model dictionaries retain explicit local legacy seams without changing `material_model.mjs` exports. Source strings/UTF-8 and the Gate 8E `Number(s)<2` / `Number(h)>0` assertions are preserved. The staged scope is now `src/domain/**` + `cn-search/src/**` + fourteen root application/UI modules, with zero diagnostics remaining outside scope (193 -> 0). Added regression coverage locks the local boundaries and guards plus dependency/dye/consume counts, set/cart behavior, reconstruction totals, star/drop rendering, and delegated actions. Targeted validation: `npm run typecheck` PASS at zero; `npm run typecheck:no-implicit-any` PASS at zero inside and outside scope; ESLint on `material.mjs`, the staged checker and Gate 8F test file PASS; 55/55 Node tests PASS across 5C, 6D, 7C, 8C, 8D, 8E, 8F and baseline suites. A temporary original-versus-migrated fixture comparison also passed with 22 identical rendering writes. This gate changes only `material.mjs`, `scripts/typecheck-no-implicit-any.mjs`, `tests/gate8f-strictness.test.mjs`, and `README.md`; all uncommitted Gate 8F-12 work is preserved, including byte-identical `nikki.mjs`. Full `npm run check` and browser tests were not run for this gate. Final validation remains pending; HEAD stays at `65865aa` on `refactor/gate8f-strictness-20260916`, with no commit or push performed.
+```powershell
+npm run test:browser
+```
 
-Gate 8F Final makes full `strict: true` mode canonical for the main active ESM graph, retaining explicit strict-family protections plus `noUncheckedIndexedAccess: true` and `exactOptionalPropertyTypes: true`, and removing the contradictory `noImplicitAny: false`. Gate 8F-12 (Nikki, 138 -> 0) and Gate 8F-13 (Material, 193 -> 0) are completed; their uncommitted runtime work is preserved. With zero remaining staged debt, Final deletes `tsconfig.no-implicit-any.json` and `scripts/typecheck-no-implicit-any.mjs`, removes the `typecheck:no-implicit-any` package script and its `npm run check` reference, and updates historical Gate 8F tests to preserve source/contract regressions and the Material runtime fixture without depending on retired scaffolding. Final changes are confined to `tsconfig.json`, `package.json`, `tests/gate8f-strictness.test.mjs`, this README, and the two deleted files; `typecheck-baseline.json` remains unchanged and empty. Final validation is complete: `npm run typecheck` and `npm run typecheck:raw` both PASS at zero diagnostics; the Gate 8F regression suite is 20/20 PASS; `npm run check` PASS with 115/115 Node tests and all four wardrobe validators at zero errors; Playwright browser smoke is 5/5 PASS. Direct browser probes also confirm both the normal one-key strategy and lazy strategy render successfully after the strict migration (239 and 277 characters respectively), switch the button to `????`, and produce zero page or console errors. `git diff --check` remains PASS. Gate 8F is therefore complete and the staged strictness scaffolding is retired; this branch is ready for the final commit and push.
+專案使用 browser-native ES Modules，沒有 bundler。主要頁面仍維持靜態網站架構；只有本機搜尋／Guided Update 等需要檔案或 privileged 操作的工具會啟動 localhost server。
 
+## 專案結構
 
-### Gate 9A ? Legacy boundary inventory
+```text
+data/
+  主要 wardrobe / levels 與其他正式資料
 
-Gate 9A starts the modernization closeout as an audit-only gate. The current active ESM tree was inspected after Gate 8F reached canonical `strict: true`; vendor/generated/data files, tests, tooling internals, and comments were excluded from production-debt counting. This gate changes documentation only and does not modify runtime, HTML, package, compiler, test, or data files.
+src/
+  共用 domain 與仍保留的 legacy browser boundary
 
-The audit identifies **10 meaningful boundary groups: 5 KEEP, 5 TIGHTEN, 0 REMOVE/RETIRE verified now**.
+scripts/
+  資料驗證、Gate 11/12 pipeline、launcher 與本機服務
 
-**KEEP (5 groups)**
+guided-update/
+  Guided Update 前端介面
 
-1. **Native DOM compatibility facade** ? `src/legacy/native-dom.js` plus `src/legacy/native-dom-types.d.ts`. The runtime is still loaded by active pages and its type facade is consumed across the Main/BigUse/Material modules. The broad attr/prop/css/value/event `any` surface reflects a jQuery-compatible adapter boundary; replacing those with falsely precise types would add churn without removing a real runtime ambiguity. Keep the facade; Gate 9C may narrow individual high-value overloads only where actual callers prove a stable type.
-2. **Action bridge mechanisms** ? `src/legacy/main-actions.js` + `src/legacy/page-events.js`, and `src/legacy/material-actions.js`. They have verified active HTML/module consumers: Main/BigUse register through `MainActions`, page-events dispatches those actions, and Material registers through `MaterialActions`. The bridge mechanism therefore stays. Only its type signatures are a Gate 9C tightening target.
-3. **Raw persistence/domain extension points** ? intentional opaque values in `src/domain/wardrobe/types.d.ts`, the inventory extension map in `src/domain/inventory/types.d.ts`, and the open-ended criteria/global scoring fields in `src/domain/scoring/types.d.ts`. These are real raw/legacy boundaries rather than unresolved application inference, so keep them unless a concrete caller requires a narrower contract.
-4. **CN-search raw/external row seams** ? normalization/search/staging/manual/UI modules intentionally accept partially normalized external rows and preserve unresolved fields. Their remaining `any`/`any[]` occurrences are concentrated at ingest/staging boundaries rather than core search logic. Keep the raw boundary for now; only convert a field to `unknown`/a tuple when a later change needs stronger validation.
-5. **Lazy-strategy dynamic result dictionaries** ? `onekeystrategy_lan.mjs` still builds flexible keyword/tag/result maps whose keys and shapes vary by strategy data. Keep the genuinely dynamic `LegacyDict` seams and ad-hoc result maps; do not manufacture a large nominal type hierarchy merely to remove the keyword `any`.
+cn-search/
+  外部服裝搜尋與 generated search index
 
-**TIGHTEN (5 groups)**
+docs/
+  資料流程、更新契約、UI 與歷史文件
 
-1. **Main model collection exports ? highest priority for Gate 9B.** `model.mjs` still exports `clothes` as `any[]` and `clothesSet` as `Record<string, any>` even though its internals already use typed collections. Current consumers are all known ESM modules (Nikki, one-key strategies, UI, BigUse UI, share wardrobe). The source comment explicitly marks this as a staged boundary to remove after consumer migration, and Gate 8F has now completed that migration.
-2. **Material model collection/factory exports ? Gate 9B.** `material_model.mjs` still exposes a `Clothes` factory returning `any`, `clothes` as `any[]`, and `clothesSet` through `LegacyDict`. Its only active collection consumer, `material.mjs`, already creates a typed local view, so the export can now be made concrete without widening the change across unrelated consumers.
-3. **Stable recipe/data-table globals ? Gate 9C.** `model.mjs` / `material_model.mjs` pattern tables and Material's `pattern`, `setcategory`, `convert`, `construct`, `merchant`, `convertPrice`, and `patternPrice` globals are currently typed as `any[][]`/`LegacyDict`, but their rows are consumed positionally with stable meanings. Define small tuple/map contracts at the browser-global boundary rather than leaving every downstream index operation dynamically typed.
-4. **Action/runtime hook signatures ? Gate 9C.** `MainActions.register`, `MaterialActions.register`, and Nikki's `RuntimeHook` still use broad variadic `any`/`never` signatures. Keep the registries themselves, but introduce minimal callable contracts for the actions/hooks that are actually registered and dispatched.
-5. **Simple legacy globals hidden behind broad dictionaries ? Gate 9C.** Nikki's exported category hierarchy and simple category/theme arrays/maps used by strategy code now have stable ESM consumers; similarly, the simple category/skip/repel views in lazy strategy can be narrowed independently from the genuinely dynamic strategy dictionaries. Tighten these small stable shapes without attempting to redesign the entire lazy-strategy data model.
+tests/
+  Node regression tests 與 Playwright browser tests
+```
 
-**REMOVE/RETIRE: none verified in Gate 9A.** Every maintained file under `src/legacy` found by this audit has at least one active HTML/module consumer (`main-actions.js`, `material-actions.js`, `native-autocomplete.js`, `native-dom.js`, and `page-events.js`). Gate 9D should therefore be a consumer re-check plus dead-helper/comment cleanup, not a pre-decided bridge deletion pass.
+## 主要資料
 
-**Planned closeout sequence**
+目前資料 ownership 以 [`docs/data-source-contract.md`](docs/data-source-contract.md) 為準。
 
-- **Gate 9B ? model legacy export cleanup:** remove the loose `clothes` / `clothesSet` seams from `model.mjs` and `material_model.mjs`, plus the Material factory `any` return, with consumer-level regression checks.
-- **Gate 9C ? action/browser-global/native-DOM audit:** type the stable recipe/global tables and action/runtime-hook signatures; keep the native DOM facade and genuinely dynamic strategy/raw-data seams, narrowing only proven stable overloads/fields.
-- **Gate 9D ? dead compatibility cleanup:** re-check all active HTML/module consumers before deleting anything; currently there are zero verified bridge-removal candidates.
-- **Gate 9E ? closeout validation:** full TypeScript/lint/Node/data validation, browser smoke, and direct strategy probes, followed by a final documentation pass marking intentional retained boundaries.
+常用 canonical / runtime 資料包括：
 
-Gate 9A validation is limited to source-audit evidence, `git diff --check`, and working-tree scope because runtime is intentionally untouched. Full tests are deferred to the first implementation gate.
+- `data/wardrobe.js`：主要 canonical wardrobe。
+- `data/levels.js`：主搭配器關卡資料。
+- `data/biguse_levels.js`：BigUse 獨立關卡資料。
+- `cn-search/data/cn_search_index.json`：由來源資料重建的 generated search index。
 
+不要只依檔名推測兩份資料應該同步；正式 ownership、generated dependency 與 rebuild 規則請依 Data Source Contract。
 
-### Gate 9B - model legacy export cleanup
+## 文件索引
 
-Gate 9B retires the temporary loose collection seams left by Gate 8F. In `model.mjs`, the public `clothes` and `clothesSet` aliases now expose the existing `ModelClothing[]` and `Record<string, Record<string, ModelClothing>>` contracts directly, and `ModelClothing.isSuit` is narrowed to its actual string data shape. In `material_model.mjs`, the Clothes factory now returns `MaterialClothing`; `clothes` and `clothesSet` use concrete collection types; dependency construction and loading guard unchecked indexed reads; and the stable feature map is typed as a feature/sign tuple map. Tightening the Main export exposed legacy lazy-strategy indexed reads, so `onekeystrategy_lan.mjs` now captures each indexed clothing item once, skips missing entries under `noUncheckedIndexedAccess`, and preserves the existing scoring/filtering values without introducing fallback runtime values.
+### 日常資料更新
 
-Gate 9B also updates the Gate 8F regression contracts so tests now lock the typed public collections instead of requiring the retired `any` seams. Validation is complete: `npm run typecheck:raw` PASS at zero diagnostics; targeted model/material/lazy/strict regression coverage is 44/44 PASS; `npm run check` PASS with TypeScript baseline 0/0, 115/115 Node tests, lint clean, and all four wardrobe validators at zero errors; Playwright smoke is 5/5 PASS after installing the missing local Chromium runtime on this workstation; and `git diff --check` PASS. Gate 9B changes runtime only in `model.mjs`, `material_model.mjs`, and `onekeystrategy_lan.mjs`, plus the strictness regression test and this README. Gate 9C remains pending.
+- [Guided Update UI / 日常操作入口](docs/guided-update-ui.md)
+- [External Source Reader](docs/external-source-reader.md)
+- [Game Update Session](docs/game-update-session.md)
+- [服裝搜尋 / 收集](docs/update-wardrobe.md)
+- [關卡搜尋 / 收集](docs/update-levels.md)
+- [完整度檢查](docs/update-completeness.md)
+- [差異預覽](docs/update-diff-preview.md)
+- [衝突審查 / 決策保存](docs/update-conflict-review.md)
+- [Apply-ready Staging](docs/update-staging.md)
+- [Review / Apply](docs/update-review-apply.md)
+- [Apply 後驗證 / Closeout](docs/update-closeout.md)
 
+### 底層資料 Pipeline
 
-### Gate 9C - action, browser-global and native-DOM boundary audit
+- [Data Source Contract](docs/data-source-contract.md)
+- [Wardrobe Staging](docs/data-staging.md)
+- [Wardrobe Preview / Apply](docs/data-preview-apply.md)
+- [Derived Rebuild](docs/derived-rebuild.md)
+- [Level Pipeline](docs/level-pipeline.md)
+- [One-command Data Update](docs/one-command-update.md)
 
-Gate 9C tightens only stable compatibility boundaries and deliberately leaves genuinely dynamic/native-adapter seams explicit. `MaterialActions.register` now stores actions behind a `never[] -> unknown` callable contract instead of variadic `any`; Nikki's BigUse runtime-hook slots use the same safe callable seam while each invoke wrapper casts back to its real call signature; `CATEGORY_HIERARCHY` is now a concrete `Record<string, string[]>`; and the lazy strategy narrows `category`, `skipCategory`, `repelCates`, `clone`, and the missing-clothes list to their stable shapes, adding indexed guards where `noUncheckedIndexedAccess` requires them.
+### 歷史紀錄
 
-Material's external recipe/data globals now have concrete ingress contracts: pattern, set-category, convert, construct, merchant, convert-price, and pattern-price sources are typed as tuple/record data matching the maintained data files. The legacy Material algorithm still consumes those sources through an explicit `LegacyDict` dense-index view because a direct tuple-array migration would require pervasive mechanical guards for an established dense-data invariant; Gate 9C records that boundary rather than replacing it with fake precision. The native DOM facade remains intentionally unchanged because its broad jQuery-compatible attr/prop/css/value/event surface is still an active compatibility boundary. No legacy bridge is removed in this gate.
+原 README 中 Gate 1～10 的現代化、ESM、TypeScript、UI migration 與驗收紀錄已移至：
 
-Gate 9C adds `tests/gate9-modernization-closeout.test.mjs` to lock the Gate 9B collection cleanup and Gate 9C action/hook/global contracts, and updates the historical Gate 8F Nikki assertion to expect the now-typed hierarchy. Validation is complete: `npm run typecheck:raw` PASS at zero diagnostics; targeted closeout/strict/Main/BigUse/Material regression coverage is 39/39 PASS; `npm run check` PASS with TypeScript baseline 0/0, lint clean, 118/118 Node tests, and all four wardrobe validators at zero errors; Playwright browser smoke is 5/5 PASS; and `git diff --check` PASS. Gate 9D remains pending.
+- [Project History](docs/project-history.md)
 
+Git commit history 仍是實際變更的最終依據。
 
-### Gate 9D - dead compatibility cleanup
+## Git 分支
 
-Gate 9D re-verifies every maintained browser compatibility bridge before removal. All five active files under `src/legacy` remain real consumers: `native-dom.js` is loaded by Main, BigUse, and Material; `native-autocomplete.js` remains a BigUse dependency; `main-actions.js` is loaded by Main and BigUse; `material-actions.js` remains the delegated Material action registry; and `page-events.js` is still loaded by all three active pages. No active bridge file is deleted.
+目前保留兩條 branch：
 
-The verified dead compatibility behavior is retired instead: `src/legacy/page-events.js` no longer falls back from `MainActions.run(name)` to `root[name]()`, and `src/legacy/material-actions.js` no longer resolves delegated actions through `root[actionName]`; Material actions must now come from the explicit `MaterialActions.register(...)` registry. Main/BigUse hard-coded page-event names were checked against their registered action sets, and Material's generated delegated-action path remains covered by its registered action table and regression suite. Gate 9D also removes stale post-9B naming by replacing the `legacyClothes` / `legacyClothesSet` import aliases in Nikki and Material with `modelClothes` / `modelClothesSet`, while preserving collection identity, and updates the native-DOM facade comment to reflect its actual Main/BigUse/Material consumers.
+```text
+main         穩定基準
+development  日常開發
+```
 
-Regression coverage in `tests/gate9-modernization-closeout.test.mjs` now locks the retired global fallbacks, active registry use, current typed collection aliases, and retained native-DOM bridge. Validation is complete: `npm run typecheck:raw` PASS at zero diagnostics; targeted Gate 9/action/browser regression coverage is 44/44 PASS; `npm run check` PASS with TypeScript baseline 0/0, lint clean, 119/119 Node tests, and all four wardrobe validators at zero errors; Playwright browser smoke is 5/5 PASS. Gate 9D therefore closes with no active bridge deletions and only verified dead fallback/alias cleanup. Gate 9E Final remains pending.
-
-
-### Gate 9E Final - modernization closeout
-
-Gate 9E performs closeout validation only; it does not introduce another runtime refactor. The Gate 9 audit is now resolved: the temporary Main/Material collection export seams are retired, stable action/runtime-hook/category/browser-global boundaries are narrowed, dead global action fallbacks are removed, and all retained compatibility boundaries are explicitly intentional rather than unfinished migration scaffolding.
-
-The intentionally retained boundaries are: the active native-DOM compatibility facade and its broad jQuery-compatible value/event surface; raw persistence/domain extension fields; CN-search ingest/staging rows that remain partially normalized external data; lazy-strategy dynamic keyword/tag/result dictionaries; Material's explicit `LegacyDict` dense-index views over concretely typed external recipe tables; and the remaining complex Material/model browser-global dictionaries whose runtime data is genuinely open-ended. Vendor code such as `html2canvas.js` is not counted as production typing debt. No active bridge under `src/legacy` is a deletion candidate at closeout.
-
-Final validation is complete on `refactor/gate8f-strictness-20260916`: `npm run typecheck:raw` PASS at zero diagnostics; canonical `strict: true`, `noUncheckedIndexedAccess: true`, and `exactOptionalPropertyTypes: true` remain enabled; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **119/119 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**. Direct Chromium probes additionally exercise both normal and lazy one-key strategy paths: both render visible strategy output, produce non-empty results (240 and 278 text characters respectively), switch the action button to `????`, and emit zero page or console errors. `git diff --check` PASS, and the retired loose collection/global-fallback patterns are absent.
-
-Gate 9 is therefore complete: **9A inventory, 9B model export cleanup, 9C stable boundary tightening, 9D dead compatibility cleanup, and 9E final validation are all DONE.** The modernization closeout intentionally stops here; remaining broad boundaries are documented compatibility/data seams, not queued cleanup disguised as debt. No commit or push is performed by Gate 9E itself.
-
-
-### UI Modernization Gate 9A - UI/CSS inventory
-
-UI/CSS modernization starts from the clean technical-closeout commit rather than mixing visual work into the Gate 8/technical Gate 9 history. Gate 9A is audit-only: it maps the active page/style dependencies and establishes the migration order before any visual runtime changes.
-
-All four active pages still load the bundled **Bootstrap 3.3.5** stylesheet. Main and BigUse are the most Bootstrap-coupled pages: their HTML uses large numbers of `btn*`, `form-inline`, checkbox/group, and active-state classes, while runtime modules also generate Bootstrap-flavored classes such as `glyphicon`, `btn-*`, `nav-tabs`, `nav-justified`, `badge`, `hidden`, and `active`. Wardrobe Check has little Bootstrap markup in the static HTML but generates Bootstrap navigation/badge classes at runtime. Material has only a small amount of Bootstrap markup in its HTML, yet `material.mjs` dynamically emits Bootstrap buttons and glyphicons. Bootstrap therefore cannot be removed safely until both static and generated class consumers are migrated.
-
-The current stylesheet stack is fragmented by page purpose:
-- **Main / Wardrobe Check shared:** `style.css` + `ui.css` + mobile-only `mobileui.css`.
-- **Main / BigUse strategy UI:** `onekeystrategy.css`.
-- **BigUse additions:** `biguse.css`.
-- **Material:** its separate `data/material_style.css` plus Bootstrap, with a small inline style block.
-- **Main only:** Font Awesome 4.7 is loaded from an external CDN.
-
-Responsive behavior is similarly fragmented. All active pages include a viewport meta tag that disables user scaling; Main/BigUse/Wardrobe Check load a separate stylesheet only below 650px, `onekeystrategy.css` contains its own 650px media query, and `style.css` has a separate 1020px breakpoint. Material has no equivalent shared responsive layer. Inline styles remain in all four pages (Main 8, BigUse 12, Material 4, Wardrobe Check 1), including layout-critical widths/floats in Main and BigUse. Repeated color literals and page-specific table/button rules show that the current CSS has no shared token layer.
-
-The UI modernization sequence is therefore fixed as follows:
-1. **Gate 9B - design tokens and base layer:** introduce shared CSS custom properties and neutral base/layout primitives without changing page semantics or removing Bootstrap.
-2. **Gate 9C - shared controls/components:** replace Bootstrap-dependent button, form, navigation, badge, table-action, visibility, and state classes with project-owned primitives; update both static HTML and runtime-generated markup.
-3. **Gate 9D - page-by-page migration:** Main first, then BigUse, Material, and Wardrobe Check, preserving existing behavior and browser smoke after every page.
-4. **Gate 9E - Bootstrap CSS retirement:** remove `bootstrap/bootstrap.min.css` only after zero active Bootstrap-class consumers remain; separately decide whether Font Awesome is retained or replaced.
-5. **Gate 9F - responsive and visual polish:** unify breakpoints, remove layout-critical inline styles, restore user zoom, and normalize desktop/mobile spacing, typography, controls, and tables.
-6. **Gate 9G Final - visual closeout:** full quality/browser validation plus representative desktop/mobile screenshot review.
-
-Gate 9A makes no runtime or stylesheet changes. Its purpose is to prevent the usual CSS modernization tragedy in which somebody deletes Bootstrap first and only afterward discovers that JavaScript has been manufacturing Bootstrap class names in three different files for a decade.
-
-
-### UI Modernization Gate 9B - design tokens and base layer
-
-UI Gate 9B introduces a project-owned visual foundation without changing page structure or retiring Bootstrap. A new shared `ui-foundation.css` defines Bootstrap-compatible baseline typography and colors plus project tokens for text/link/surface/border/semantic colors, spacing, radii, shadows, control heights, responsive breakpoints, and focus-ring styling. It also establishes neutral base primitives for box sizing, body typography/background, links, form-control font inheritance, focus-visible handling, hidden state, and simple surface/muted helpers.
-
-All four active pages now load `ui-foundation.css` immediately after `bootstrap/bootstrap.min.css` and before their existing page-specific styles. This ordering is intentional: Bootstrap remains the compatibility source during migration, the new foundation supplies project-owned defaults/tokens, and existing page CSS still wins where current behavior must be preserved. No Bootstrap stylesheet, Bootstrap class, runtime-generated class, inline layout style, or existing page stylesheet is removed in Gate 9B.
-
-Regression coverage is added in `tests/gate9-ui-modernization.test.mjs`. It locks foundation loading on Main, BigUse, Material, and Wardrobe Check; verifies Bootstrap remains before the foundation during this stage; verifies the shared token/base contract; and prevents premature removal of page-specific styles. Validation is complete: the UI Gate 9B regression suite is 3/3 PASS; `npm run typecheck:raw` PASS at zero diagnostics; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **122/122 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**; and `git diff --check` PASS. Gate 9C is next and will migrate shared controls/components away from Bootstrap-owned class semantics before any page-by-page visual rewrite.
-
-
-### UI Modernization Gate 9C - shared controls/components
-
-UI Gate 9C moves the shared component vocabulary away from Bootstrap-owned class semantics while deliberately keeping the Bootstrap 3.3.5 stylesheet loaded as a compatibility safety net for the remaining page-level migration. `ui-foundation.css` now owns buttons and variants/sizes, control sizing, button groups, inline-form and checkbox wrappers, tabs/justified tabs, badges, hidden state, cart/trash icon buttons, and the back-to-top affordance. The project-owned classes are used consistently in static HTML and in runtime-generated markup.
-
-Main and BigUse static controls now use `ui-btn*`, `ui-control*`, `ui-check`, `ui-inline-form`, `ui-btn-group`, and `ui-hidden`. Runtime UI generators in `ui.mjs`, `biguse_ui.mjs`, `nikki.mjs`, `onekeystrategy_lan.mjs`, `material.mjs`, and `wardrobechk.mjs` now emit project-owned buttons, tabs, badges, and icon classes rather than `glyphicon`, `nav-tabs`, `nav-justified`, or Bootstrap `btn-*` variants. Main/BigUse cart actions use CSS-owned cart/trash glyphs, Material's generated cart/image buttons use the same shared component layer, and the previous Glyphicons Halflings back-to-top CSS dependency is retired in favor of `ui-gotop`. Existing application state class `active` remains intentionally unchanged because runtime behavior depends on it and it is not Bootstrap-specific.
-
-Legacy page CSS selectors that styled Bootstrap navigation, checkbox wrappers, and badges are retargeted to the new `ui-*` vocabulary, including the mobile rules. A final exact-token audit confirms zero active occurrences of `glyphicon`, `nav-tabs`, `nav-justified`, `btn-default`, `btn-info`, `btn-success`, or `btn-outline-secondary` across the four active pages and their shared runtime generators. Bootstrap CSS still appears exactly once on each active page and is not removed until Gate 9E.
-
-Regression coverage in `tests/gate9-ui-modernization.test.mjs` now includes Gate 9C shared-component contracts and runtime/static migration guards. Validation is complete: UI Gate tests are **6/6 PASS**; `npm run typecheck:raw` PASS at zero diagnostics; `npm run check` PASS with TypeScript baseline 0/0, lint clean, **125/125 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke is **5/5 PASS**; and `git diff --check` PASS. Gate 9D is next and will migrate page-specific layout/structure one page at a time while retaining the shared component layer established here.
-
-### UI Modernization Gate 9D - page-by-page layout migration
-
-UI Gate 9D migrates the active page layouts to project-owned `ui-*` structure while preserving behavior and keeping Bootstrap CSS as a temporary compatibility stylesheet until Gate 9E. `ui-foundation.css` now owns the shared page/header/section/panel, responsive split/grid, editor, filter, cart, preview, Material frame, and Wardrobe Check layout primitives used by the active pages.
-
-- **Main Matcher:** page/header/top/filter/result/cart/import structure now uses project-owned layout classes; layout-critical inline widths/floats and superseded page-level float scaffolding are retired.
-- **BigUse:** top controls, announcement, image preview, cart comparison, autocomplete controls, and advice sections now use the shared layout layer. The duplicate `shoppingCartContainer` id is replaced by unique A/B container ids after verifying there were no runtime consumers of the duplicate id.
-- **Material:** page/frame/alignment/visibility layout moves to project-owned classes. The intro toggle regression caused by moving initial hiding from inline `display:none` to `ui-initially-hidden` is fixed by reading computed visibility before toggling, preserving the existing link text and `nikki_ZHCX_hideIntro` localStorage behavior.
-- **Wardrobe Check:** the legacy two-column table wrapper is replaced by a responsive project-owned grid, and the inline table/visibility layout styles are retired.
-- Superseded page-skeleton rules in `style.css`, `mobileui.css`, `biguse.css`, and `data/material_style.css` are removed where the shared layout layer now owns that behavior. Bootstrap CSS remains loaded intentionally; its retirement is Gate 9E, not part of Gate 9D.
-
-Regression coverage now includes four Gate 9D layout contracts plus a browser responsive probe across desktop/mobile Main, BigUse, Material, and Wardrobe Check. The browser probe itself was also made lint-safe by resolving computed styles through each element's document window rather than relying on an undeclared browser global in the Node-authored test file.
-
-Validation after Gate 9D is complete: UI modernization regression is **10/10 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **129/129 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke/responsive coverage is **6/6 PASS**; and `git diff --check` PASS. Gate 9E is next and will retire Bootstrap CSS only after confirming no remaining active page/runtime dependency requires it.
-
-### UI Modernization Gate 9E - Bootstrap CSS retirement
-
-UI Gate 9E removes Bootstrap 3.3.5 from every active stylesheet consumer after the Gate 9C/9D migrations eliminated its component and layout responsibilities. Main, BigUse, Material, Wardrobe Check, and the auxiliary search entry no longer load `bootstrap/bootstrap.min.css`; the vendor file may remain in the repository as historical source material, but it is no longer part of an active page stylesheet stack.
-
-`ui-foundation.css` now owns the small browser-normalization baseline that the active pages actually relied on, including paragraph/link/image/hr defaults, form-control font and margin normalization, checkbox/radio box sizing, label/table basics, and the project-owned button-group radio hiding rule. Main and BigUse also retire the Bootstrap-named `data-toggle="buttons"` hook in favor of `data-ui-buttons`, with `src/legacy/page-events.js` renamed to the matching `syncUiButtons()` behavior while preserving the existing `active` state semantics.
-
-The auxiliary search entry replaces its remaining `.btn`/`.btn-sm` usage with a local `search-action` primitive and preserves its primary-action styling, so the repository now has zero non-vendor references to the Bootstrap stylesheet. Gate 6 regression contracts are updated accordingly: Bootstrap JavaScript remains retired, active Bootstrap CSS consumers must stay at zero, and the native event bridge must use the project-owned button-group hook.
-
-Validation after Gate 9E is complete: UI modernization regression is **10/10 PASS**; targeted Gate 6 + UI Gate 9 regression is **16/16 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **129/129 Node tests**, and all four wardrobe validators at zero errors; Playwright browser smoke/responsive/Bootstrap-retirement coverage is **7/7 PASS**. Gate 9F is next for responsive and visual polish; Bootstrap is no longer a compatibility dependency.
-
-### UI Modernization Gate 9F-1 - responsive baseline and viewport
-
-UI Gate 9F-1 establishes a single responsive baseline before page-specific visual polish. Main, BigUse, Material, Wardrobe Check, and the auxiliary search entry now use `width=device-width, initial-scale=1` without `maximum-scale=1` or `user-scalable=no`, restoring normal browser zoom and accessibility behavior. The responsive audit confirms that the previously documented 1020px rule was already retired by the page-layout migration; 650px is now the only active UI breakpoint and is documented as the canonical mobile boundary in `ui-foundation.css`. The stale `--ui-breakpoint-compact` token is removed rather than preserving a second breakpoint that has no runtime consumer.
-
-Existing responsive delivery stays intentionally stable in this baseline gate: Main, BigUse, and Wardrobe Check still load `mobileui.css` at 650px, while `ui-foundation.css`, `onekeystrategy.css`, and Material's local responsive rule use the same 650px boundary. No page-specific typography, spacing, table, or control redesign is introduced yet; those remain Gate 9F-2 onward.
-
-Regression coverage now locks zoom restoration, absence of the retired viewport constraints, the canonical 650px breakpoint, removal of the stale 1020px token, and consistent 650px media usage. Validation is complete: UI modernization regression is **11/11 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **130/130 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage remains **7/7 PASS**; and the CRLF-aware `git diff --check` passes. Gate 9F-2 is next for typography, spacing, and shared-control polish.
-
-### UI Modernization Gate 9F-2 - typography, spacing and shared controls
-
-UI Gate 9F-2 centralizes the remaining shared visual contract in `ui-foundation.css` without beginning the page-specific Main/BigUse redesign. The foundation now exposes small/normal/large typography sizes plus tight/default/relaxed line-height tokens, uses spacing tokens for paragraph/rule rhythm, and owns the common fieldset, legend, label, placeholder, checkbox/radio, and warning-notice baseline that was still duplicated in page CSS. Superseded `style.css` / `mobileui.css` rules for shared checkbox, fieldset/legend, justified-tab, badge, and fixed select-height behavior are retired rather than layered on top of the shared primitives.
-
-Shared controls now consume the existing 34px/30px height tokens directly. `ui-btn` / `ui-control` have consistent vertical alignment, transitions, focus-visible rings, disabled state, and grouped-control border/radius behavior; `ui-check` owns normal-weight clickable labels and checkbox spacing. Info/success variants now keep their semantic colors through hover/focus/active instead of being overridden by the generic button hover. Browser probing also exposed and fixed a real cascade defect where `.ui-control-sm` requested 30px but the later base `.ui-control` rule forced it back to 34px; the explicit `.ui-control.ui-control-sm` contract now resolves to 30px on both desktop and mobile.
-
-Regression coverage locks the centralized CSS ownership and computed browser behavior for typography, button/control heights, grouped radii, semantic hover color, disabled state, fieldset/legend styling, and mobile small-control sizing. Validation is complete: UI modernization regression is **12/12 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **131/131 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **8/8 PASS** including the new Gate 9F-2 visual-contract probe. Gate 9F-3 is next for Main and BigUse page-specific responsive polish.
-
-### UI Modernization Gate 9F-3 - Main and BigUse responsive polish
-
-UI Gate 9F-3 resolves the page-specific responsive failures exposed by direct Chromium measurement at 1280, 1024, 768, and 390px without adding another breakpoint. Before the gate, both Main and BigUse overflowed the viewport by roughly 80px at 768px because their justified category tabs could not wrap; Main also overflowed by roughly 96px at 390px because the theme selector/button group stayed 479px wide. Main's filter layout additionally compressed its weight-control column to 161px at 1024px and 118px at 768px, silently clipping controls whose content widths reached 176px and 271px.
-
-Main now uses a page-scoped responsive grid that reserves a 280px minimum for the weight/filter column while allowing the advanced-options column to consume the remaining space. `weightContainer` rows wrap instead of hiding overflow, including the longer tag rows, and the mobile theme-control group allows its selectors to shrink while keeping the one-key action visible. Main and BigUse category tabs use page-scoped flex wrapping above and below the existing 650px mobile boundary, so the 768px tablet-width overflow is removed without inventing a new media-query threshold.
-
-BigUse keeps its two-cart grid above 650px and one-column mobile layout below it, but each autocomplete field now clears the floated cart action and fills the available cart-panel width at every tested viewport. The fixed preview card is anchored inside the viewport with responsive right/top spacing and a viewport-safe maximum width. Direct browser probes confirm that the autocomplete suggestion surface and preview card also remain inside a 390px viewport.
-
-Regression coverage now checks Main and BigUse at **1280 / 1024 / 768 / 390px** for document overflow, tab overflow, Main weight-control clipping, the mobile theme group, BigUse cart-search sizing, autocomplete suggestion placement, and preview-card containment. Validation is complete: UI modernization regression is **13/13 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **132/132 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **9/9 PASS**, including the dedicated Gate 9F-3 viewport/interaction probe. Gate 9F-4 is next for Material, Wardrobe Check, and auxiliary-page responsive polish.
-
-### UI Modernization Gate 9F-4 - Material, Wardrobe Check and auxiliary responsive polish
-
-UI Gate 9F-4 completes the page-specific responsive pass for the remaining UI surfaces while retaining the single canonical 650px mobile boundary. Material already fit the tested viewports without document overflow, so this gate avoids unnecessary structural churn: the dynamically created inventory textarea width moves out of the page-local inline style into the shared page contract, and Material's result, note, inventory, and cart containers now own horizontal overflow locally so future wide generated tables cannot widen the document. The textarea remains 60% on larger screens and expands to 100% below 650px.
-
-Wardrobe Check keeps its existing two-column comparison grid above 650px and one-column grid below it. Its category navigation now uses the same page-scoped flex wrapping pattern established for Main/BigUse, fixing the measured 768px tab overflow without adding a tablet breakpoint or changing category behavior.
-
-The auxiliary search page receives standalone responsive cleanup because it does not load the shared foundation. Its manual attribute grid now uses `minmax(0, 1fr)` tracks instead of min-content-constrained columns; at 768px the previously measured ~950px internal width now fits its ~700px container, while mobile uses a two-column attribute grid. Filter/manual groups become full-width below 650px, staging/manual actions wrap, metadata uses flex wrapping instead of an inline float, staging rows stack on mobile, the toast is viewport-contained, and the result table deliberately keeps horizontal scrolling inside its own wrapper instead of widening the page.
-
-The auxiliary entry still exposes the pre-existing `cn-search.js` encoding/syntax defect (`Invalid or unexpected token`) when its legacy orchestration module executes. Gate 9F-4 does not rewrite that unrelated runtime debt; browser coverage isolates layout verification from that known failure and keeps the defect explicit rather than normalizing it as desired behavior.
-
-Regression coverage checks Material, Wardrobe Check, and the auxiliary page at **1280 / 1024 / 768 / 390px**, including document containment, Material overflow ownership, Wardrobe tab/grid behavior, auxiliary manual-grid containment, mobile two-column attributes, full-width manual controls, and result-table internal scrolling. Validation is complete: UI modernization regression is **14/14 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **133/133 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **10/10 PASS**, including the dedicated Gate 9F-4 responsive probe. Gate 9F-5 is next for responsive cleanup and final validation before UI Gate 9G visual closeout.
-
-### UI Modernization Gate 9F-5 - responsive cleanup and final validation
-
-UI Gate 9F-5 closes the responsive-polish phase without introducing another visual redesign. A final CSS audit confirms that every maintained responsive media query uses the canonical **650px** boundary; no 768px/1020px fallback breakpoint remains. Existing `mobileui.css` rules for category tabs, mobile tables, and filter spacing were retained because each still has active Main/BigUse/Wardrobe consumers. Confirmed dead CSS is removed instead: the unused `FloatMenu` block, obsolete Duoshuo selectors, and empty `.fliter_option` / `div.facet` rules have no runtime consumers anywhere in the repository.
-
-The final inline-layout audit removes the auxiliary manual-attribute heading's presentation-only inline style in favor of a local class. The remaining auxiliary `style="display:none"` attributes are deliberate initial visibility state consumed by the page's JavaScript and are not converted into permanent CSS classes that would interfere with runtime show/hide behavior. Main's two old inline-hidden buttons occur only inside an HTML comment and are not active DOM.
-
-Responsive boundary verification explicitly exercises **651 / 650 / 649px** in addition to the earlier 1280 / 1024 / 768 / 390px probes. Main switches from flex to mobile block layout exactly at 650px; BigUse and Wardrobe Check switch from two columns to one; the auxiliary manual-attribute grid switches from five columns to two; Material remains document-contained throughout. All five UI surfaces remain free of document-level horizontal overflow at every tested width, while intentionally wide tables continue scrolling only inside their designated containers.
-
-Regression coverage now locks the cleanup contract, absence of retired responsive breakpoints/dead CSS/layout-critical inline styles, and the exact 650px boundary behavior. Final Gate 9F validation is complete: UI modernization regression is **15/15 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **134/134 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **11/11 PASS** including the dedicated Gate 9F-5 boundary probe; and CRLF-aware `git diff --check` PASS. UI Gate 9F is therefore complete. UI Gate 9G Final is next for representative desktop/mobile screenshot review and visual closeout.
-
-### UI Modernization Gate 9G Final - visual closeout
-
-UI Gate 9G performs representative visual closeout rather than another broad redesign. Main, BigUse, Material, and Wardrobe Check were captured at **1280×900 desktop** and **390×844 mobile** after the Gate 9F responsive pass. The screenshot pass was paired with computed-layout checks for document containment, hidden/clipped content, interactive overlap, and page-specific composition so visual defects that do not create horizontal overflow would still be surfaced.
-
-That review exposed one real mobile-only defect missed by the earlier responsive gates: BigUse clothing rows render separate **A** and **B** cart actions, while the shared legacy mobile table rule assumed a single right-aligned icon and pulled every icon upward with a negative margin. The result was repeated 9–17px overlap between A/B controls and adjacent rows on a 390px viewport. The final page-scoped fix reserves an 84px action lane on BigUse clothing rows and positions A/B actions side-by-side at the same vertical offset. Shopping-cart rows, which still have only one remove action, retain the existing shared mobile behavior.
-
-Post-fix visual geometry confirms the first representative BigUse mobile rows have aligned A/B controls, both controls stay inside their row bounds, there is zero control-to-control or cross-row overlap, and the document remains contained to the viewport. Main's apparent anchor overlap from the generic bounding-box audit was verified as a multi-line inline-link rectangle rather than overlapping rendered text; Material and Wardrobe Check produced no interactive-overlap or clipping findings. A corrected BigUse mobile screenshot was recaptured after the fix.
-
-UI Gate 9G adds static and browser regression coverage for the BigUse mobile action lane. Final validation is complete: UI modernization regression is **16/16 PASS**; `npm run check` PASS with lint clean, TypeScript baseline **0 known / 0 new** on TypeScript 7.0.2, **135/135 Node tests**, and all four wardrobe validators at zero errors; Playwright browser coverage is **12/12 PASS**; and CRLF-aware `git diff --check` PASS. The auxiliary search page's pre-existing `cn-search.js` encoding/syntax defect remains explicitly outside this visual closeout and was not modified.
-
-UI modernization is therefore complete through **9A–9G**: inventory, shared foundation/components, page migration, Bootstrap CSS retirement, responsive/visual polish, cleanup, and final visual closeout are all DONE.
-
-### Gate 10 - modernization closeout
-
-Gate 10 treats the completed 9A–9G UI milestone as the integration baseline rather than starting another redesign cycle. The closeout covers full regression, accessibility/UX hardening, runtime cleanup review, and final documentation. The canonical working baseline is `fa0d6e2` on `refactor/gate8f-strictness-20260916`; data-pipeline redesign and new product features remain separate follow-up work.
-
-The accessibility pass keeps existing behavior while hardening the remaining legacy click-like controls. Main/BigUse high-score links and the show-more control are promoted to keyboard-reachable button semantics at runtime, dynamically generated “回到頂部” controls expose the same focusable role, and Enter/Space activation is handled through the existing page-event boundary. Icon-only cart/remove actions in Main, BigUse, and Material now expose accessible names without changing their visual rendering.
-
-Runtime cleanup review found no new application-level compatibility layer requiring another migration. The browser-native ESM graph, strict TypeScript configuration, project-owned UI foundation, single 650px responsive boundary, and existing static hosting model remain the supported architecture. The pre-existing auxiliary `cn-search.js` encoding/syntax defect remains explicitly outside Gate 10 and is not normalized as desired behavior.
-
-Gate 10 validation uses the existing full repository quality gate plus Playwright browser coverage, the dedicated `tests/gate10-modernization-closeout.test.mjs` regression contract, and `git diff --check`. After this closeout, future work should be planned as product/data work rather than continued modernization unless a concrete regression or architectural requirement justifies reopening the foundation.
+日常修改、測試與 milestone commit 都先放在 `development`；需要正式合併時再另外決定如何處理 `main`。
