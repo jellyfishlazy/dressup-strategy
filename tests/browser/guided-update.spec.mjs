@@ -146,7 +146,7 @@ test('Gate 12L desktop Guided Update loads six-step local workflow without brows
   await expect(page.locator('#step-collect .gu-prerequisite')).toBeVisible();
   await expect(page.locator('#step-collect .gu-prerequisite')).toContainText('請先完成 Step 1');
   await expect(page.locator('#wardrobe-query')).toBeDisabled();
-  await expect(page.locator('#wardrobe-search-form button')).toBeDisabled();
+  await expect(page.locator('#wardrobe-search-form button[type="submit"]')).toBeDisabled();
   await expect(page.locator('#execute-apply')).toBeDisabled();
   await expect(page.locator('#complete-closeout')).toBeDisabled();
 
@@ -164,19 +164,34 @@ test('Gate 12L desktop Guided Update loads six-step local workflow without brows
   await expect(page.locator('#step-collect .gu-prerequisite')).toBeHidden();
   await expect(page.locator('#wardrobe-query')).toBeEnabled();
 
-  await page.locator('#wardrobe-query').fill('活動');
+  await page.locator('#wardrobe-source').fill('活動');
   await page.locator('#wardrobe-search-form button[type="submit"]').click();
   await expect(page.locator('#wardrobe-search-summary')).toContainText('符合 2 筆');
-  await expect(page.locator('#wardrobe-results .gu-result')).toHaveCount(2);
+  await expect(page.locator('#wardrobe-results-body tr')).toHaveCount(2);
   await expect(page.locator('#wardrobe-results')).toContainText('春櫻');
   await expect(page.locator('#wardrobe-results')).toContainText('星夜髮飾');
-  await expect(page.locator('#wardrobe-results')).toContainText('原始：');
+  await expect(page.locator('#wardrobe-results')).toContainText('春樱');
 
   await expect(page.locator('#wardrobe-add-all')).toHaveText('加入全部 2 筆');
   await page.locator('#wardrobe-add-all').click();
   await expect(page.locator('#wardrobe-count')).toHaveText('2');
   await expect(page.locator('#wardrobe-selected .gu-selected-item')).toHaveCount(2);
   await expect(page.locator('#wardrobe-search-summary')).toContainText('已加入 2 筆');
+
+  await page.locator('#wardrobe-manual-entry').evaluate(details => { details.open = true; });
+  await page.locator('#manual-name').fill('手動補髮');
+  await page.locator('#manual-type').selectOption('髮型');
+  await page.locator('#manual-id').fill('M001');
+  await page.locator('#manual-stars').selectOption('4');
+  await page.locator('#manual-source').fill('手動補資料');
+  await page.locator('#manual-suit').fill('手動套裝');
+  await page.locator('#manual-version').fill('VManual');
+  await page.locator('#wardrobe-manual-form button[type="submit"]').click();
+  await expect(page.locator('#wardrobe-count')).toHaveText('3');
+  await expect(page.locator('#wardrobe-selected .gu-selected-item')).toHaveCount(3);
+  await expect(page.locator('#wardrobe-selected')).toContainText('手動新增');
+  await expect(page.locator('#wardrobe-selected')).toContainText('手動補髮');
+  await expect(page.locator('#wardrobe-selected')).toContainText('外部來源');
 
   await page.route('**/__guided_update_api', async route => {
     const body = route.request().postDataJSON();
@@ -217,17 +232,23 @@ test('Gate 12L mobile Guided Update collapses the workflow to one-column content
 
   const layout = await page.evaluate(() => {
     const stepbar = globalThis.getComputedStyle(globalThis.document.querySelector('.gu-stepbar'));
-    const collection = globalThis.getComputedStyle(globalThis.document.querySelector('.gu-collection-grid'));
+    const step2 = globalThis.getComputedStyle(globalThis.document.querySelector('.gu-step2-stack'));
+    const filters = globalThis.getComputedStyle(globalThis.document.querySelector('.gu-search-filters-always'));
+    const attrs = globalThis.getComputedStyle(globalThis.document.querySelector('.gu-manual-attrs'));
     const metrics = globalThis.getComputedStyle(globalThis.document.querySelector('#completeness-summary'));
     return {
       stepColumns: stepbar.gridTemplateColumns.split(' ').filter(Boolean).length,
-      collectionColumns: collection.gridTemplateColumns.split(' ').filter(Boolean).length,
+      step2Columns: step2.gridTemplateColumns.split(' ').filter(Boolean).length,
+      filterColumns: filters.gridTemplateColumns.split(' ').filter(Boolean).length,
+      attrColumns: attrs.gridTemplateColumns.split(' ').filter(Boolean).length,
       metricColumns: metrics.gridTemplateColumns.split(' ').filter(Boolean).length,
     };
   });
 
   expect(layout.stepColumns).toBe(2);
-  expect(layout.collectionColumns).toBe(1);
+  expect(layout.step2Columns).toBe(1);
+  expect(layout.filterColumns).toBe(1);
+  expect(layout.attrColumns).toBe(2);
   expect(layout.metricColumns).toBe(1);
   await expect(page.locator('#wardrobe-search-form')).toBeVisible();
   await expect(page.locator('#levels-search-form')).toBeVisible();

@@ -209,6 +209,38 @@ test('Gate 12L.1 service adds the full wardrobe search result set, not only the 
   assert.equal(noOp.alreadyCollected, 2);
 });
 
+test('Gate 12L service adds and removes manual wardrobe rows with explicit manual origin', async t => {
+  const fx = serviceFixture(t);
+  await fx.service.dispatch('session.create', { name: 'Manual wardrobe test' });
+
+  const row = [
+    '手動補鞋', '鞋子', 'M001', '4',
+    '', 'S', '', 'A', '', 'B', '', 'A', 'C', '',
+    '小動物', '手動補資料', '手動套裝', 'VManual',
+  ];
+
+  const added = await fx.service.dispatch('wardrobe.manual-add', { row });
+  assert.deepEqual(added.planned, ['鞋子|M001']);
+  assert.deepEqual(added.collected, ['鞋子|M001']);
+
+  let state = await fx.service.dispatch('state');
+  assert.equal(state.plan.wardrobe.length, 1);
+  assert.equal(state.plan.wardrobe[0].origin, 'manual');
+  assert.equal(state.collection.wardrobe.length, 1);
+  assert.equal(state.collection.wardrobe[0].origin, 'manual');
+  assert.equal(state.collection.wardrobe[0].name, '手動補鞋');
+  assert.equal(state.collection.wardrobe[0].suit, '手動套裝');
+  assert.equal(state.completeness.complete, true);
+
+  const removed = await fx.service.dispatch('wardrobe.remove', { keys: ['鞋子|M001'] });
+  assert.deepEqual(removed.collection, ['鞋子|M001']);
+  assert.deepEqual(removed.plan, ['鞋子|M001']);
+
+  state = await fx.service.dispatch('state');
+  assert.equal(state.collection.wardrobe.length, 0);
+  assert.equal(state.plan.wardrobe.length, 0);
+});
+
 test('Gate 12L service removes an item from both collection and plan', async t => {
   const fx = serviceFixture(t);
   await fx.service.dispatch('session.create', { name: 'Remove test' });
@@ -419,13 +451,22 @@ test('Gate 12L static UI contains six guided steps and no inline event handlers'
   assert.match(html, /id="wardrobe-add-all"/);
   assert.match(html, /id="wardrobe-search-summary"/);
   assert.match(html, /id="wardrobe-category"/);
+  assert.match(html, /id="wardrobe-results-body"/);
+  assert.match(html, /id="wardrobe-search-clear"/);
+  assert.match(html, /id="wardrobe-manual-form"/);
+  assert.match(html, /data-manual-attr="4"/);
+  assert.match(html, /data-manual-attr="13"/);
   assert.match(app, /SESSION_REQUIRED_ACTIONS/);
   assert.match(app, /wardrobe\.collect-search/);
+  assert.match(app, /wardrobe\.manual-add/);
   assert.match(app, /請先完成 Step 1：建立或啟用一個進行中的「本次更新」/);
   assert.match(app, /apply\.preview/);
   assert.match(app, /closeout\.complete/);
   assert.match(css, /\.gu-prerequisite/);
   assert.match(css, /\.gu-search-filters/);
+  assert.match(css, /\.gu-result-table/);
+  assert.match(css, /\.gu-manual-entry/);
+  assert.match(css, /\.gu-origin-badge/);
   assert.match(css, /@media only screen and \(max-width: 650px\)/);
 });
 

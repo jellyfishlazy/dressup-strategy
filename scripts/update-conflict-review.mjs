@@ -287,7 +287,7 @@ function levelSourceResolution(item) {
 
 function sourceResolution(item) {
   if (item.domain === 'wardrobe') {
-    if (item.conflictKind !== 'localized-field-difference'
+    if (!['localized-field-difference', 'manual-local-difference'].includes(item.conflictKind)
       || !item.targetKey
       || !Array.isArray(item.candidateRow)) {
       throw new Error('use-source is not available for this wardrobe conflict');

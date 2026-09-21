@@ -95,6 +95,7 @@ function cacheSet(key, value) {
 
 function compactResult(item, collected) {
   return {
+    origin: 'external',
     key: item.sourceKey,
     sourceKey: item.sourceKey,
     displayKey: item.key,
@@ -353,6 +354,92 @@ export async function resolveGuidedWardrobeBatch({
     alreadyCollectedKeys,
     nonselectableItems,
   };
+}
+
+export async function guidedWardrobeManualOptions({
+  session,
+  canonicalWardrobePath,
+} = {}) {
+  const model = await buildGuidedWardrobeSearchModel({ session, canonicalWardrobePath });
+  const tags = new Set();
+  for (const item of model.items) {
+    for (const part of String(item.tags || '').split(/[/,，]/)) {
+      const tag = part.trim();
+      if (tag) tags.add(tag);
+    }
+  }
+  return {
+    categories: model.categories.map(entry => entry.value),
+    tags: [...tags].sort((a, b) => a.localeCompare(b, 'zh-TW')),
+  };
+}
+
+export async function projectGuidedWardrobeCollection({
+  session,
+  canonicalWardrobePath,
+} = {}) {
+  if (!session || !Array.isArray(session.collection?.wardrobe)) return [];
+  const externalItems = session.collection.wardrobe.filter(item => item.origin !== 'manual');
+  let bySourceKey = new Map();
+  if (externalItems.length) {
+    const model = await buildGuidedWardrobeSearchModel({ session, canonicalWardrobePath });
+    bySourceKey = new Map(model.items.map(item => [item.sourceKey, item]));
+  }
+  const collected = new Set(session.collection.wardrobe.map(item => item.key));
+
+  return session.collection.wardrobe.map(item => {
+    if (item.origin === 'manual') {
+      const row = item.coreRow || item.row;
+      return {
+        origin: 'manual',
+        key: item.key,
+        sourceKey: null,
+        displayKey: item.key,
+        id: String(row[FIELD.id] ?? ''),
+        name: String(row[FIELD.name] ?? ''),
+        category: String(row[FIELD.type] ?? ''),
+        suit: String(row[FIELD.suit] ?? ''),
+        tags: String(row[FIELD.tags] ?? ''),
+        source: String(row[FIELD.source] ?? ''),
+        version: String(row[FIELD.version] ?? ''),
+        sourceOnly: false,
+        hasLocalMatch: false,
+        collected: true,
+        selectable: true,
+        warnings: [],
+        original: null,
+      };
+    }
+
+    const merged = bySourceKey.get(item.key);
+    if (merged) return compactResult(merged, collected);
+    return {
+      origin: 'external',
+      key: item.key,
+      sourceKey: item.key,
+      displayKey: item.key,
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      suit: String(item.coreRow?.[FIELD.suit] ?? ''),
+      tags: String(item.coreRow?.[FIELD.tags] ?? ''),
+      source: String(item.coreRow?.[FIELD.source] ?? ''),
+      version: String(item.coreRow?.[FIELD.version] ?? ''),
+      sourceOnly: true,
+      hasLocalMatch: false,
+      collected: true,
+      selectable: true,
+      warnings: [],
+      original: {
+        name: item.name,
+        category: item.category,
+        suit: String(item.coreRow?.[FIELD.suit] ?? ''),
+        tags: String(item.coreRow?.[FIELD.tags] ?? ''),
+        source: String(item.coreRow?.[FIELD.source] ?? ''),
+        version: String(item.coreRow?.[FIELD.version] ?? ''),
+      },
+    };
+  });
 }
 
 export function clearGuidedWardrobeSearchCache() {

@@ -10,9 +10,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readExternalSourceSnapshot } from '../scripts/external-source-reader.mjs';
 import { createUpdateSession } from '../scripts/update-session.mjs';
-import { addWardrobeToUpdate } from '../scripts/update-wardrobe.mjs';
+import { addManualWardrobeToUpdate, addWardrobeToUpdate } from '../scripts/update-wardrobe.mjs';
 import { addLevelsToUpdate } from '../scripts/update-levels.mjs';
-import { addPlannedItems } from '../scripts/update-completeness.mjs';
+import { addManualPlannedWardrobe, addPlannedItems } from '../scripts/update-completeness.mjs';
 import { buildUpdateDiffPreview } from '../scripts/update-diff-preview.mjs';
 
 function extWardrobeRow(name, type, id, stars = '3') {
@@ -190,6 +190,54 @@ test('Gate 12G classifies new, modified, conflict and unchanged across both doma
   assert.deepEqual(levels['1-3'].localOwners, ['tasksRaw']);
 
   assert.equal(levels['1-4'].status, 'unchanged');
+});
+
+test('Gate 12G treats manual wardrobe rows as canonical TW input without reconversion', async t => {
+  const f = fixture(t);
+  const manualRow = localWardrobeRow('手動補鞋', '鞋子', 'M001', '4');
+  manualRow[14] = '小動物';
+  manualRow[15] = '手動補資料';
+  manualRow[16] = '手動套裝';
+  manualRow[17] = 'VManual';
+
+  addManualPlannedWardrobe({ ...f.options, row: manualRow });
+  addManualWardrobeToUpdate({ ...f.options, row: manualRow });
+
+  const result = await buildUpdateDiffPreview({
+    ...f.options,
+    wardrobeTargetPath: f.localWardrobePath,
+    levelsTargetPath: f.localLevelsPath,
+  });
+
+  assert.equal(result.wardrobe.items.length, 1);
+  const item = result.wardrobe.items[0];
+  assert.equal(item.sourceKey, '鞋子|M001');
+  assert.equal(item.targetKey, '鞋子|M001');
+  assert.equal(item.mappingRule, 'manual-canonical-identity');
+  assert.equal(item.status, 'new');
+  assert.deepEqual(item.candidateRow, manualRow);
+});
+
+test('Gate 12G requires review when a manual row differs from an existing canonical identity', async t => {
+  const f = fixture(t);
+  const manualRow = localWardrobeRow('手動覆寫鞋', '鞋子', '002', '5');
+  manualRow[15] = '手動補資料';
+
+  addManualPlannedWardrobe({ ...f.options, row: manualRow });
+  addManualWardrobeToUpdate({ ...f.options, row: manualRow });
+
+  const result = await buildUpdateDiffPreview({
+    ...f.options,
+    wardrobeTargetPath: f.localWardrobePath,
+    levelsTargetPath: f.localLevelsPath,
+  });
+
+  const item = result.wardrobe.items[0];
+  assert.equal(item.status, 'conflict');
+  assert.equal(item.conflictKind, 'manual-local-difference');
+  assert.equal(item.targetKey, '鞋子|002');
+  assert.ok(item.manualReviewFields.includes('name'));
+  assert.deepEqual(item.candidateRow, manualRow);
 });
 
 test('Gate 12G preview blocks missing planned items but still previews collected planned work', async t => {

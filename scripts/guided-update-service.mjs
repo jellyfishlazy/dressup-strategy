@@ -7,6 +7,8 @@ import {
 import { join, resolve } from 'node:path';
 import { resolveExternalDataSource } from './external-data-source.mjs';
 import {
+  guidedWardrobeManualOptions,
+  projectGuidedWardrobeCollection,
   resolveGuidedWardrobeBatch,
   searchGuidedWardrobe,
 } from './guided-wardrobe-search.mjs';
@@ -19,6 +21,7 @@ import {
   setCurrentSession,
 } from './update-session.mjs';
 import {
+  addManualWardrobeToUpdate,
   addWardrobeToUpdate,
   listUpdateWardrobe,
   removeWardrobeFromUpdate,
@@ -30,6 +33,7 @@ import {
   searchUpdateLevels,
 } from './update-levels.mjs';
 import {
+  addManualPlannedWardrobe,
   addPlannedItems,
   checkUpdateCompleteness,
   listUpdatePlan,
@@ -137,7 +141,7 @@ function sourceStatus(sourceOptions) {
   }
 }
 
-function compactState(workspace, outputRoot, sourceOptions) {
+async function compactState(workspace, outputRoot, sourceOptions, canonicalWardrobePath) {
   const sessions = listUpdateSessions({ workspace }).map(compactSession);
   const current = getCurrentSession({ workspace });
   if (!current) {
@@ -153,6 +157,35 @@ function compactState(workspace, outputRoot, sourceOptions) {
   }
 
   const common = { workspace, sessionId: current.id };
+  const rawWardrobe = listUpdateWardrobe(common).items;
+  let projectedWardrobe;
+  let wardrobeOptions = { categories: [], tags: [] };
+  try {
+    [projectedWardrobe, wardrobeOptions] = await Promise.all([
+      projectGuidedWardrobeCollection({
+        session: current,
+        canonicalWardrobePath,
+      }),
+      guidedWardrobeManualOptions({
+        session: current,
+        canonicalWardrobePath,
+      }),
+    ]);
+  } catch {
+    projectedWardrobe = rawWardrobe.map(item => ({
+      origin: item.origin || 'external',
+      key: item.key,
+      displayKey: item.key,
+      name: item.name,
+      category: item.category,
+      id: item.id,
+      suit: String(item.coreRow?.[16] ?? ''),
+      source: String(item.coreRow?.[15] ?? ''),
+      tags: String(item.coreRow?.[14] ?? ''),
+      version: String(item.coreRow?.[17] ?? ''),
+      original: null,
+    }));
+  }
   return {
     source: sourceStatus(sourceOptions),
     current: compactSession(current),
@@ -162,6 +195,7 @@ function compactState(workspace, outputRoot, sourceOptions) {
       const plan = listUpdatePlan(common);
       return {
         wardrobe: plan.wardrobe.map(item => ({
+          origin: item.origin || 'external',
           key: item.key, name: item.name, category: item.category, id: item.id,
         })),
         levels: plan.levels.map(item => ({
@@ -169,10 +203,9 @@ function compactState(workspace, outputRoot, sourceOptions) {
         })),
       };
     })(),
+    wardrobeOptions,
     collection: {
-      wardrobe: listUpdateWardrobe(common).items.map(item => ({
-        key: item.key, name: item.name, category: item.category, id: item.id,
-      })),
+      wardrobe: projectedWardrobe,
       levels: listUpdateLevels(common).items.map(item => ({
         key: item.key, runtimeLabel: item.runtimeLabel,
       })),
@@ -239,6 +272,29 @@ export function createGuidedUpdateService({
     }
   }
 
+  async function collectManualWardrobe(row) {
+    const base = common();
+    const planResult = addManualPlannedWardrobe({ ...base, row });
+    const newlyPlanned = planResult.added.wardrobe;
+    try {
+      const collection = addManualWardrobeToUpdate({ ...base, row });
+      return {
+        planned: planResult.added.wardrobe,
+        collected: collection.addedKeys,
+        skipped: collection.skippedKeys,
+      };
+    } catch (error) {
+      if (newlyPlanned.length) {
+        try {
+          removePlannedItems({ ...base, wardrobeKeys: newlyPlanned });
+        } catch (rollbackError) {
+          throw new Error(error.message + '; manual plan rollback failed: ' + rollbackError.message);
+        }
+      }
+      throw error;
+    }
+  }
+
   async function collectLevels(keys) {
     const requested = exactKeys(keys, 'level keys');
     const base = common();
@@ -267,6 +323,7 @@ export function createGuidedUpdateService({
   async function removeWardrobe(keys) {
     const requested = exactKeys(keys, 'wardrobe keys');
     const base = common();
+    const before = new Map(listUpdateWardrobe(base).items.map(item => [item.key, cloneJson(item)]));
     const removedCollection = removeWardrobeFromUpdate({ ...base, keys: requested });
     try {
       const removedPlan = removePlannedItems({ ...base, wardrobeKeys: requested });
@@ -277,7 +334,13 @@ export function createGuidedUpdateService({
     } catch (error) {
       if (removedCollection.removedKeys.length) {
         try {
-          addWardrobeToUpdate({ ...base, keys: removedCollection.removedKeys });
+          const external = [];
+          for (const key of removedCollection.removedKeys) {
+            const item = before.get(key);
+            if (item?.origin === 'manual') addManualWardrobeToUpdate({ ...base, row: item.coreRow });
+            else external.push(key);
+          }
+          if (external.length) addWardrobeToUpdate({ ...base, keys: external });
         } catch (rollbackError) {
           throw new Error(error.message + '; collection rollback failed: ' + rollbackError.message);
         }
@@ -313,7 +376,7 @@ export function createGuidedUpdateService({
 
     switch (action) {
       case 'state':
-        return compactState(actualWorkspace, actualOutputRoot, sourceOptions);
+        return compactState(actualWorkspace, actualOutputRoot, sourceOptions, actualCanonicalWardrobePath);
       case 'session.create':
         return serializeMutation(() => compactSession(createUpdateSession({
           name: body.name,
@@ -340,6 +403,8 @@ export function createGuidedUpdateService({
         });
       case 'wardrobe.collect':
         return serializeMutation(() => collectWardrobe(body.keys));
+      case 'wardrobe.manual-add':
+        return serializeMutation(() => collectManualWardrobe(body.row));
       case 'wardrobe.collect-search':
         return serializeMutation(async () => {
           const batch = await resolveGuidedWardrobeBatch({
@@ -484,7 +549,7 @@ export function createGuidedUpdateService({
 
   return {
     dispatch,
-    state: () => compactState(actualWorkspace, actualOutputRoot, sourceOptions),
+    state: () => compactState(actualWorkspace, actualOutputRoot, sourceOptions, actualCanonicalWardrobePath),
     workspace: actualWorkspace,
     outputRoot: actualOutputRoot,
   };

@@ -18,27 +18,57 @@ export function wardrobeRowWarnings(row) {
   return warnings;
 }
 
+function validIso(value) {
+  return typeof value === 'string'
+    && Number.isFinite(Date.parse(value))
+    && new Date(value).toISOString() === value;
+}
+
+export function wardrobeCollectionOrigin(item) {
+  return item?.origin === 'manual' ? 'manual' : 'external';
+}
+
+function manualWardrobeRowWarnings(row) {
+  const warnings = wardrobeRowWarnings(row);
+  if (Array.isArray(row) && row.length !== 18) warnings.push('manual row must contain exactly 18 columns');
+  return warnings;
+}
+
 function readSession({ workspace = DEFAULT_UPDATE_WORKSPACE, sessionId } = {}) {
   const session = sessionId === undefined
     ? getCurrentSession({ workspace }) : loadUpdateSession(sessionId, { workspace });
   if (!session) throw new Error('no current update session');
   const seen = new Set();
   for (const item of session.collection.wardrobe) {
-    if (!item || typeof item !== 'object' || wardrobeRowWarnings(item.row).length
+    const origin = wardrobeCollectionOrigin(item);
+    const commonInvalid = !item || typeof item !== 'object'
       || item.key !== item.category + '|' + item.id || seen.has(item.key)
-      || item.name !== item.row[0] || item.category !== item.row[1]
-      || item.id !== String(item.row[2])
-      || !Number.isSafeInteger(item.index) || item.index < 0
-      || item.index >= session.sourceSnapshot.wardrobe?.count
-      || JSON.stringify(item.coreRow) !== JSON.stringify(item.row.slice(0, 18))
-      || JSON.stringify(item.extraColumns) !== JSON.stringify(item.row.slice(18))
-      || item.sourceHash !== session.sourceSnapshot.hashes.wardrobe
-      || typeof item.sourcePath !== 'string' || !isAbsolute(item.sourcePath)
-      || item.sourcePath !== session.sourceSnapshot.files?.wardrobe
-      || typeof item.collectedAt !== 'string' || !Number.isFinite(Date.parse(item.collectedAt))
-      || new Date(item.collectedAt).toISOString() !== item.collectedAt) {
-      throw new Error('invalid persisted wardrobe collection');
+      || item.name !== item.row?.[0] || item.category !== item.row?.[1]
+      || item.id !== String(item.row?.[2])
+      || !validIso(item.collectedAt);
+
+    let invalid = commonInvalid;
+    if (origin === 'manual') {
+      invalid ||= item.origin !== 'manual'
+        || manualWardrobeRowWarnings(item.row).length > 0
+        || JSON.stringify(item.coreRow) !== JSON.stringify(item.row)
+        || !Array.isArray(item.extraColumns) || item.extraColumns.length !== 0
+        || item.index !== undefined
+        || item.sourceHash !== undefined
+        || item.sourcePath !== undefined;
+    } else {
+      invalid ||= (item.origin !== undefined && item.origin !== 'external')
+        || wardrobeRowWarnings(item.row).length > 0
+        || !Number.isSafeInteger(item.index) || item.index < 0
+        || item.index >= session.sourceSnapshot.wardrobe?.count
+        || JSON.stringify(item.coreRow) !== JSON.stringify(item.row.slice(0, 18))
+        || JSON.stringify(item.extraColumns) !== JSON.stringify(item.row.slice(18))
+        || item.sourceHash !== session.sourceSnapshot.hashes.wardrobe
+        || typeof item.sourcePath !== 'string' || !isAbsolute(item.sourcePath)
+        || item.sourcePath !== session.sourceSnapshot.files?.wardrobe;
     }
+
+    if (invalid) throw new Error('invalid persisted wardrobe collection');
     seen.add(item.key);
   }
   return session;
@@ -122,6 +152,7 @@ export function addWardrobeToUpdate(options = {}) {
     if (collected.has(key)) { skippedKeys.push(key); continue; }
     const { index, name, category, id, row, coreRow, extraColumns } = byKey.get(key);
     session.collection.wardrobe.push({
+      origin: 'external',
       key, index, name, category, id, row, coreRow, extraColumns,
       sourcePath: source.path, sourceHash: source.sha256, collectedAt,
     });
@@ -130,6 +161,40 @@ export function addWardrobeToUpdate(options = {}) {
   }
   if (addedKeys.length) saveUpdateSession(session, options);
   return { session: readSession({ ...options, sessionId: session.id }), addedKeys, skippedKeys };
+}
+
+export function addManualWardrobeToUpdate(options = {}) {
+  const row = Array.isArray(options.row) ? Array.from(options.row) : options.row;
+  const warnings = manualWardrobeRowWarnings(row);
+  if (warnings.length) throw new Error('invalid manual wardrobe row: ' + warnings.join('; '));
+
+  const session = readSession(options);
+  assertDraft(session);
+  const category = String(row[1]);
+  const id = String(row[2]);
+  const key = category + '|' + id;
+  if (session.collection.wardrobe.some(item => item.key === key)) {
+    throw new Error('wardrobe collection already contains key: ' + key);
+  }
+
+  const collectedAt = (options.now instanceof Date ? options.now : new Date()).toISOString();
+  session.collection.wardrobe.push({
+    origin: 'manual',
+    key,
+    name: String(row[0]),
+    category,
+    id,
+    row,
+    coreRow: Array.from(row),
+    extraColumns: [],
+    collectedAt,
+  });
+  saveUpdateSession(session, options);
+  return {
+    session: readSession({ ...options, sessionId: session.id }),
+    addedKeys: [key],
+    skippedKeys: [],
+  };
 }
 
 export function listUpdateWardrobe(options = {}) {

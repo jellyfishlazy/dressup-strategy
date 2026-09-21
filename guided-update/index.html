@@ -81,45 +81,45 @@
       </div>
       <p class="gu-help">「加入本次更新」會同時列入預計清單並收集來源資料。搜尋與加入都使用目前 Session 鎖定的來源版本。</p>
 
-      <div class="gu-collection-grid">
+      <div class="gu-step2-stack">
         <section class="gu-subcard">
           <div class="gu-subcard-title">
             <h3>服裝</h3>
             <span id="wardrobe-count" class="gu-count">0</span>
           </div>
           <form id="wardrobe-search-form" class="gu-wardrobe-search-form">
-            <div class="gu-search-row">
-              <input id="wardrobe-query" class="ui-control" type="search"
-                     placeholder="可輸入繁中或來源原文：名稱、套裝、來源、標籤">
-              <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+            <div class="gu-search-filters gu-search-filters-always">
+              <label>
+                名稱
+                <input id="wardrobe-query" class="ui-control" type="search" placeholder="可輸入繁中或來源原文">
+              </label>
+              <label>
+                套裝
+                <input id="wardrobe-suit" class="ui-control" type="search" placeholder="套裝名稱">
+              </label>
+              <label>
+                版本
+                <input id="wardrobe-version" class="ui-control" type="search" placeholder="例如 V12.1.1">
+              </label>
+              <label>
+                來源 / 活動 / 標籤
+                <input id="wardrobe-source" class="ui-control" type="search" placeholder="來源、活動或標籤">
+              </label>
+              <label>
+                分類
+                <select id="wardrobe-category" class="ui-control">
+                  <option value="">全部</option>
+                </select>
+              </label>
+              <label class="gu-check-row">
+                <input id="wardrobe-cn-only" type="checkbox">
+                只看外部獨有項目
+              </label>
             </div>
-            <details class="gu-search-advanced">
-              <summary>進階篩選</summary>
-              <div class="gu-search-filters">
-                <label>
-                  分類
-                  <select id="wardrobe-category" class="ui-control">
-                    <option value="">全部</option>
-                  </select>
-                </label>
-                <label>
-                  套裝
-                  <input id="wardrobe-suit" class="ui-control" type="search" placeholder="套裝名稱">
-                </label>
-                <label>
-                  版本
-                  <input id="wardrobe-version" class="ui-control" type="search" placeholder="版本">
-                </label>
-                <label>
-                  來源 / 活動 / 標籤
-                  <input id="wardrobe-source" class="ui-control" type="search" placeholder="來源、活動或標籤">
-                </label>
-                <label class="gu-check-row">
-                  <input id="wardrobe-cn-only" type="checkbox">
-                  只看外部獨有項目
-                </label>
-              </div>
-            </details>
+            <div class="gu-search-actions">
+              <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+              <button id="wardrobe-search-clear" class="ui-btn ui-btn-default" type="button">清除條件</button>
+            </div>
           </form>
           <div class="gu-search-toolbar">
             <div id="wardrobe-search-summary" class="gu-search-summary">尚未搜尋</div>
@@ -127,10 +127,79 @@
               加入全部符合項目
             </button>
           </div>
-          <div id="wardrobe-results" class="gu-results gu-empty">尚未搜尋</div>
+          <div id="wardrobe-results" class="gu-table-shell gu-empty">
+            <div id="wardrobe-results-empty" class="gu-table-empty">尚未搜尋</div>
+            <div class="gu-table-scroll">
+              <table class="gu-result-table" aria-label="服裝搜尋結果">
+                <thead>
+                  <tr>
+                    <th class="gu-col-add">＋</th>
+                    <th>ID</th>
+                    <th>分類</th>
+                    <th>名稱</th>
+                    <th>套裝</th>
+                    <th>標籤</th>
+                    <th>來源</th>
+                    <th>版本</th>
+                    <th>原始</th>
+                  </tr>
+                </thead>
+                <tbody id="wardrobe-results-body"></tbody>
+              </table>
+            </div>
+          </div>
           <button id="wardrobe-search-more" class="ui-btn ui-btn-default gu-search-more" type="button" hidden>
             顯示更多
           </button>
+
+          <details id="wardrobe-manual-entry" class="gu-manual-entry">
+            <summary>手動新增服裝資料</summary>
+            <form id="wardrobe-manual-form" class="gu-manual-body">
+              <p class="gu-help">找不到來源資料時可直接補一筆 canonical 繁中 row。這類資料會標記為「手動新增」，不偽裝成外部來源。</p>
+              <div class="gu-manual-grid">
+                <label>名稱 *<input id="manual-name" class="ui-control" type="text" required></label>
+                <label>分類 *<select id="manual-type" class="ui-control" required><option value="">請選擇</option></select></label>
+                <label>編號 *<input id="manual-id" class="ui-control" type="text" required></label>
+                <label>星級 *
+                  <select id="manual-stars" class="ui-control" required>
+                    <option value="">請選擇</option>
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                    <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                  </select>
+                </label>
+                <label>套裝<input id="manual-suit" class="ui-control" type="text"></label>
+                <label>來源<input id="manual-source" class="ui-control" type="text"></label>
+                <label>版本<input id="manual-version" class="ui-control" type="text"></label>
+              </div>
+
+              <div class="gu-manual-section-label">
+                屬性 <span>允許 SS / S / A / B / C，不適用留空</span>
+              </div>
+              <div class="gu-manual-attrs">
+                <label>華麗<input class="ui-control" data-manual-attr="4" type="text" maxlength="2"></label>
+                <label>優雅<input class="ui-control" data-manual-attr="6" type="text" maxlength="2"></label>
+                <label>成熟<input class="ui-control" data-manual-attr="8" type="text" maxlength="2"></label>
+                <label>性感<input class="ui-control" data-manual-attr="10" type="text" maxlength="2"></label>
+                <label>清涼<input class="ui-control" data-manual-attr="12" type="text" maxlength="2"></label>
+                <label>簡約<input class="ui-control" data-manual-attr="5" type="text" maxlength="2"></label>
+                <label>活潑<input class="ui-control" data-manual-attr="7" type="text" maxlength="2"></label>
+                <label>可愛<input class="ui-control" data-manual-attr="9" type="text" maxlength="2"></label>
+                <label>清純<input class="ui-control" data-manual-attr="11" type="text" maxlength="2"></label>
+                <label>保暖<input class="ui-control" data-manual-attr="13" type="text" maxlength="2"></label>
+              </div>
+
+              <div class="gu-manual-tags">
+                <div class="gu-manual-section-label">服裝 Tag</div>
+                <div id="manual-tags" class="gu-tag-checks"></div>
+              </div>
+
+              <div class="gu-manual-actions">
+                <button id="manual-reset" class="ui-btn ui-btn-default" type="reset">清除表單</button>
+                <button class="ui-btn ui-btn-success" type="submit">加入本次更新</button>
+              </div>
+            </form>
+          </details>
+
           <div class="gu-selected-block">
             <h4>本次已加入</h4>
             <div id="wardrobe-selected" class="gu-selected-list gu-empty">尚無服裝</div>

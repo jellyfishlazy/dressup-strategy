@@ -7,7 +7,7 @@ import {
   loadUpdateSession,
   saveUpdateSession,
 } from './update-session.mjs';
-import { listUpdateWardrobe } from './update-wardrobe.mjs';
+import { listUpdateWardrobe, wardrobeRowWarnings } from './update-wardrobe.mjs';
 import { listUpdateLevels } from './update-levels.mjs';
 
 const LEVEL_PRIMARY_TABLE = 'levelsRaw';
@@ -113,12 +113,24 @@ function readPlannableLevels(session) {
 
 function wardrobePlanRecord(item, source, plannedAt) {
   return {
+    origin: 'external',
     key: item.key,
     name: item.name,
     category: item.category,
     id: item.id,
     sourcePath: source.path,
     sourceHash: source.sha256,
+    plannedAt,
+  };
+}
+
+function manualWardrobePlanRecord(row, plannedAt) {
+  return {
+    origin: 'manual',
+    key: String(row[1]) + '|' + String(row[2]),
+    name: String(row[0]),
+    category: String(row[1]),
+    id: String(row[2]),
     plannedAt,
   };
 }
@@ -137,15 +149,22 @@ function levelPlanRecord(bundle, source, plannedAt) {
 function validateWardrobePlanItem(item, session) {
   const errors = [];
   if (!item || typeof item !== 'object' || Array.isArray(item)) return ['wardrobe plan item must be an object'];
+  const origin = item.origin === 'manual' ? 'manual' : 'external';
+  if (item.origin !== undefined && !['external', 'manual'].includes(item.origin)) errors.push('invalid wardrobe plan origin');
   if (typeof item.key !== 'string' || !/^[^|]+\|[^|]+$/.test(item.key)) errors.push('invalid wardrobe plan key');
   if (typeof item.name !== 'string' || !item.name.trim()) errors.push('invalid wardrobe plan name');
   if (typeof item.category !== 'string' || !item.category.trim()) errors.push('invalid wardrobe plan category');
   if (typeof item.id !== 'string' || !item.id.trim()) errors.push('invalid wardrobe plan id');
   if (item.key !== item.category + '|' + item.id) errors.push('wardrobe plan identity mismatch');
-  if (item.sourcePath !== session.sourceSnapshot.files?.wardrobe || !isAbsolute(item.sourcePath || '')) {
-    errors.push('wardrobe plan source path mismatch');
+  if (origin === 'manual') {
+    if (item.sourcePath !== undefined) errors.push('manual wardrobe plan must not have sourcePath');
+    if (item.sourceHash !== undefined) errors.push('manual wardrobe plan must not have sourceHash');
+  } else {
+    if (item.sourcePath !== session.sourceSnapshot.files?.wardrobe || !isAbsolute(item.sourcePath || '')) {
+      errors.push('wardrobe plan source path mismatch');
+    }
+    if (item.sourceHash !== session.sourceSnapshot.hashes.wardrobe) errors.push('wardrobe plan source hash mismatch');
   }
-  if (item.sourceHash !== session.sourceSnapshot.hashes.wardrobe) errors.push('wardrobe plan source hash mismatch');
   if (!validIso(item.plannedAt)) errors.push('invalid wardrobe plannedAt');
   return errors;
 }
@@ -280,6 +299,37 @@ export function addPlannedItems(options = {}) {
   if (added.wardrobe.length || added.levels.length) saveUpdateSession(session, options);
   const saved = readSession({ ...options, sessionId: session.id });
   return { session: saved, added, skipped };
+}
+
+export function addManualPlannedWardrobe(options = {}) {
+  const row = Array.isArray(options.row) ? Array.from(options.row) : options.row;
+  const warnings = wardrobeRowWarnings(row);
+  if (warnings.length || !Array.isArray(row) || row.length !== 18) {
+    throw new Error('invalid manual wardrobe plan row: ' + [...warnings, ...(Array.isArray(row) && row.length !== 18 ? ['manual row must contain exactly 18 columns'] : [])].join('; '));
+  }
+
+  const session = readSession(options);
+  assertDraft(session);
+  const record = manualWardrobePlanRecord(row, (options.now instanceof Date ? options.now : new Date()).toISOString());
+  const existing = session.plan.wardrobe.find(item => item.key === record.key);
+  if (existing) {
+    if ((existing.origin || 'external') === 'manual') {
+      return {
+        session,
+        added: { wardrobe: [], levels: [] },
+        skipped: { wardrobe: [record.key], levels: [] },
+      };
+    }
+    throw new Error('wardrobe plan already contains external key: ' + record.key);
+  }
+
+  session.plan.wardrobe.push(record);
+  saveUpdateSession(session, options);
+  return {
+    session: readSession({ ...options, sessionId: session.id }),
+    added: { wardrobe: [record.key], levels: [] },
+    skipped: { wardrobe: [], levels: [] },
+  };
 }
 
 export function removePlannedItems(options = {}) {

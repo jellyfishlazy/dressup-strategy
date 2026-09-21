@@ -130,22 +130,31 @@ function localWardrobeIndex(rows) {
 
 function previewWardrobeItem(sourceItem, planItem, local, converters) {
   const sourceType = String(sourceItem.category);
-  const mapping = wardrobeTargetType(sourceType, local.types);
+  const manual = sourceItem.origin === 'manual';
+  const mapping = manual
+    ? (local.types.has(sourceType)
+      ? { targetType: sourceType, rule: 'manual-canonical-identity' }
+      : { targetType: null, rule: null })
+    : wardrobeTargetType(sourceType, local.types);
   if (!mapping.targetType) {
     return {
       domain: 'wardrobe',
       sourceKey: sourceItem.key,
       planned: compactWardrobePlan(planItem),
       status: 'conflict',
-      conflictKind: 'unmapped-category',
-      reasons: ['source category has no explicit or exact local mapping'],
+      conflictKind: manual ? 'manual-unmapped-category' : 'unmapped-category',
+      reasons: [manual
+        ? 'manual wardrobe category is not a canonical local category'
+        : 'source category has no explicit or exact local mapping'],
       targetKey: null,
     };
   }
 
   const targetKey = mapping.targetType + '|' + sourceItem.id;
   const candidates = local.byKey.get(targetKey) || [];
-  const candidateRow = candidateWardrobeRow(sourceItem, mapping, converters);
+  const candidateRow = manual
+    ? cloneJson(sourceItem.coreRow)
+    : candidateWardrobeRow(sourceItem, mapping, converters);
 
   if (candidates.length > 1) {
     return {
@@ -190,8 +199,26 @@ function previewWardrobeItem(sourceItem, planItem, local, converters) {
     };
   }
 
-  const manual = differences.filter(diff => WARDROBE_MANUAL_FIELDS.has(diff.field));
-  if (manual.length) {
+  if (manual) {
+    return {
+      domain: 'wardrobe',
+      sourceKey: sourceItem.key,
+      planned: compactWardrobePlan(planItem),
+      targetKey,
+      mappingRule: mapping.rule,
+      targetIndex: target.index,
+      status: 'conflict',
+      conflictKind: 'manual-local-difference',
+      reasons: ['manual wardrobe row differs from the existing canonical row and requires review'],
+      differences,
+      manualReviewFields: differences.map(diff => diff.field),
+      candidateRow,
+      baselineRow: cloneJson(target.row),
+    };
+  }
+
+  const manualFields = differences.filter(diff => WARDROBE_MANUAL_FIELDS.has(diff.field));
+  if (manualFields.length) {
     return {
       domain: 'wardrobe',
       sourceKey: sourceItem.key,
@@ -203,7 +230,7 @@ function previewWardrobeItem(sourceItem, planItem, local, converters) {
       conflictKind: 'localized-field-difference',
       reasons: ['name/source/suit differs after deterministic conversion and requires review'],
       differences,
-      manualReviewFields: manual.map(diff => diff.field),
+      manualReviewFields: manualFields.map(diff => diff.field),
       candidateRow,
       baselineRow: cloneJson(target.row),
     };

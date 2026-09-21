@@ -198,6 +198,52 @@ normalized filters
 
 所以新版保留舊搜尋的「＋全部」語意，但不再回到 browser staging / 複製 JS 片段的舊流程。
 
+#### Step 2 parity UI
+
+服裝區恢復舊 CN Search 比較適合日常資料維護的操作方式，但仍由 Gate 12 backend 執行正式收集：
+
+- 名稱、套裝、版本、來源／活動／標籤、分類與「只看外部獨有」直接攤開，不藏在進階選單；
+- Desktop 使用完整結果表，欄位為「＋ / ID / 分類 / 名稱 / 套裝 / 標籤 / 來源 / 版本 / 原始」；
+- 每筆可用「＋」加入，亦可使用「加入全部」處理完整 server-side matched set；
+- Mobile 將同一張結果表折成單欄資料卡，不維護第二套 HTML；
+- 「本次已加入」以繁中 projection 為主，external item 同時保留原始來源文字供查核。
+
+#### 手動補資料
+
+找不到外部來源時，可在 Step 2 使用「手動新增服裝資料」建立一筆完整 18 欄 canonical wardrobe row。
+
+表單包含：
+
+```text
+名稱 / 分類 / ID / 星級
+華麗 / 簡約
+優雅 / 活潑
+成熟 / 可愛
+性感 / 清純
+清涼 / 保暖
+Tag / 來源 / 套裝 / 版本
+```
+
+手動資料不會偽造 external provenance。Collection / Plan 以：
+
+```text
+origin = external
+origin = manual
+```
+
+明確區分。
+
+舊 Session 沒有 `origin` 的 wardrobe item 仍視為 `external`，因此不需要升級 Session format。
+
+Gate 12G 對 manual row 的規則：
+
+- manual row 已經是 canonical TW，不再次經過 OpenCC；
+- 新 identity 直接形成 `new` candidate；
+- 與既有 canonical identity 相同且內容不同時，形成 `manual-local-difference` conflict，必須進 Gate 12H Review；
+- manual item 的 Plan / Collection 加入與移除仍使用相同的 compensation rollback 保證同步。
+
+「本次已加入」會標示「外部來源」或「手動新增」，讓 UI 顯示方式不再與實際 provenance 混在一起。
+
 ## Step 3 — 完整度
 
 直接顯示 Gate 12F：
@@ -526,20 +572,19 @@ Gate 12L adds:
 
 ## Validation
 
-Validation completed on 2026-09-21:
+Validation completed on 2026-09-22:
 
-- PASS: Gate 12L service / privileged local server / static UI tests — 8/8.
-- PASS: Gate 12L.1 bilingual wardrobe search adapter tests — 7/7.
+- PASS: Gate 12L / 12L.1 service, local server, static UI and bilingual-search targeted tests include manual-origin and parity coverage.
 - PASS: targeted ESLint for Guided Update search adapter, service, server, browser UI and tests with zero warnings/errors.
-- PASS: Guided Update Playwright desktop/mobile coverage — 2/2; desktop flow creates a Session, searches external source data with Traditional input, renders Traditional results, and batch-adds the complete matched set without browser errors.
+- PASS: Guided Update Playwright desktop/mobile coverage — 2/2; desktop flow covers table search, Traditional projection, batch add and manual add; mobile verifies one-column filters, two-column manual attributes and responsive result presentation.
 - PASS: no-Session guard blocks Step 2–6 controls before API dispatch; forced submit produces the visible Step 1 prerequisite error without an HTTP 400 request.
 - PASS: `/favicon.ico` is served by the privileged server and no longer produces unrelated 404 noise.
 - PASS: launcher replaces a stale same-repo Guided Update server automatically using runtime fingerprints.
 - PASS: wardrobe UI rejects legacy/incompatible search payloads with a visible front/back-end version mismatch message instead of rendering undefined counters.
-- PASS: full `npm run check` — TypeScript baseline 0 known / 0 new diagnostics; 348/348 Node tests; wardrobe validators report zero errors; Main and BigUse level validation PASS.
+- PASS: full `npm run check` — TypeScript baseline 0 known / 0 new diagnostics; 351/351 Node tests; `data/wardrobe.js` 32776 rows / 0 errors; all wardrobe validators zero errors; Main and BigUse level validation PASS.
 - PASS: bilingual search keeps exact Gate 12D source identity while displaying mapped Traditional category/name/source data.
 - PASS: batch add uses the complete server-side matched set rather than only the visible page, excludes already-collected/nonselectable rows, and rejects stale search fingerprints.
-- PASS: daily collect/remove composition keeps Gate 12F Plan and Gate 12D/12E Collection synchronized.
+- PASS: daily external collect/remove and manual add/remove both keep Gate 12F Plan and Collection synchronized; manual rows stay canonical TW and never receive fake external source provenance.
 
 No commit, push, real canonical apply, or real update-session completion was performed by Gate 12L validation.
 
