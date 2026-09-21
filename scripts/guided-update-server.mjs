@@ -14,10 +14,13 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGuidedUpdateService } from './guided-update-service.mjs';
-
-export const GUIDED_UPDATE_SERVER_SIGNATURE = 'dressup-strategy-guided-update-v1';
+import {
+  GUIDED_UPDATE_SERVER_SIGNATURE,
+  guidedUpdateRuntimeFingerprint,
+} from './guided-update-runtime.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
+const RUNTIME_FINGERPRINT = guidedUpdateRuntimeFingerprint();
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 8127;
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -100,6 +103,9 @@ function allowedStaticPath(urlPath) {
   if (urlPath === '/ui-foundation.css') {
     return join(REPO_ROOT, 'ui-foundation.css');
   }
+  if (urlPath === '/favicon.ico') {
+    return join(REPO_ROOT, 'favicon.ico');
+  }
   if (urlPath.startsWith('/guided-update/')) {
     const relative = urlPath.slice('/guided-update/'.length);
     if (!relative || relative.includes('..') || relative.includes('\\')) return null;
@@ -148,6 +154,8 @@ export function createGuidedUpdateServer({
           app: 'dressup-strategy',
           feature: 'guided-update',
           signature: GUIDED_UPDATE_SERVER_SIGNATURE,
+          runtimeFingerprint: RUNTIME_FINGERPRINT,
+          pid: process.pid,
           root: REPO_ROOT,
         });
         return;
@@ -258,13 +266,16 @@ function parseServerArgs(argv) {
     port: Number(process.env.GUIDED_UPDATE_PORT) || DEFAULT_PORT,
     workspace: null,
     outputRoot: null,
+    wardrobeSource: null,
+    levelsSource: null,
+    canonicalWardrobe: null,
   };
   const seen = new Set();
   for (const arg of argv) {
     const match = /^--([^=]+)=(.*)$/s.exec(arg);
     if (!match) throw new Error('expected --option=value: ' + arg);
     const [, key, value] = match;
-    if (!['port', 'workspace', 'output-root'].includes(key)) {
+    if (!['port', 'workspace', 'output-root', 'wardrobe-source', 'levels-source', 'canonical-wardrobe'].includes(key)) {
       throw new Error('unknown option: --' + key);
     }
     if (seen.has(key)) throw new Error('duplicate option: --' + key);
@@ -272,7 +283,10 @@ function parseServerArgs(argv) {
     if (!value.trim()) throw new Error('--' + key + ' must not be empty');
     if (key === 'port') options.port = Number(value);
     else if (key === 'workspace') options.workspace = resolve(value);
-    else options.outputRoot = resolve(value);
+    else if (key === 'output-root') options.outputRoot = resolve(value);
+    else if (key === 'wardrobe-source') options.wardrobeSource = resolve(value);
+    else if (key === 'levels-source') options.levelsSource = resolve(value);
+    else options.canonicalWardrobe = resolve(value);
   }
   if (!Number.isInteger(options.port) || options.port < 1 || options.port > 65535) {
     throw new Error('invalid --port');
@@ -286,6 +300,13 @@ if (invokedDirectly) {
   const service = createGuidedUpdateService({
     ...(options.workspace ? { workspace: options.workspace } : {}),
     ...(options.outputRoot ? { outputRoot: options.outputRoot } : {}),
+    ...(options.wardrobeSource || options.levelsSource ? {
+      sourceOptions: {
+        ...(options.wardrobeSource ? { wardrobePath: options.wardrobeSource } : {}),
+        ...(options.levelsSource ? { levelsPath: options.levelsSource } : {}),
+      },
+    } : {}),
+    ...(options.canonicalWardrobe ? { canonicalWardrobePath: options.canonicalWardrobe } : {}),
   });
   const runtime = createGuidedUpdateServer({ port: options.port, service });
   runtime.start().then(() => {

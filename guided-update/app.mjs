@@ -9,6 +9,15 @@ let latestReview = null;
 let applyFingerprint = null;
 let applyReportPath = null;
 let closeoutFingerprint = null;
+let wardrobeSearchState = null;
+
+const SESSION_REQUIRED_ACTIONS = new Set([
+  'wardrobe.search', 'wardrobe.collect', 'wardrobe.collect-search', 'wardrobe.remove',
+  'levels.search', 'levels.collect', 'levels.remove',
+  'completeness', 'diff', 'review', 'review.save', 'review.remove',
+  'stage', 'apply.preview', 'apply.execute',
+  'closeout.verify', 'closeout.complete',
+]);
 
 function node(tag, className = '', text = '') {
   const element = document.createElement(tag);
@@ -27,18 +36,51 @@ function setBusy(value) {
   document.body.classList.toggle('gu-busy', value);
 }
 
+function setSessionWorkflowAvailable(current) {
+  const available = current?.status === 'draft';
+  for (const section of document.querySelectorAll('[data-requires-session]')) {
+    section.classList.toggle('gu-step-locked', !available);
+    if (available) section.removeAttribute('aria-disabled');
+    else section.setAttribute('aria-disabled', 'true');
+
+    const notice = section.querySelector('.gu-prerequisite');
+    if (notice) notice.hidden = available;
+
+    for (const control of section.querySelectorAll('button, input, select, textarea')) {
+      if (!available) {
+        if (!control.disabled) {
+          control.disabled = true;
+          control.dataset.sessionPrerequisiteDisabled = 'true';
+        }
+      } else if (control.dataset.sessionPrerequisiteDisabled === 'true') {
+        control.disabled = false;
+        delete control.dataset.sessionPrerequisiteDisabled;
+      }
+    }
+  }
+}
+
 function showMessage(kind, message) {
   const error = qs('#global-error');
   const success = qs('#global-success');
   error.hidden = true;
   success.hidden = true;
   const target = kind === 'error' ? error : success;
-  target.textContent = message;
+  target.textContent = kind === 'error' ? '操作無法完成：' + message : message;
   target.hidden = false;
   globalThis.clearTimeout(showMessage.timer);
+
+  if (kind === 'error') {
+    target.tabIndex = -1;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.focus({ preventScroll: true });
+    return;
+  }
+
+  target.removeAttribute('tabindex');
   showMessage.timer = globalThis.setTimeout(() => {
     target.hidden = true;
-  }, kind === 'error' ? 9000 : 5000);
+  }, 5000);
 }
 
 function log(message, kind = '') {
@@ -62,6 +104,9 @@ async function decodeResponse(response) {
 
 async function api(action, payload = {}) {
   if (!token) throw new Error('Guided Update token 尚未就緒');
+  if (SESSION_REQUIRED_ACTIONS.has(action) && state?.current?.status !== 'draft') {
+    throw new Error('請先完成 Step 1：建立或啟用一個進行中的「本次更新」。');
+  }
   const response = await browserFetch('/__guided_update_api', {
     method: 'POST',
     headers: {
@@ -85,8 +130,142 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('zh-TW');
 }
 
+function currentWardrobeFilters() {
+  return {
+    query: qs('#wardrobe-query').value.trim(),
+    name: '',
+    category: qs('#wardrobe-category').value,
+    suit: qs('#wardrobe-suit').value.trim(),
+    version: qs('#wardrobe-version').value.trim(),
+    source: qs('#wardrobe-source').value.trim(),
+    cnOnly: qs('#wardrobe-cn-only').checked,
+  };
+}
+
+function populateWardrobeCategories(categories) {
+  const select = qs('#wardrobe-category');
+  const current = select.value;
+  select.replaceChildren();
+  const all = node('option', '', '全部');
+  all.value = '';
+  select.append(all);
+  for (const entry of categories || []) {
+    const option = node('option', '', entry.value + ' (' + entry.count + ')');
+    option.value = entry.value;
+    select.append(option);
+  }
+  if ([...select.options].some(option => option.value === current)) select.value = current;
+}
+
+function resetWardrobeSearch() {
+  wardrobeSearchState = null;
+  qs('#wardrobe-search-summary').textContent = '尚未搜尋';
+  qs('#wardrobe-add-all').disabled = true;
+  qs('#wardrobe-add-all').textContent = '加入全部符合項目';
+  qs('#wardrobe-search-more').hidden = true;
+  qs('#wardrobe-results').className = 'gu-results gu-empty';
+  qs('#wardrobe-results').textContent = '尚未搜尋';
+}
+
+function invalidateWardrobeSearchForChangedFilters() {
+  if (!wardrobeSearchState) return;
+  resetWardrobeSearch();
+  qs('#wardrobe-search-summary').textContent = '搜尋條件已變更，請重新搜尋';
+  qs('#wardrobe-results').textContent = '條件已變更，按「搜尋」取得新的結果。';
+}
+
+function assertWardrobeSearchPayload(result) {
+  const valid = result
+    && typeof result === 'object'
+    && Number.isSafeInteger(result.total)
+    && Number.isSafeInteger(result.addable)
+    && Number.isSafeInteger(result.alreadyCollected)
+    && Number.isSafeInteger(result.nonselectable)
+    && typeof result.searchFingerprint === 'string'
+    && /^[0-9a-f]{64}$/i.test(result.searchFingerprint)
+    && result.filters && typeof result.filters === 'object'
+    && Array.isArray(result.categories)
+    && Array.isArray(result.items);
+
+  if (!valid) {
+    throw new Error(
+      'Guided Update 前後端版本不一致。請關閉目前頁面，重新執行「開啟資料更新.bat」後再搜尋。',
+    );
+  }
+}
+
+function renderWardrobeSearch(result, { append = false } = {}) {
+  assertWardrobeSearchPayload(result);
+  if (!append || !wardrobeSearchState
+    || wardrobeSearchState.searchFingerprint !== result.searchFingerprint) {
+    wardrobeSearchState = {
+      sessionId: result.sessionId,
+      filters: result.filters,
+      searchFingerprint: result.searchFingerprint,
+      items: [],
+      nextOffset: 0,
+      total: result.total,
+      addable: result.addable,
+      alreadyCollected: result.alreadyCollected,
+      nonselectable: result.nonselectable,
+    };
+  }
+
+  wardrobeSearchState.items.push(...result.items);
+  wardrobeSearchState.nextOffset = result.offset + result.items.length;
+  wardrobeSearchState.total = result.total;
+  wardrobeSearchState.addable = result.addable;
+  wardrobeSearchState.alreadyCollected = result.alreadyCollected;
+  wardrobeSearchState.nonselectable = result.nonselectable;
+
+  populateWardrobeCategories(result.categories);
+  renderSearchResults('#wardrobe-results', { items: wardrobeSearchState.items }, 'wardrobe');
+
+  const summary = [
+    '符合 ' + result.total + ' 筆',
+    '可加入 ' + result.addable + ' 筆',
+    '已加入 ' + result.alreadyCollected + ' 筆',
+  ];
+  if (result.nonselectable) summary.push('不可加入 ' + result.nonselectable + ' 筆');
+  qs('#wardrobe-search-summary').textContent = summary.join('｜');
+
+  const addAll = qs('#wardrobe-add-all');
+  addAll.disabled = result.addable === 0;
+  addAll.textContent = result.addable > 0
+    ? '加入全部 ' + result.addable + ' 筆'
+    : '目前結果皆已加入';
+
+  qs('#wardrobe-search-more').hidden = !result.hasMore;
+}
+
+async function runWardrobeSearch({ append = false } = {}) {
+  const filters = append && wardrobeSearchState
+    ? wardrobeSearchState.filters
+    : currentWardrobeFilters();
+  const result = await api('wardrobe.search', {
+    filters,
+    offset: append && wardrobeSearchState ? wardrobeSearchState.nextOffset : 0,
+    limit: 50,
+  });
+  renderWardrobeSearch(result, { append });
+  return result;
+}
+
+async function refreshWardrobeSearchIfPresent() {
+  if (!wardrobeSearchState) return;
+  const previousFilters = wardrobeSearchState.filters;
+  const result = await api('wardrobe.search', {
+    filters: previousFilters,
+    offset: 0,
+    limit: 50,
+  });
+  renderWardrobeSearch(result);
+}
+
 function renderState() {
   const current = state?.current || null;
+  if (wardrobeSearchState && wardrobeSearchState.sessionId !== current?.id) resetWardrobeSearch();
+  setSessionWorkflowAvailable(current);
   const form = qs('#create-session-form');
   const panel = qs('#current-session');
   const sourcePanel = qs('#source-readiness');
@@ -233,6 +412,7 @@ function renderSelected(selector, items, removeAction) {
       resetApplyState();
       resetCloseoutState();
       await refreshState();
+      if (removeAction === 'wardrobe.remove') await refreshWardrobeSearchIfPresent();
     }));
     row.append(main, remove);
     root.append(row);
@@ -291,9 +471,24 @@ function renderSearchResults(selector, result, domain) {
     const main = node('div', 'gu-result-main');
     const label = domain === 'wardrobe' ? item.name : item.runtimeLabel;
     const meta = domain === 'wardrobe'
-      ? [item.key, item.suit, item.source, item.version].filter(Boolean).join(' ・ ')
+      ? [item.displayKey || item.key, item.suit, item.source, item.tags, item.version]
+        .filter(Boolean).join(' ・ ')
       : [item.key, ...(item.themeFilter || []).map(group => group.name)].filter(Boolean).join(' ・ ');
     main.append(node('strong', '', label || item.key), node('div', 'gu-result-meta', meta));
+    if (domain === 'wardrobe') {
+      if (item.sourceOnly) {
+        main.append(node('div', 'gu-result-meta gu-result-source-only', '外部獨有'));
+      }
+      const original = item.original || {};
+      const originalBits = [];
+      if (original.name && original.name !== item.name) originalBits.push(original.name);
+      if (original.category && original.category !== item.category) originalBits.push(original.category);
+      if (original.suit && original.suit !== item.suit) originalBits.push(original.suit);
+      if (original.source && original.source !== item.source) originalBits.push(original.source);
+      if (originalBits.length) {
+        main.append(node('div', 'gu-result-meta gu-result-original', '原始：' + originalBits.join(' ・ ')));
+      }
+    }
     if (item.warnings?.length) {
       main.append(node('div', 'gu-result-meta', '⚠ ' + item.warnings.map(w => w.message || w.kind || String(w)).join('；')));
     }
@@ -314,8 +509,12 @@ function renderSearchResults(selector, result, domain) {
       resetApplyState();
       resetCloseoutState();
       await refreshState();
-      button.disabled = true;
-      button.textContent = '已加入';
+      if (domain === 'wardrobe') {
+        await refreshWardrobeSearchIfPresent();
+      } else {
+        button.disabled = true;
+        button.textContent = '已加入';
+      }
     }));
     row.append(main, button);
     root.append(row);
@@ -507,7 +706,7 @@ async function runAction(label, task) {
     showMessage('success', label + '完成');
     return result;
   } catch (error) {
-    console.error(error);
+    console.warn('[Guided Update]', error);
     log(label + '：' + error.message, 'error');
     showMessage('error', error.message);
     return null;
@@ -534,13 +733,50 @@ qs('#create-session-form').addEventListener('submit', event => {
 
 qs('#wardrobe-search-form').addEventListener('submit', event => {
   event.preventDefault();
-  runAction('搜尋服裝', async () => {
-    const result = await api('wardrobe.search', {
-      query: qs('#wardrobe-query').value.trim(),
-      limit: 50,
-    });
-    renderSearchResults('#wardrobe-results', result, 'wardrobe');
-  });
+  runAction('搜尋服裝', () => runWardrobeSearch());
+});
+
+for (const selector of [
+  '#wardrobe-query',
+  '#wardrobe-suit',
+  '#wardrobe-version',
+  '#wardrobe-source',
+]) {
+  qs(selector).addEventListener('input', invalidateWardrobeSearchForChangedFilters);
+}
+qs('#wardrobe-category').addEventListener('change', invalidateWardrobeSearchForChangedFilters);
+qs('#wardrobe-cn-only').addEventListener('change', invalidateWardrobeSearchForChangedFilters);
+
+qs('#wardrobe-search-more').addEventListener('click', () => {
+  if (!wardrobeSearchState) return;
+  runAction('顯示更多服裝', () => runWardrobeSearch({ append: true }));
+});
+
+qs('#wardrobe-add-all').addEventListener('click', async () => {
+  if (!wardrobeSearchState || wardrobeSearchState.addable <= 0) return;
+  if (wardrobeSearchState.addable > 500
+    && !globalThis.confirm('將加入 ' + wardrobeSearchState.addable + ' 筆符合項目，確定？')) return;
+
+  const result = await runAction('加入全部符合服裝', () => api('wardrobe.collect-search', {
+    filters: wardrobeSearchState.filters,
+    searchFingerprint: wardrobeSearchState.searchFingerprint,
+  }));
+  if (!result) return;
+
+  latestDiff = null;
+  latestReview = null;
+  resetApplyState();
+  resetCloseoutState();
+  await refreshState();
+  await refreshWardrobeSearchIfPresent();
+
+  const summary = [
+    '新加入 ' + result.added + ' 筆',
+    '已存在 ' + result.alreadyCollected + ' 筆',
+  ];
+  if (result.nonselectable) summary.push('不可加入 ' + result.nonselectable + ' 筆');
+  if (result.skippedDuringCollect) summary.push('競合略過 ' + result.skippedDuringCollect + ' 筆');
+  showMessage('success', summary.join('｜'));
 });
 
 qs('#levels-search-form').addEventListener('submit', event => {

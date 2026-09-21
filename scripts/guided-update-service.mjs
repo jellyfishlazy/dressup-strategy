@@ -7,6 +7,10 @@ import {
 import { join, resolve } from 'node:path';
 import { resolveExternalDataSource } from './external-data-source.mjs';
 import {
+  resolveGuidedWardrobeBatch,
+  searchGuidedWardrobe,
+} from './guided-wardrobe-search.mjs';
+import {
   DEFAULT_UPDATE_WORKSPACE,
   cancelUpdateSession,
   createUpdateSession,
@@ -18,7 +22,6 @@ import {
   addWardrobeToUpdate,
   listUpdateWardrobe,
   removeWardrobeFromUpdate,
-  searchUpdateWardrobe,
 } from './update-wardrobe.mjs';
 import {
   addLevelsToUpdate,
@@ -183,16 +186,22 @@ export function createGuidedUpdateService({
   outputRoot = DEFAULT_APPLY_READY_OUTPUT_ROOT,
   runRoot = null,
   sourceOptions = {},
+  canonicalWardrobePath = null,
 } = {}) {
   const actualWorkspace = resolve(workspace);
   const actualOutputRoot = resolve(outputRoot);
   const actualRunRoot = runRoot ? resolve(runRoot) : null;
+  const actualCanonicalWardrobePath = canonicalWardrobePath ? resolve(canonicalWardrobePath) : undefined;
   let mutationQueue = Promise.resolve();
 
-  function currentId() {
+  function currentSession() {
     const current = getCurrentSession({ workspace: actualWorkspace });
     if (!current) throw new Error('尚未建立或啟用本次更新');
-    return current.id;
+    return current;
+  }
+
+  function currentId() {
+    return currentSession().id;
   }
 
   function common() {
@@ -322,9 +331,37 @@ export function createGuidedUpdateService({
           { workspace: actualWorkspace },
         )));
       case 'wardrobe.search':
-        return searchUpdateWardrobe({ ...common(), ...body, limit: body.limit || 50 });
+        return searchGuidedWardrobe({
+          session: currentSession(),
+          filters: body.filters || body,
+          offset: body.offset ?? 0,
+          limit: body.limit ?? 50,
+          canonicalWardrobePath: actualCanonicalWardrobePath,
+        });
       case 'wardrobe.collect':
         return serializeMutation(() => collectWardrobe(body.keys));
+      case 'wardrobe.collect-search':
+        return serializeMutation(async () => {
+          const batch = await resolveGuidedWardrobeBatch({
+            session: currentSession(),
+            filters: body.filters || {},
+            searchFingerprint: body.searchFingerprint,
+            canonicalWardrobePath: actualCanonicalWardrobePath,
+          });
+          const collected = batch.eligibleKeys.length
+            ? await collectWardrobe(batch.eligibleKeys)
+            : { planned: [], collected: [], skipped: [] };
+          return {
+            searchFingerprint: batch.searchFingerprint,
+            matched: batch.matched,
+            added: collected.collected.length,
+            planned: collected.planned.length,
+            alreadyCollected: batch.alreadyCollectedKeys.length,
+            nonselectable: batch.nonselectableItems.length,
+            skippedDuringCollect: collected.skipped.length,
+            nonselectableItems: batch.nonselectableItems,
+          };
+        });
       case 'wardrobe.remove':
         return serializeMutation(() => removeWardrobe(body.keys));
       case 'levels.search':

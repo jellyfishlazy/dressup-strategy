@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Guided Update｜資料更新</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="/ui-foundation.css">
   <link rel="stylesheet" href="/guided-update/guided-update.css">
 </head>
@@ -66,7 +67,11 @@
       </details>
     </section>
 
-    <section id="step-collect" class="gu-card">
+    <section id="step-collect" class="gu-card" data-requires-session>
+      <div class="gu-prerequisite" role="status" hidden>
+        <strong>請先完成 Step 1</strong>
+        <span>建立或啟用一個進行中的「本次更新」後，才能搜尋與加入資料。</span>
+      </div>
       <div class="gu-card-header">
         <div>
           <p class="gu-step-label">Step 2</p>
@@ -82,11 +87,50 @@
             <h3>服裝</h3>
             <span id="wardrobe-count" class="gu-count">0</span>
           </div>
-          <form id="wardrobe-search-form" class="gu-search-row">
-            <input id="wardrobe-query" class="ui-control" type="search" placeholder="名稱、分類、套裝、來源、標籤">
-            <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+          <form id="wardrobe-search-form" class="gu-wardrobe-search-form">
+            <div class="gu-search-row">
+              <input id="wardrobe-query" class="ui-control" type="search"
+                     placeholder="可輸入繁中或來源原文：名稱、套裝、來源、標籤">
+              <button class="ui-btn ui-btn-info" type="submit">搜尋</button>
+            </div>
+            <details class="gu-search-advanced">
+              <summary>進階篩選</summary>
+              <div class="gu-search-filters">
+                <label>
+                  分類
+                  <select id="wardrobe-category" class="ui-control">
+                    <option value="">全部</option>
+                  </select>
+                </label>
+                <label>
+                  套裝
+                  <input id="wardrobe-suit" class="ui-control" type="search" placeholder="套裝名稱">
+                </label>
+                <label>
+                  版本
+                  <input id="wardrobe-version" class="ui-control" type="search" placeholder="版本">
+                </label>
+                <label>
+                  來源 / 活動 / 標籤
+                  <input id="wardrobe-source" class="ui-control" type="search" placeholder="來源、活動或標籤">
+                </label>
+                <label class="gu-check-row">
+                  <input id="wardrobe-cn-only" type="checkbox">
+                  只看外部獨有項目
+                </label>
+              </div>
+            </details>
           </form>
+          <div class="gu-search-toolbar">
+            <div id="wardrobe-search-summary" class="gu-search-summary">尚未搜尋</div>
+            <button id="wardrobe-add-all" class="ui-btn ui-btn-success" type="button" disabled>
+              加入全部符合項目
+            </button>
+          </div>
           <div id="wardrobe-results" class="gu-results gu-empty">尚未搜尋</div>
+          <button id="wardrobe-search-more" class="ui-btn ui-btn-default gu-search-more" type="button" hidden>
+            顯示更多
+          </button>
           <div class="gu-selected-block">
             <h4>本次已加入</h4>
             <div id="wardrobe-selected" class="gu-selected-list gu-empty">尚無服裝</div>
@@ -111,7 +155,11 @@
       </div>
     </section>
 
-    <section id="step-completeness" class="gu-card">
+    <section id="step-completeness" class="gu-card" data-requires-session>
+      <div class="gu-prerequisite" role="status" hidden>
+        <strong>請先完成 Step 1</strong>
+        <span>建立或啟用一個進行中的「本次更新」後，才能檢查完整度。</span>
+      </div>
       <div class="gu-card-header">
         <div>
           <p class="gu-step-label">Step 3</p>
@@ -131,7 +179,11 @@
       <div id="missing-items" class="gu-list gu-empty">尚未檢查</div>
     </section>
 
-    <section id="step-review" class="gu-card">
+    <section id="step-review" class="gu-card" data-requires-session>
+      <div class="gu-prerequisite" role="status" hidden>
+        <strong>請先完成 Step 1</strong>
+        <span>建立或啟用一個進行中的「本次更新」後，才能產生差異與進行審查。</span>
+      </div>
       <div class="gu-card-header">
         <div>
           <p class="gu-step-label">Step 4</p>
@@ -153,7 +205,11 @@
       <div id="conflict-list" class="gu-conflicts gu-empty">尚未產生差異預覽</div>
     </section>
 
-    <section id="step-apply" class="gu-card">
+    <section id="step-apply" class="gu-card" data-requires-session>
+      <div class="gu-prerequisite" role="status" hidden>
+        <strong>請先完成 Step 1</strong>
+        <span>建立或啟用一個進行中的「本次更新」後，才能進行 Staging、Preview 與 Apply。</span>
+      </div>
       <div class="gu-card-header">
         <div>
           <p class="gu-step-label">Step 5</p>
@@ -173,7 +229,11 @@
       </div>
     </section>
 
-    <section id="step-closeout" class="gu-card">
+    <section id="step-closeout" class="gu-card" data-requires-session>
+      <div class="gu-prerequisite" role="status" hidden>
+        <strong>請先完成 Step 1</strong>
+        <span>建立或啟用一個進行中的「本次更新」後，才能驗證並完成更新。</span>
+      </div>
       <div class="gu-card-header">
         <div>
           <p class="gu-step-label">Step 6</p>

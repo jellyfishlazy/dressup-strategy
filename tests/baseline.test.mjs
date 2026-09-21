@@ -70,7 +70,9 @@ test('CN mappings and mixed tag separators preserve established semantics', () =
 
 test('OpenCC resolves from repository dependencies and converts CN to TW', async () => {
   const mod = await importOpencc();
-  assert.equal(mod.Converter({ from: 'cn', to: 'tw' })('头发'), '頭髮');
+  const s2tw = mod.Converter({ from: 'cn', to: 'tw' });
+  assert.equal(s2tw('头发'), '頭髮');
+  assert.equal(s2tw('栗梦心语'), '栗夢心語');
 });
 
 const row = () => ['name', 'type', '001', ...Array(15).fill('')];

@@ -4,6 +4,7 @@ import net from 'node:net';
 import {
   mkdtempSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -22,6 +23,15 @@ async function freePort() {
   const address = server.address();
   await new Promise(resolveClose => server.close(resolveClose));
   return address.port;
+}
+
+function wardrobeRow(name, type, id, source, suit) {
+  return [
+    name, type, id, '5',
+    '', 'S', '', 'A', '', 'B', '', 'A', 'C', '',
+    '现代流行', source, suit, 'V1',
+    'extra-a', 'extra-b',
+  ];
 }
 
 async function waitFor(url, timeoutMs = 10_000) {
@@ -45,12 +55,51 @@ async function waitFor(url, timeoutMs = 10_000) {
 test.beforeAll(async () => {
   port = await freePort();
   root = mkdtempSync(join(tmpdir(), 'gate12l-browser-'));
+  const externalWardrobe = join(root, 'external-wardrobe.js');
+  const externalLevels = join(root, 'external-levels.js');
+  const canonicalWardrobe = join(root, 'canonical-wardrobe.js');
+
+  writeFileSync(externalWardrobe, [
+    'var wardrobe = ' + JSON.stringify([
+      wardrobeRow('春樱', '发型', '001', '活动-限时登录', '樱花套装'),
+      wardrobeRow('星夜发饰', '发型', '002', '活动-限时登录', '星夜套装'),
+    ]) + ';',
+    "var wardrobe_lastupd = '2026/9/21';",
+    '',
+  ].join('\n'), 'utf8');
+
+  writeFileSync(canonicalWardrobe, [
+    'var wardrobe = ' + JSON.stringify([[
+      '春櫻', '髮型', '001', '5',
+      '', 'S', '', 'A', '', 'B', '', 'A', 'C', '',
+      'POP', '活動·限時登入', '櫻花套裝', 'V1',
+    ]]) + ';',
+    '',
+  ].join('\n'), 'utf8');
+
+  writeFileSync(externalLevels, [
+    'var themeFilter = [];',
+    'var competitionsRaw = {};',
+    'var extraRaw = {};',
+    'var tasksRaw = {};',
+    'var levelsRaw = {"III-90-1": [1,1,1,1,1]};',
+    'var dreamWeavingRaw = {};',
+    'var levelFilters = {};',
+    'var levelBonus = {};',
+    'var addSkillsInfo = {};',
+    'var addHintInfo = {};',
+    '',
+  ].join('\n'), 'utf8');
+
   baseURL = 'http://127.0.0.1:' + port;
   child = spawn(process.execPath, [
     'scripts/guided-update-server.mjs',
     '--port=' + port,
     '--workspace=' + join(root, 'workspace'),
     '--output-root=' + join(root, 'staging'),
+    '--wardrobe-source=' + externalWardrobe,
+    '--levels-source=' + externalLevels,
+    '--canonical-wardrobe=' + canonicalWardrobe,
   ], {
     cwd: resolve('.'),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -70,6 +119,12 @@ test('Gate 12L desktop Guided Update loads six-step local workflow without brows
   page.on('console', message => {
     if (message.type() === 'error') failures.push('console.error: ' + message.text());
   });
+  page.on('response', response => {
+    const url = new URL(response.url());
+    if (url.hostname === '127.0.0.1' && response.status() >= 400) {
+      failures.push('http ' + response.status() + ': ' + url.pathname);
+    }
+  });
 
   await page.goto(baseURL + '/guided-update/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('h1')).toHaveText('Guided Update');
@@ -88,8 +143,70 @@ test('Gate 12L desktop Guided Update loads six-step local workflow without brows
     await expect(page.locator('#' + id)).toBeVisible();
   }
 
+  await expect(page.locator('#step-collect .gu-prerequisite')).toBeVisible();
+  await expect(page.locator('#step-collect .gu-prerequisite')).toContainText('請先完成 Step 1');
+  await expect(page.locator('#wardrobe-query')).toBeDisabled();
+  await expect(page.locator('#wardrobe-search-form button')).toBeDisabled();
   await expect(page.locator('#execute-apply')).toBeDisabled();
   await expect(page.locator('#complete-closeout')).toBeDisabled();
+
+  await page.locator('#wardrobe-search-form').evaluate(form => {
+    form.dispatchEvent(new globalThis.Event('submit', { bubbles: true, cancelable: true }));
+  });
+  await expect(page.locator('#global-error')).toBeVisible();
+  await expect(page.locator('#global-error')).toContainText(
+    '操作無法完成：請先完成 Step 1：建立或啟用一個進行中的「本次更新」。',
+  );
+
+  await page.locator('#session-name').fill('Browser bilingual update');
+  await page.locator('#create-session-button').click();
+  await expect(page.locator('#session-badge')).toHaveText('進行中');
+  await expect(page.locator('#step-collect .gu-prerequisite')).toBeHidden();
+  await expect(page.locator('#wardrobe-query')).toBeEnabled();
+
+  await page.locator('#wardrobe-query').fill('活動');
+  await page.locator('#wardrobe-search-form button[type="submit"]').click();
+  await expect(page.locator('#wardrobe-search-summary')).toContainText('符合 2 筆');
+  await expect(page.locator('#wardrobe-results .gu-result')).toHaveCount(2);
+  await expect(page.locator('#wardrobe-results')).toContainText('春櫻');
+  await expect(page.locator('#wardrobe-results')).toContainText('星夜髮飾');
+  await expect(page.locator('#wardrobe-results')).toContainText('原始：');
+
+  await expect(page.locator('#wardrobe-add-all')).toHaveText('加入全部 2 筆');
+  await page.locator('#wardrobe-add-all').click();
+  await expect(page.locator('#wardrobe-count')).toHaveText('2');
+  await expect(page.locator('#wardrobe-selected .gu-selected-item')).toHaveCount(2);
+  await expect(page.locator('#wardrobe-search-summary')).toContainText('已加入 2 筆');
+
+  await page.route('**/__guided_update_api', async route => {
+    const body = route.request().postDataJSON();
+    if (body?.action === 'wardrobe.search') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          result: {
+            sessionId: 'old-server',
+            total: 37541,
+            offset: 0,
+            limit: 50,
+            items: [],
+            sourceHash: '0'.repeat(64),
+            warnings: [],
+          },
+        }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.locator('#wardrobe-query').fill('版本不一致測試');
+  await page.locator('#wardrobe-search-form button[type="submit"]').click();
+  await expect(page.locator('#global-error')).toContainText('Guided Update 前後端版本不一致');
+  await expect(page.locator('#wardrobe-search-summary')).toContainText('搜尋條件已變更');
+
   expect(failures).toEqual([]);
 });
 

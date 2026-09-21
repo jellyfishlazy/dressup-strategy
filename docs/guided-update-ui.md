@@ -85,6 +85,19 @@ Guided Update 使用一個 responsive 單頁，固定分成六段。
 
 UI 不自行保存另一份 Session state，所有資料仍來自 Gate 12C。
 
+### 流程防呆與可見錯誤
+
+Step 2～6 都要求目前存在一個 `draft` Game Update Session。
+
+若尚未建立或啟用 Session：
+
+- 各步驟會在卡片頂端顯示「請先完成 Step 1」提示；
+- 搜尋、完整度、差異審查、Staging、Apply、Closeout 等控制會停用；
+- 前端會在送出 API request 前再次檢查 Session，避免把正常的流程前置條件錯誤變成 HTTP 400；
+- 若仍因狀態過期或其他 API 錯誤失敗，頁面會顯示持續可見、可聚焦的全域錯誤提示，Activity log 同時保留紀錄；DevTools console 只作開發診斷，不是主要使用者提示介面。
+
+Guided Update privileged server 也提供 `/favicon.ico`，避免瀏覽器自動請求產生與更新流程無關的 404 雜訊。
+
 ### Step 2 — 搜尋並加入本次更新
 
 分成：
@@ -95,6 +108,33 @@ UI 不自行保存另一份 Session state，所有資料仍來自 Gate 12C。
 ```
 
 兩個區塊。
+
+#### 服裝繁簡對齊搜尋
+
+Guided Update 的服裝搜尋不直接把 Gate 12D raw-source substring search 暴露給日常 UI。
+
+它會將目前 Session 鎖定的外部 wardrobe 與 canonical `data/wardrobe.js` 建立一份唯讀搜尋模型，重用既有 CN Search domain：
+
+- category mapping；
+- canonical wardrobe identity 對齊；
+- OpenCC cn→tw / tw→cn（Node 與舊版 browser CN Search 都固定使用 `opencc-js 1.3.0`，避免字典版本造成繁中搜尋落差）；
+- canonical TW lexicon；
+- tag override / normalization；
+- TW + 原始來源雙語 haystack。
+
+因此使用者可輸入繁中或來源原文；結果顯示繁中優先，同時保留 exact source key 供 Gate 12D 收集。
+
+如果本地已有相同 mapped identity，名稱／套裝／來源／標籤／版本優先使用 canonical TW 資料；外部獨有項目才使用 deterministic conversion 顯示。
+
+搜尋模型依：
+
+```text
+external wardrobe SHA
++
+canonical wardrobe SHA
+```
+
+快取。來源或 canonical 資料改變時會建立新模型，不沿用舊轉換結果。
 
 服裝可搜尋：
 
@@ -131,6 +171,32 @@ Guided Update service 會將同一 key：
 「移除」同樣會從 collection + plan 一起移除；若 plan 移除失敗，會嘗試補回 collection。
 
 所有 mutation 在 privileged service 內序列化執行，避免使用者快速連點造成兩個 Session writer 同時搶寫。
+
+#### 加入全部搜尋結果
+
+服裝搜尋回應會保存：
+
+```text
+session id
+external wardrobe SHA
+canonical wardrobe SHA
+normalized filters
+```
+
+計算出的 search fingerprint。
+
+畫面可以只分批顯示結果，但「加入全部」不會依賴目前 DOM 或只加入目前頁面；server 會用相同 filters 重新解析完整 matched set，並要求 fingerprint 仍然一致。
+
+若 Session、來源、canonical wardrobe 或搜尋條件改變，舊 fingerprint 不能用於批次加入，必須重新搜尋。
+
+批次加入會：
+
+1. 排除 nonselectable source rows；
+2. 排除已在 Collection 的 exact source keys；
+3. 對剩餘完整結果執行既有 Gate 12F Plan + Gate 12D Collection；
+4. 回報 new / already collected / nonselectable / concurrent skipped 摘要。
+
+所以新版保留舊搜尋的「＋全部」語意，但不再回到 browser staging / 複製 JS 片段的舊流程。
 
 ## Step 3 — 完整度
 
@@ -423,10 +489,14 @@ scripts/guided-update-server.mjs
 Launcher 會：
 
 1. 檢查 8127；
-2. 若為 Guided Update server 就沿用；
-3. 若未啟動就啟動；
-4. 若被其他服務占用就拒絕；
-5. 開啟 browser。
+2. 計算目前 Guided Update backend runtime fingerprint；
+3. 若既有 server 屬於同一 repo 且 fingerprint 相同就沿用；
+4. 若既有 server 屬於同一 repo但 fingerprint 已過期，會先停止舊 server 再啟動目前版本；
+5. 若未啟動就啟動；
+6. 若被其他服務占用就拒絕，不會終止未知程序；
+7. 開啟 browser。
+
+Browser 的 wardrobe search UI 也會驗證新版 payload contract；若收到 legacy / incompatible payload，會顯示前後端版本不一致錯誤，不會把缺少欄位渲染成 `undefined`。
 
 測試用：
 
@@ -444,10 +514,12 @@ Gate 12L adds:
 - `guided-update/guided-update.css`;
 - `guided-update/app.mjs`;
 - `scripts/guided-update-service.mjs`;
+- `scripts/guided-wardrobe-search.mjs`;
 - `scripts/guided-update-server.mjs`;
 - `scripts/launch-guided-update.mjs`;
 - `開啟資料更新.bat`;
 - `tests/gate12l-guided-update.test.mjs`;
+- `tests/gate12l1-guided-wardrobe-search.test.mjs`;
 - `tests/browser/guided-update.spec.mjs`;
 - `docs/guided-update-ui.md`;
 - npm script `start:update`.
@@ -456,15 +528,17 @@ Gate 12L adds:
 
 Validation completed on 2026-09-21:
 
-- PASS: Gate 12L service / privileged local server / static UI tests — 7/7.
-- PASS: targeted ESLint for Guided Update service, server, launcher, browser UI and tests with zero warnings/errors.
-- PASS: Guided Update Playwright desktop/mobile coverage — 2/2.
-- PASS: integrated Gate 12C + 12D + 12E + 12F + 12G + 12H + 12I + 12J + 12K + 12L regression — 130/130.
-- PASS: full `npm run check` — TypeScript baseline 0 known / 0 new diagnostics; 338/338 Node tests; wardrobe validators report zero errors; Main and BigUse level validation PASS.
-- PASS: `git diff --check`.
-- PASS: real launcher smoke using `node scripts/launch-guided-update.mjs --no-open --ephemeral --port=18139`; the privileged server started, health detection succeeded, and the port was closed afterward.
-- PASS: privileged API rejects invalid token and cross-origin requests and exposes only the Guided Update static assets plus shared UI foundation.
-- PASS: desktop UI renders all six workflow steps without browser errors; 390px mobile UI collapses collection and metric content to one column.
+- PASS: Gate 12L service / privileged local server / static UI tests — 8/8.
+- PASS: Gate 12L.1 bilingual wardrobe search adapter tests — 7/7.
+- PASS: targeted ESLint for Guided Update search adapter, service, server, browser UI and tests with zero warnings/errors.
+- PASS: Guided Update Playwright desktop/mobile coverage — 2/2; desktop flow creates a Session, searches external source data with Traditional input, renders Traditional results, and batch-adds the complete matched set without browser errors.
+- PASS: no-Session guard blocks Step 2–6 controls before API dispatch; forced submit produces the visible Step 1 prerequisite error without an HTTP 400 request.
+- PASS: `/favicon.ico` is served by the privileged server and no longer produces unrelated 404 noise.
+- PASS: launcher replaces a stale same-repo Guided Update server automatically using runtime fingerprints.
+- PASS: wardrobe UI rejects legacy/incompatible search payloads with a visible front/back-end version mismatch message instead of rendering undefined counters.
+- PASS: full `npm run check` — TypeScript baseline 0 known / 0 new diagnostics; 348/348 Node tests; wardrobe validators report zero errors; Main and BigUse level validation PASS.
+- PASS: bilingual search keeps exact Gate 12D source identity while displaying mapped Traditional category/name/source data.
+- PASS: batch add uses the complete server-side matched set rather than only the visible page, excludes already-collected/nonselectable rows, and rejects stale search fingerprints.
 - PASS: daily collect/remove composition keeps Gate 12F Plan and Gate 12D/12E Collection synchronized.
 
 No commit, push, real canonical apply, or real update-session completion was performed by Gate 12L validation.

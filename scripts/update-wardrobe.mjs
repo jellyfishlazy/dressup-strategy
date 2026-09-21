@@ -5,7 +5,7 @@ import {
   DEFAULT_UPDATE_WORKSPACE, getCurrentSession, loadUpdateSession, saveUpdateSession,
 } from './update-session.mjs';
 
-function rowWarnings(row) {
+export function wardrobeRowWarnings(row) {
   const warnings = [];
   if (!Array.isArray(row)) return ['invalid row'];
   if (row.length < 18) warnings.push('row has fewer than 18 columns');
@@ -24,7 +24,7 @@ function readSession({ workspace = DEFAULT_UPDATE_WORKSPACE, sessionId } = {}) {
   if (!session) throw new Error('no current update session');
   const seen = new Set();
   for (const item of session.collection.wardrobe) {
-    if (!item || typeof item !== 'object' || rowWarnings(item.row).length
+    if (!item || typeof item !== 'object' || wardrobeRowWarnings(item.row).length
       || item.key !== item.category + '|' + item.id || seen.has(item.key)
       || item.name !== item.row[0] || item.category !== item.row[1]
       || item.id !== String(item.row[2])
@@ -52,7 +52,7 @@ function readPinned(session) {
   const counts = new Map();
   for (const item of source.items) counts.set(item.key, (counts.get(item.key) || 0) + 1);
   for (const item of source.items) {
-    item.warnings = rowWarnings(item.row);
+    item.warnings = wardrobeRowWarnings(item.row);
     if (counts.get(item.key) > 1) item.warnings.push('duplicate source identity');
     item.selectable = item.warnings.length === 0;
   }
