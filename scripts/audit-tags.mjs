@@ -1,7 +1,8 @@
-// One-off audit: compare wardrobe [14] tokens vs flist/levels tag strings.
+// One-off audit: compare wardrobe tags tokens vs flist/levels tag strings.
 // Run: node scripts/audit-tags.mjs
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { WARDROBE_FIELD_INDEX as FIELD } from '../src/domain/wardrobe/schema.mjs';
 
 function loadCtx(path) {
 	const ctx = {};
@@ -18,15 +19,15 @@ const GLOW = /^(簡約|華麗|可愛|成熟|活潑|優雅|清純|性感|清涼|�
 const rowTags = new Set();
 const rowTagSamples = new Map(); // tag -> first row name for verification
 for (const r of wardrobe) {
-	const cat = r[1] || '';
-	const tg = r[14] || '';
+	const cat = r[FIELD.type] || '';
+	const tg = r[FIELD.tags] || '';
 	if (!tg || cat === '螢光之靈') continue;
 	for (const p of String(tg).split(SPLIT)) {
 		const t = (p || '').trim();
 		if (!t || p === '/' || p === ',' || p === '，') continue;
 		if (GLOW.test(t)) continue;
 		rowTags.add(t);
-		if (!rowTagSamples.has(t)) rowTagSamples.set(t, r[0]);
+		if (!rowTagSamples.has(t)) rowTagSamples.set(t, r[FIELD.name]);
 	}
 }
 
@@ -90,7 +91,7 @@ console.log = out;
 console.log(header('wardrobeTags (' + wardrobeTags.size + ')'));
 console.log([...wardrobeTags].join(', '));
 
-console.log(header('wardrobe [14] scanned (' + rowTags.size + ')'));
+console.log(header('wardrobe tags scanned (' + rowTags.size + ')'));
 console.log([...rowTags].sort((a, b) => a.localeCompare(b, 'zh-Hant')).join(', '));
 
 console.log(header('Flist "tag" entries (' + flistTagSet.size + ' unique)'));

@@ -1,3 +1,10 @@
+import { WARDROBE_FIELD_COUNT, WARDROBE_FIELD_INDEX as FIELD } from '../src/domain/wardrobe/schema.mjs';
+import { createLexicon } from './src/normalization.mjs';
+import { buildTwLookup, mergeRow as mergeSearchRow, filterRows } from './src/search.mjs';
+import { buildStagingRow as makeStagingRow, buildStagingSnippet as makeStagingSnippet } from './src/staging.mjs';
+import { resultRowsHtml, stagingRowsHtml } from './src/ui.mjs';
+import { VALID_ATTR, collectManualOptions as collectOptions } from './src/manual-entry.mjs';
+
 // CN wardrobe search page logic.
 //
 // Loads:
@@ -19,164 +26,17 @@
 (function () {
 	'use strict';
 
-	// CN category -> TW category. Hand-mapped from the two `wardrobe.js`
-	// files; do not derive via OpenCC alone because several pairs differ
-	// in vocabulary (連衣裙 vs 連身裙, 上裝 vs 上衣, 下裝 vs 下著,
-	// 髮卡 vs 髮夾, 手飾·雙 vs 手飾·手套, 地面 vs 地板, ...).
-	var CN2TW_CATEGORY = {
-		'发型': '髮型',
-		'连衣裙': '連身裙',
-		'外套': '外套',
-		'上装': '上衣',
-		'下装': '下著',
-		'袜子-袜套': '襪子-腿飾',
-		'袜子-袜子': '襪子-襪子',
-		'鞋子': '鞋子',
-		'饰品-头饰·发饰': '飾品-頭飾·髮飾',
-		'饰品-头饰·头纱': '飾品-頭飾·頭紗',
-		'饰品-头饰·发卡': '飾品-頭飾·髮夾',
-		'饰品-头饰·耳朵': '飾品-頭飾·耳朵',
-		'饰品-耳饰': '飾品-耳飾',
-		'饰品-颈饰·围巾': '飾品-頸飾·圍巾',
-		'饰品-颈饰·项链': '飾品-頸飾·項鍊',
-		'饰品-手饰·右': '飾品-手飾·右',
-		'饰品-手饰·左': '飾品-手飾·左',
-		'饰品-手饰·双': '飾品-手飾·手套',
-		'饰品-手持·右': '飾品-手持·右',
-		'饰品-手持·左': '飾品-手持·左',
-		'饰品-手持·双': '飾品-手持·雙',
-		'饰品-腰饰': '飾品-腰飾',
-		'饰品-特殊·面饰': '飾品-特殊·面飾',
-		'饰品-特殊·胸饰': '飾品-特殊·胸飾',
-		'饰品-特殊·纹身': '飾品-特殊·紋身',
-		'饰品-特殊·翅膀': '飾品-特殊·翅膀',
-		'饰品-特殊·尾巴': '飾品-特殊·尾巴',
-		'饰品-特殊·前景': '飾品-特殊·前景',
-		'饰品-特殊·后景': '飾品-特殊·後景',
-		'饰品-特殊·顶饰': '飾品-特殊·頂飾',
-		'饰品-特殊·地面': '飾品-特殊·地板',
-		'饰品-皮肤': '飾品-皮膚',
-		'妆容': '妝容',
-		'萤光之灵': '螢光之靈'
-	};
-
-	var s2tw = (typeof OpenCC !== 'undefined' && OpenCC.Converter)
-		? OpenCC.Converter({ from: 'cn', to: 'tw' })
+	var opencc = globalThis.OpenCC;
+	var s2tw = (opencc && opencc.Converter)
+		? opencc.Converter({ from: 'cn', to: 'tw' })
 		: function (s) { return s; };
 
-	var tw2cn = (typeof OpenCC !== 'undefined' && OpenCC.Converter)
-		? OpenCC.Converter({ from: 'tw', to: 'cn' })
+	var tw2cn = (opencc && opencc.Converter)
+		? opencc.Converter({ from: 'tw', to: 'cn' })
 		: function (s) { return s; };
 
-	var openccLoaded = typeof OpenCC !== 'undefined' && !!OpenCC.Converter;
-
-	// Maps simplified-Chinese anchor -> canonical TW string from data/wardrobe.js.
-	var lexByKey = Object.create(null);
-
-	var SPLIT_SEG = /(\/|,|，)/;
-
-	// CN decoded sources often use ASCII hyphen between segments (活动-限时登录)
-	// while data/wardrobe.js uses middle dot (活動·限時登入). Lexicon keys use tw2cn(TW)
-	// → simplified with · , so lookups must normalize Han-hyphen-Han → Han·Han .
-	function normalizeHanHyphenToDot(s) {
-		if (!s) return s;
-		var out = String(s);
-		var prev;
-		var re = /([\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\u3007])[\u002d\uFF0D\u2013\u2014]([\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\u3007])/g;
-		do {
-			prev = out;
-			out = out.replace(re, '$1·$2');
-		} while (out !== prev);
-		return out;
-	}
-
-	// Mainland strings use 登录 / 登陆; OpenCC tw→cn may emit 限时登入 for 限时登入,
-	// which does not equal game's 限时登录 — lex misses and s2tw yields 登錄.
-	function unifyLimitedLoginWording(s) {
-		return String(s)
-			.replace(/限时登入/g, '限时登录')
-			.replace(/限时登陆/g, '限时登录')
-			.replace(/限時登入/g, '限时登录')
-			.replace(/限時登陸/g, '限时登录');
-	}
-
-	function canonicalLexAnchor(s) {
-		if (!s) return s;
-		return unifyLimitedLoginWording(normalizeHanHyphenToDot(String(s)));
-	}
-
-	function splitPreserveSeg(s) {
-		if (!s) return [];
-		return String(s).split(SPLIT_SEG);
-	}
-
-	function registerLexEntry(twStr) {
-		if (!twStr || typeof twStr !== 'string') return;
-		var t = twStr.trim();
-		if (!t) return;
-		var key = canonicalLexAnchor(tw2cn(t));
-		var prev = lexByKey[key];
-		if (!prev) {
-			lexByKey[key] = t;
-			return;
-		}
-		if (prev === t) return;
-		// Prefer longer TW phrase when two phrases collapse to the same simp key.
-		if (t.length > prev.length) lexByKey[key] = t;
-	}
-
-	function registerLexFieldPieces(str) {
-		if (!str || typeof str !== 'string') return;
-		registerLexEntry(str);
-		var parts = splitPreserveSeg(str);
-		for (var i = 0; i < parts.length; i++) {
-			var p = parts[i];
-			if (!p || p === '/' || p === ',' || p === '，') continue;
-			registerLexEntry(p.trim());
-		}
-	}
-
-	function buildTwLexicon() {
-		lexByKey = Object.create(null);
-		if (typeof wardrobe === 'undefined' || !wardrobe || !wardrobe.length) return;
-		for (var i = 0; i < wardrobe.length; i++) {
-			var row = wardrobe[i];
-			registerLexFieldPieces(row[14] || '');
-			registerLexFieldPieces(row[15] || '');
-			registerLexFieldPieces(row[16] || '');
-			registerLexEntry(row[17] || '');
-		}
-	}
-
-	function alignWholeField(cnSimpStr) {
-		if (!cnSimpStr) return '';
-		var raw = String(cnSimpStr);
-		var canon = canonicalLexAnchor(raw);
-		if (lexByKey[canon]) return lexByKey[canon];
-		if (lexByKey[raw]) return lexByKey[raw];
-		var k = canonicalLexAnchor(tw2cn(s2tw(canon)));
-		if (lexByKey[k]) return lexByKey[k];
-		k = canonicalLexAnchor(tw2cn(s2tw(raw)));
-		if (lexByKey[k]) return lexByKey[k];
-		return s2tw(canon);
-	}
-
-	function alignCompoundField(cnStr) {
-		if (!cnStr) return '';
-		var raw = String(cnStr);
-		var canonFull = canonicalLexAnchor(raw);
-		if (lexByKey[canonFull]) return lexByKey[canonFull];
-		if (lexByKey[raw]) return lexByKey[raw];
-		var parts = splitPreserveSeg(canonFull);
-		if (parts.length <= 1) return alignWholeField(raw);
-		var out = [];
-		for (var j = 0; j < parts.length; j++) {
-			var p = parts[j];
-			if (p === '/' || p === ',' || p === '，') out.push(p);
-			else out.push(alignWholeField(p.trim()));
-		}
-		return out.join('');
-	}
+	var openccLoaded = !!(opencc && opencc.Converter);
+	var lexicon = createLexicon({ s2tw: s2tw, tw2cn: tw2cn });
 
 	var statusEl = document.getElementById('status');
 	var countEl = document.getElementById('count');
@@ -227,101 +87,6 @@
 		toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
 	}
 
-	function buildTwLookup() {
-		// `wardrobe` is the global array defined by data/wardrobe.js.
-		// Builds two maps in one pass: a slim object for rendering, and
-		// fullTwByKey -> full 18-column array clones for staging.
-		var map = Object.create(null);
-		if (typeof wardrobe === 'undefined' || !wardrobe || !wardrobe.length) {
-			console.warn('TW wardrobe global not found.');
-			return map;
-		}
-		for (var i = 0; i < wardrobe.length; i++) {
-			var row = wardrobe[i];
-			var key = row[1] + '|' + row[2];
-			map[key] = {
-				name: row[0],
-				type: row[1],
-				id: row[2],
-				tags: row[14] || '',
-				source: row[15] || '',
-				suit: row[16] || '',
-				version: row[17] || ''
-			};
-			fullTwByKey[key] = row.slice();
-		}
-		return map;
-	}
-
-	function mergeRow(cn, twByKey) {
-		var typeTw = CN2TW_CATEGORY[cn.categoryCn] || s2tw(cn.categoryCn || '');
-		var tw = twByKey[typeTw + '|' + cn.id];
-
-		var name, suit, tags, source, version, hasTw;
-		if (tw) {
-			hasTw = true;
-			name = tw.name;
-			suit = tw.suit;
-			tags = tw.tags;
-			source = tw.source;
-			version = tw.version;
-		} else {
-			hasTw = false;
-			name = s2tw(cn.nameCn || '');
-			suit = alignCompoundField(cn.suitCn || '');
-			tags = Object.prototype.hasOwnProperty.call(cn, 'tagsTw')
-				? (cn.tagsTw == null ? '' : String(cn.tagsTw))
-				: alignCompoundField(cn.tagsCn || '');
-			source = alignCompoundField(cn.sourceCn || '');
-			version = alignWholeField(cn.version || '') || (cn.version || '');
-		}
-
-		// Build search haystacks combining TW + CN so users can paste
-		// either traditional or simplified text.
-		var hayName = (name + '|' + (cn.nameCn || '')).toLowerCase();
-		var suitFallback = s2tw(cn.suitCn || '');
-		var haySuit = (suit + '|' + (cn.suitCn || '') + '|' + suitFallback).toLowerCase();
-		var srcFallback = s2tw(cn.sourceCn || '');
-		var tagRaw = cn.tagsCn || '';
-		var tagS2tw = s2tw(tagRaw);
-		var haySource = (source + '|' + (cn.sourceCn || '') + '|' + srcFallback + '|' +
-			tags + '|' + tagRaw + '|' + tagS2tw).toLowerCase();
-		var hayVersion = (version + '|' + (cn.version || '')).toLowerCase();
-
-		return {
-			hasTw: hasTw,
-			id: cn.id,
-			type: typeTw,
-			typeCn: cn.categoryCn,
-			key: typeTw + '|' + cn.id,
-			name: name,
-			suit: suit,
-			tags: tags,
-			source: source,
-			version: version,
-			cnName: cn.nameCn || '',
-			cnSuit: cn.suitCn || '',
-			cnSource: cn.sourceCn || '',
-			cnFullRow: Array.isArray(cn.fullRow) ? cn.fullRow : null,
-			hayName: hayName,
-			haySuit: haySuit,
-			haySource: haySource,
-			hayVersion: hayVersion
-		};
-	}
-
-	function tokens(s) {
-		if (!s) return [];
-		return s.trim().split(/\s+/).filter(Boolean).map(function (t) { return t.toLowerCase(); });
-	}
-
-	function matchAll(hay, qs) {
-		for (var i = 0; i < qs.length; i++) {
-			if (hay.indexOf(qs[i]) < 0) return false;
-		}
-		return true;
-	}
-
 	function populateCategoryOptions() {
 		var seen = Object.create(null);
 		for (var i = 0; i < merged.length; i++) {
@@ -337,74 +102,21 @@
 	}
 
 	function refresh() {
-		// User input may be either TW or CN; convert TW->? we can't easily,
-		// but each haystack already contains the CN original too, so
-		// matching either form works as long as the user's text appears
-		// verbatim in at least one of them.
-		var nt = tokens(qName.value);
-		var st = tokens(qSuit.value);
-		var vt = tokens(qVersion.value);
-		var ot = tokens(qSource.value);
-		var cnOnly = qCnOnly.checked;
-		var cat = categorySelect.value;
-
-		var matched = [];
-		for (var i = 0; i < merged.length; i++) {
-			var r = merged[i];
-			if (cnOnly && r.hasTw) continue;
-			if (cat && r.type !== cat) continue;
-			if (nt.length && !matchAll(r.hayName, nt)) continue;
-			if (st.length && !matchAll(r.haySuit, st)) continue;
-			if (vt.length && !matchAll(r.hayVersion, vt)) continue;
-			if (ot.length && !matchAll(r.haySource, ot)) continue;
-			matched.push(r);
-		}
+		var matched = filterRows(merged, {
+			name: qName.value,
+			suit: qSuit.value,
+			version: qVersion.value,
+			source: qSource.value,
+			cnOnly: qCnOnly.checked,
+			category: categorySelect.value
+		});
 		lastMatched = matched;
 		render(matched);
 	}
 
-	function escapeHtml(s) {
-		return String(s == null ? '' : s)
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;');
-	}
-
 	function render(rows) {
-		var total = merged.length;
-		countEl.textContent = '符合 ' + rows.length + ' 筆 / 共 ' + total + ' 筆';
-
-		var cap = 800;
-		var n = Math.min(rows.length, cap);
-		var parts = [];
-		for (var i = 0; i < n; i++) {
-			var r = rows[i];
-			var rawBits = [];
-			if (r.cnName && r.cnName !== r.name) rawBits.push(r.cnName);
-			if (r.cnSuit && r.cnSuit !== r.suit) rawBits.push(r.cnSuit);
-			if (r.cnSource && r.cnSource !== r.source) rawBits.push(r.cnSource);
-			var canAdd = r.hasTw || !!r.cnFullRow;
-			var addBtn = '<button class="btn-add" data-key="' + escapeHtml(r.key) + '" type="button" title="' +
-				(canAdd ? '加入暫存' : '索引缺 fullRow，請重跑 build') + '"' +
-				(canAdd ? '' : ' disabled') + '>＋</button>';
-			parts.push(
-				'<tr' + (r.hasTw ? '' : ' class="cn-only"') + '>' +
-				'<td class="col-add">' + addBtn + '</td>' +
-				'<td>' + escapeHtml(r.id) + '</td>' +
-				'<td>' + escapeHtml(r.type) + '</td>' +
-				'<td class="wrap">' + escapeHtml(r.name) + (r.hasTw ? '' : '<span class="cn-tag">陸服</span>') + '</td>' +
-				'<td class="wrap">' + escapeHtml(r.suit) + '</td>' +
-				'<td class="wrap">' + escapeHtml(r.tags) + '</td>' +
-				'<td class="wrap">' + escapeHtml(r.source) + '</td>' +
-				'<td>' + escapeHtml(r.version) + '</td>' +
-				'<td class="wrap cn-raw">' + escapeHtml(rawBits.join(' / ')) + '</td>' +
-				'</tr>'
-			);
-		}
-		if (rows.length > cap) {
-			parts.push('<tr><td colspan="9" style="text-align:center;color:#999;padding:10px">… 僅顯示前 ' + cap + ' 筆，但「＋全部」會加入全部 ' + rows.length + ' 筆。</td></tr>');
-		}
-		tbody.innerHTML = parts.join('');
+		countEl.textContent = '符合 ' + rows.length + ' 筆 / 共 ' + merged.length + ' 筆';
+		tbody.innerHTML = resultRowsHtml(rows);
 	}
 
 	function scheduleRefresh() {
@@ -414,9 +126,17 @@
 
 	function init(data) {
 		setStatus('解析中…');
-		var twByKey = buildTwLookup();
-		buildTwLexicon();
-		merged = (data.rows || []).map(function (cn) { return mergeRow(cn, twByKey); });
+		var lookup = buildTwLookup(globalThis.wardrobe);
+		var twByKey = lookup.slim;
+		fullTwByKey = lookup.full;
+		lexicon.build(globalThis.wardrobe);
+		merged = (data.rows || []).map(function (cn) {
+			return mergeSearchRow(cn, twByKey, {
+				s2tw: s2tw,
+				alignCompoundField: lexicon.alignCompoundField,
+				alignWholeField: lexicon.alignWholeField
+			});
+		});
 		for (var i = 0; i < merged.length; i++) mergedByKey[merged[i].key] = merged[i];
 		populateCategoryOptions();
 		initManualEntry();
@@ -435,45 +155,6 @@
 
 	// ---- Staging ---------------------------------------------------------
 
-	// Indices for CN-only staging: rating slots get plain s2tw; name [0]
-	// never uses lexicon; [14]-[17] use lexicon alignment.
-	var ATTR_INDICES = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-
-	function buildStagingRow(m) {
-		// Returns an 18-element array matching the schema of data/wardrobe.js.
-		if (m.hasTw) {
-			var tw = fullTwByKey[m.key];
-			if (tw) return tw.slice(0, 18);
-		}
-		if (!m.cnFullRow) return null;
-		var row = m.cnFullRow.slice(0, 18);
-		for (var ai = 0; ai < ATTR_INDICES.length; ai++) {
-			var ix = ATTR_INDICES[ai];
-			if (typeof row[ix] === 'string' && row[ix]) row[ix] = s2tw(row[ix]);
-		}
-		if (typeof row[0] === 'string' && row[0]) row[0] = s2tw(row[0]);
-		if (typeof row[2] === 'string' && row[2]) row[2] = String(row[2]);
-		row[1] = m.type || row[1];
-		row[14] = m.tags != null ? m.tags : '';
-		if (typeof row[15] === 'string') row[15] = alignCompoundField(row[15]);
-		if (typeof row[16] === 'string') row[16] = alignCompoundField(row[16]);
-		if (typeof row[17] === 'string') {
-			var v0 = row[17];
-			row[17] = alignWholeField(v0) || v0;
-		}
-		return row;
-	}
-
-	function rowSummary(row) {
-		return {
-			name: row[0] || '',
-			type: row[1] || '',
-			id: row[2] || '',
-			suit: row[16] || '',
-			version: row[17] || ''
-		};
-	}
-
 	function renderStaging() {
 		stagingCountEl.textContent = staging.length + ' 筆';
 		if (!staging.length) {
@@ -484,29 +165,17 @@
 		}
 		stagingEmptyEl.style.display = 'none';
 		stagingListEl.style.display = '';
-		var parts = [];
-		for (var i = 0; i < staging.length; i++) {
-			var entry = staging[i];
-			var s = rowSummary(entry.row);
-			parts.push(
-				'<div class="staging-item" data-key="' + escapeHtml(entry.key) + '">' +
-					'<div class="meta">' +
-						'<b>' + escapeHtml(s.name) + '</b>' +
-						' <span class="sub">[' + escapeHtml(s.type) + ' ' + escapeHtml(s.id) + ']</span>' +
-						'<br><span class="sub">' + escapeHtml(s.suit) + '　' + escapeHtml(s.version) + '</span>' +
-					'</div>' +
-					'<pre>' + escapeHtml(rowToWardrobeLine(entry.row)) + '</pre>' +
-					'<button class="btn-del" data-key="' + escapeHtml(entry.key) + '" type="button" title="從暫存移除">×</button>' +
-				'</div>'
-			);
-		}
-		stagingListEl.innerHTML = parts.join('');
+		stagingListEl.innerHTML = stagingRowsHtml(staging);
 	}
 
 	function addToStaging(merged) {
 		if (!merged) return { ok: false, reason: 'missing' };
 		if (stagingKeys[merged.key]) return { ok: false, reason: 'dup' };
-		var row = buildStagingRow(merged);
+		var row = makeStagingRow(merged, fullTwByKey, {
+			s2tw: s2tw,
+			alignCompoundField: lexicon.alignCompoundField,
+			alignWholeField: lexicon.alignWholeField
+		});
 		if (!row) return { ok: false, reason: 'no-fullrow' };
 		staging.push({ key: merged.key, row: row });
 		stagingKeys[merged.key] = true;
@@ -526,37 +195,6 @@
 		staging = [];
 		stagingKeys = Object.create(null);
 		renderStaging();
-	}
-
-	function rowToWardrobeLine(row) {
-		// Mirrors the literal style in data/wardrobe.js: '...','...',... ,
-		// using single-quoted strings. JSON.stringify produces double-quoted
-		// strings with proper escapes; we convert to single quotes and
-		// escape any embedded single quotes.
-		var parts = [];
-		for (var i = 0; i < 18; i++) {
-			var v = row[i];
-			if (typeof v === 'string') {
-				var json = JSON.stringify(v);
-				// json is "..." with internal " and \\ escaped; convert to '...'
-				var body = json.slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'");
-				parts.push("'" + body + "'");
-			} else if (v == null) {
-				parts.push("''");
-			} else {
-				parts.push(String(v));
-			}
-		}
-		return '  [' + parts.join(',') + '],';
-	}
-
-	function buildStagingSnippet() {
-		var header =
-			'// data/wardrobe.js 片段（' + staging.length + ' 筆）\n' +
-			'// 產生時間：' + new Date().toLocaleString() + '\n' +
-			'// 將下列各列貼到 var wardrobe = [ ... ] 內適當位置；請自行檢查編號重複。\n';
-		var lines = staging.map(function (e) { return rowToWardrobeLine(e.row); });
-		return header + lines.join('\n') + '\n';
 	}
 
 	function copyText(text) {
@@ -579,7 +217,7 @@
 	}
 
 	function downloadSnippet() {
-		var text = buildStagingSnippet();
+		var text = makeStagingSnippet(staging);
 		var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
 		var url = URL.createObjectURL(blob);
 		var a = document.createElement('a');
@@ -643,7 +281,7 @@
 
 	btnCopyStaging.addEventListener('click', function () {
 		if (!staging.length) { showToast('暫存區是空的'); return; }
-		copyText(buildStagingSnippet())
+		copyText(makeStagingSnippet(staging))
 			.then(function () { showToast('已複製 ' + staging.length + ' 筆到剪貼簿'); })
 			.catch(function () { showToast('複製失敗，請改用「下載片段」'); });
 	});
@@ -664,81 +302,9 @@
 
 	// ---- Manual entry ----------------------------------------------------
 
-	// Valid attribute grades. Empty string means "not applicable for this axis".
-	var VALID_ATTR = { '': 1, 'C': 1, 'B': 1, 'A': 1, 'S': 1, 'SS': 1 };
-
-	// model.js reads 螢光之靈 row[14] as "中文屬性+數值" bonuses, not comma-style tags — exclude from picker (A+B).
-	var GLOW_BONUS_TAG =
-		/^(簡約|華麗|可愛|成熟|活潑|優雅|清純|性感|清涼|保暖)\+\d+$/;
-
-	function shouldSkipTagFromPicker(category, token) {
-		if (category === '螢光之靈') return true;
-		return GLOW_BONUS_TAG.test(token);
-	}
-
-	function mergePickerTags(canonicalOrdered, scannedSet) {
-		// Preserve order from canonicalOrdered (from data/wardrobe.js wardrobeTags), then append scan-only leftovers sorted zh-TW.
-		var tagSeen = Object.create(null);
-		var out = [];
-
-		function pushOrdered(name) {
-			if (!name || tagSeen[name]) return;
-			tagSeen[name] = true;
-			out.push(name);
-		}
-
-		if (canonicalOrdered && canonicalOrdered.length) {
-			for (var c = 0; c < canonicalOrdered.length; c++) pushOrdered(canonicalOrdered[c]);
-		}
-
-		var extra = [];
-		for (var k in scannedSet) {
-			if (Object.prototype.hasOwnProperty.call(scannedSet, k) && !tagSeen[k]) extra.push(k);
-		}
-		extra.sort(function (a, b) { return a.localeCompare(b, 'zh-Hant', { numeric: true }); });
-		for (var e = 0; e < extra.length; e++) pushOrdered(extra[e]);
-		return out;
-	}
-
-	function collectManualOptions() {
-		// Categories from wardrobe; tags = wardrobeTags order (when present) merged with scanned [14].
-		var catSet = Object.create(null);
-		var tagSet = Object.create(null);
-		if (typeof wardrobe !== 'undefined' && wardrobe && wardrobe.length) {
-			for (var i = 0; i < wardrobe.length; i++) {
-				var row = wardrobe[i];
-				var cat = row[1] || '';
-				if (cat) catSet[cat] = true;
-				var tagStr = row[14] || '';
-				if (!tagStr) continue;
-				if (shouldSkipTagFromPicker(cat, tagStr.trim())) continue;
-				var parts = splitPreserveSeg(tagStr);
-				for (var j = 0; j < parts.length; j++) {
-					var p = parts[j];
-					if (!p || p === '/' || p === ',' || p === '，') continue;
-					var t = p.trim();
-					if (!t || shouldSkipTagFromPicker(cat, t)) continue;
-					tagSet[t] = true;
-				}
-			}
-		}
-		var tagList;
-		if (typeof wardrobeTags !== 'undefined' && wardrobeTags && wardrobeTags.length) {
-			tagList = mergePickerTags(wardrobeTags, tagSet);
-		} else {
-			tagList = Object.keys(tagSet).sort(function (a, b) {
-				return a.localeCompare(b, 'zh-Hant', { numeric: true });
-			});
-		}
-		return {
-			categories: Object.keys(catSet).sort(),
-			tags: tagList
-		};
-	}
-
 	function initManualEntry() {
 		if (!manualTypeEl || !manualTagsEl) return;
-		var opts = collectManualOptions();
+		var opts = collectOptions(globalThis.wardrobe, globalThis.wardrobeTags);
 
 		for (var i = 0; i < opts.categories.length; i++) {
 			var opt = document.createElement('option');
@@ -808,12 +374,12 @@
 		if (!id) { showToast('請輸入編號'); manualIdEl.focus(); return; }
 		if (!stars) { showToast('請選擇星級'); manualStarsEl.focus(); return; }
 
-		var row = new Array(18);
-		for (var z = 0; z < 18; z++) row[z] = '';
-		row[0] = name;
-		row[1] = type;
-		row[2] = id;
-		row[3] = stars;
+		var row = new Array(WARDROBE_FIELD_COUNT);
+		for (var z = 0; z < WARDROBE_FIELD_COUNT; z++) row[z] = '';
+		row[FIELD.name] = name;
+		row[FIELD.type] = type;
+		row[FIELD.id] = id;
+		row[FIELD.stars] = stars;
 
 		// Validate every attr cell, then assign.
 		for (var i = 0; i < manualAttrInputs.length; i++) {
@@ -831,10 +397,10 @@
 			if (ix >= 4 && ix <= 13) row[ix] = v;
 		}
 
-		row[14] = getCheckedManualTags().join(',');
-		row[15] = manualSourceEl.value.trim();
-		row[16] = manualSuitEl.value.trim();
-		row[17] = manualVersionEl.value.trim();
+		row[FIELD.tags] = getCheckedManualTags().join(',');
+		row[FIELD.source] = manualSourceEl.value.trim();
+		row[FIELD.suit] = manualSuitEl.value.trim();
+		row[FIELD.version] = manualVersionEl.value.trim();
 
 		var key = type + '|' + id;
 		if (stagingKeys[key]) {

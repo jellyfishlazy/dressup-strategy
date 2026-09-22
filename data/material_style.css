@@ -140,7 +140,3 @@ tr:nth-child(1) {
 }
 
 /*************防滚条***************/ 
-body {
-    /*overflow-y:hidden;*/
-    margin-bottom:150px;
-}

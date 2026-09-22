@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "useUnknownInCatchVariables": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": [
+    "main.mjs",
+    "model.mjs",
+    "ui.mjs",
+    "nikki.mjs",
+    "onekeystrategy.mjs",
+    "onekeystrategy_lan.mjs",
+    "clock.mjs",
+    "sharewardrobe.mjs",
+    "biguse.mjs",
+    "biguse_model.mjs",
+    "biguse_ui.mjs",
+    "biguse_nikki.mjs",
+    "material.mjs",
+    "material_model.mjs",
+    "wardrobechk.mjs",
+    "src/domain/**/*.mjs",
+    "cn-search/src/**/*.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "scripts",
+    "cn-search/scripts"
+  ]
+}

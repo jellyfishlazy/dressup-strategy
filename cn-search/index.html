@@ -2,18 +2,22 @@
 <html lang="zh-TW">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 	<title>陸服衣櫃條件搜尋</title>
-	<link rel="stylesheet" href="../bootstrap/bootstrap.min.css">
 	<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.3.0/dist/umd/full.js"></script>
 	<script src="../data/wardrobe.js"></script>
 	<style>
-		body { padding: 16px 20px 80px; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; }
+		*, *::before, *::after { box-sizing: border-box; }
+		body { margin: 0; padding: 16px 20px 80px; font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; }
+		.search-action { display: inline-block; padding: 5px 10px; font-size: 12px; font-weight: 400; line-height: 1.5; color: #333; text-align: center; vertical-align: middle; white-space: nowrap; cursor: pointer; background: #fff; border: 1px solid #ccc; border-radius: 3px; }
+		.search-action:hover, .search-action:focus { color: #333; background: #e6e6e6; border-color: #adadad; }
+		.search-action-primary { color: #fff; background: #337ab7; border-color: #2e6da4; }
+		.search-action-primary:hover, .search-action-primary:focus { color: #fff; background: #286090; border-color: #204d74; }
 		h1 { font-size: 22px; margin: 0 0 4px; }
 		.subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
 		.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; padding: 12px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
-		.filter-group { display: flex; flex-direction: column; min-width: 140px; }
+		.filter-group { display: flex; flex: 1 1 180px; flex-direction: column; min-width: 140px; }
 		.filter-group label { font-size: 12px; color: #666; margin-bottom: 2px; }
 		.filter-group input[type=text], .filter-group select { padding: 4px 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
 		.filter-group.checkbox { flex-direction: row; align-items: center; gap: 4px; min-width: 0; padding-bottom: 6px; }
@@ -46,7 +50,8 @@
 		.staging-head h2 { font-size: 16px; margin: 0; }
 		.staging-head .count-pill { font-size: 12px; color: #555; background: #f0e7c8; border-radius: 10px; padding: 1px 8px; }
 		.staging-head .spacer { flex: 1; }
-		.staging-actions button { font-size: 12px; padding: 3px 10px; margin-left: 4px; }
+		.staging-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+		.staging-actions button { margin: 0; font-size: 12px; padding: 3px 10px; }
 		.staging-empty { color: #999; font-size: 13px; padding: 8px 0; }
 		.staging-list { max-height: 240px; overflow: auto; border: 1px solid #eadfb8; border-radius: 4px; background: #fff; }
 		.staging-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #f3eccf; font-size: 12px; }
@@ -64,21 +69,38 @@
 		.manual-entry[open] > summary::before { content: '▾ '; }
 		.manual-entry .manual-body { padding: 0 12px 12px; }
 		.manual-grid { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
-		.manual-grid .filter-group { min-width: 120px; }
+		.manual-grid .filter-group { flex: 1 1 160px; min-width: 120px; }
 		.manual-grid input[type=text], .manual-grid select { padding: 4px 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
-		.manual-attrs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px 8px; margin: 8px 0; padding: 8px; background: #fff; border: 1px solid #e0e6ee; border-radius: 4px; }
+		.manual-attrs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px 8px; margin: 8px 0; padding: 8px; background: #fff; border: 1px solid #e0e6ee; border-radius: 4px; }
 		.manual-attrs .attr-cell { display: flex; flex-direction: column; }
 		.manual-attrs .attr-cell label { font-size: 12px; color: #666; margin-bottom: 2px; }
-		.manual-attrs .attr-cell input { padding: 3px 6px; font-size: 13px; text-align: center; border: 1px solid #ccc; border-radius: 3px; text-transform: uppercase; }
+		.manual-attrs .attr-cell input { width: 100%; min-width: 0; padding: 3px 6px; font-size: 13px; text-align: center; border: 1px solid #ccc; border-radius: 3px; text-transform: uppercase; }
 		.manual-attrs .attr-cell input.invalid { border-color: #c33; background: #fff5f5; }
 		.manual-tags { margin: 8px 0; }
 		.manual-tags > .tags-label { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 		.manual-tags .tag-checks { display: flex; flex-wrap: wrap; gap: 4px 10px; max-height: 96px; overflow-y: auto; padding: 6px; background: #fff; border: 1px solid #e0e6ee; border-radius: 4px; }
 		.manual-tags .tag-check { font-size: 12px; color: #444; white-space: nowrap; cursor: pointer; }
 		.manual-tags .tag-check input { margin-right: 2px; vertical-align: -1px; }
-		.manual-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+		.manual-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 8px; }
 		.manual-actions button { font-size: 13px; padding: 4px 14px; }
 		.attr-hint { font-size: 11px; color: #888; margin-left: 6px; font-weight: normal; }
+		.manual-section-label { margin: 6px 0 2px; font-size: 12px; color: #666; }
+		.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+		@media only screen and (max-width: 650px) {
+			body { padding: 12px 10px 64px; }
+			.filters { gap: 8px; padding: 10px; }
+			.filter-group, .manual-grid .filter-group { flex: 1 1 100%; width: 100%; min-width: 0; }
+			.filter-group input[type=text], .filter-group select, .manual-grid input[type=text], .manual-grid select { width: 100%; min-width: 0; }
+			.staging-head .spacer { display: none; }
+			.staging-actions { width: 100%; }
+			.staging-actions .search-action, .manual-actions .search-action { flex: 1 1 auto; }
+			.manual-entry .manual-body { padding: 0 8px 10px; }
+			.manual-attrs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 6px; }
+			.staging-item { flex-direction: column; gap: 4px; }
+			.staging-item .meta { width: 100%; min-width: 0; }
+			.results-wrap { max-height: 60vh; }
+			.toast { left: 10px; right: 10px; text-align: center; }
+		}
 	</style>
 </head>
 <body>
@@ -114,7 +136,7 @@
 			<label for="q-cn-only">僅顯示陸服獨有</label>
 		</div>
 		<div class="filter-actions">
-			<button class="btn btn-sm btn-outline-secondary" id="btn-clear" type="button">清除</button>
+			<button class="search-action" id="btn-clear" type="button">清除</button>
 		</div>
 	</div>
 
@@ -124,9 +146,9 @@
 			<span class="count-pill" id="staging-count">0 筆</span>
 			<span class="spacer"></span>
 			<div class="staging-actions">
-				<button class="btn btn-sm btn-outline-primary" id="btn-copy-staging" type="button" title="複製為 data/wardrobe.js 可貼上的列">複製為 wardrobe 列</button>
-				<button class="btn btn-sm btn-outline-secondary" id="btn-download-staging" type="button" title="下載為 .js 片段">下載片段</button>
-				<button class="btn btn-sm btn-outline-danger" id="btn-clear-staging" type="button">清空</button>
+				<button class="search-action" id="btn-copy-staging" type="button" title="複製為 data/wardrobe.js 可貼上的列">複製為 wardrobe 列</button>
+				<button class="search-action" id="btn-download-staging" type="button" title="下載為 .js 片段">下載片段</button>
+				<button class="search-action" id="btn-clear-staging" type="button">清空</button>
 			</div>
 		</div>
 		<div class="staging-empty" id="staging-empty">尚未加入任何項目。點擊結果表左側的「＋」或表頭的「＋全部」累加，或使用下方「手動新增項目」自行補資料。</div>
@@ -175,7 +197,7 @@
 				</div>
 			</div>
 
-			<div style="font-size:12px;color:#666;margin:6px 0 2px">
+			<div class="manual-section-label">
 				屬性 <span class="attr-hint">輸入 SS / S / A / B / C，不適用請留空。每對屬性同欄上下對應</span>
 			</div>
 			<div class="manual-attrs">
@@ -200,15 +222,15 @@
 			</div>
 
 			<div class="manual-actions">
-				<button class="btn btn-sm btn-outline-secondary" id="btn-manual-reset" type="button">清除表單</button>
-				<button class="btn btn-sm btn-primary" id="btn-manual-add" type="button">新增至暫存</button>
+				<button class="search-action" id="btn-manual-reset" type="button">清除表單</button>
+				<button class="search-action search-action-primary" id="btn-manual-add" type="button">新增至暫存</button>
 			</div>
 		</div>
 	</details>
 
 	<div class="meta">
 		<span id="count">—</span>
-		<span style="float:right" id="status">準備中…</span>
+		<span id="status">準備中…</span>
 	</div>
 	<div class="results-wrap">
 		<table class="results" id="results">
@@ -231,6 +253,6 @@
 
 	<div class="toast" id="toast"></div>
 
-	<script src="cn-search.js?v=8"></script>
+	<script type="module" src="cn-search.js?v=9"></script>
 </body>
 </html>
