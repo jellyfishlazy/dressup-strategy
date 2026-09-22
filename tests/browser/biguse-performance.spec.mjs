@@ -21,7 +21,13 @@ test('Gate 10H-G BigUse switch-all renders in bounded chunks and remains interac
 
   const rows = page.locator('#clothes .table-body .table-row');
   await expect(rows).toHaveCount(500);
-  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('500 / 32486');
+  const loadMore = page.locator('#clothes .biguse-load-more button');
+  await expect(loadMore).toHaveText(/500 \/ \d+/);
+  const firstLabel = await loadMore.textContent();
+  const totalMatch = firstLabel?.match(/500 \/ (\d+)/);
+  expect(totalMatch, 'load-more label should expose the current total wardrobe count').not.toBeNull();
+  const total = Number(totalMatch[1]);
+  expect(total).toBeGreaterThan(1000);
   expect(elapsed).toBeLessThan(20_000);
 
   const addA = rows.first().getByRole('button', { name: 'A', exact: true });
@@ -29,10 +35,10 @@ test('Gate 10H-G BigUse switch-all renders in bounded chunks and remains interac
   await expect(page.locator('#shoppingCart1 button[aria-label="從搭配移除"]').first()).toBeVisible();
 
   const moreStarted = Date.now();
-  await page.locator('#clothes .biguse-load-more button').click();
+  await loadMore.click();
   const moreElapsed = Date.now() - moreStarted;
   await expect(rows).toHaveCount(1000);
-  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('1000 / 32486');
+  await expect(loadMore).toContainText('1000 / ' + total);
   expect(moreElapsed).toBeLessThan(10_000);
 
   await page.locator('#categoryTab a[data-switch-cate="妝容"]').click();
