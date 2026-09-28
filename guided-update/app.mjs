@@ -4,8 +4,6 @@ const qs = selector => document.querySelector(selector);
 
 let token = null;
 let state = null;
-let latestDiff = null;
-let latestReview = null;
 let applyFingerprint = null;
 let applyReportPath = null;
 let closeoutFingerprint = null;
@@ -226,8 +224,6 @@ function renderWardrobeTable(items) {
     add.disabled = item.collected || !item.selectable;
     add.addEventListener('click', () => runAction('加入 ' + item.key, async () => {
       await api('wardrobe.collect', { keys: [item.key] });
-      latestDiff = null;
-      latestReview = null;
       resetApplyState();
       resetCloseoutState();
       await refreshState();
@@ -426,8 +422,6 @@ function renderState() {
         if (!globalThis.confirm('確定取消這次更新？已收集的 Session 資料會保留為 cancelled 紀錄。')) return;
         await runAction('取消本次更新', async () => {
           await api('session.cancel', { id: current.id });
-          latestDiff = null;
-          latestReview = null;
           resetApplyState();
           resetCloseoutState();
           await refreshState();
@@ -482,8 +476,6 @@ function renderSessions() {
       button.type = 'button';
       button.addEventListener('click', () => runAction('切換更新 Session', async () => {
         await api('session.activate', { id: session.id });
-        latestDiff = null;
-        latestReview = null;
         resetApplyState();
         resetCloseoutState();
         await refreshState();
@@ -540,8 +532,6 @@ function renderSelected(selector, items, removeAction) {
     remove.type = 'button';
     remove.addEventListener('click', () => runAction('移除 ' + item.key, async () => {
       await api(removeAction, { keys: [item.key] });
-      latestDiff = null;
-      latestReview = null;
       resetApplyState();
       resetCloseoutState();
       await refreshState();
@@ -637,8 +627,6 @@ function renderSearchResults(selector, result, domain) {
       await api(domain === 'wardrobe' ? 'wardrobe.collect' : 'levels.collect', {
         keys: [item.key],
       });
-      latestDiff = null;
-      latestReview = null;
       resetApplyState();
       resetCloseoutState();
       await refreshState();
@@ -655,7 +643,6 @@ function renderSearchResults(selector, result, domain) {
 }
 
 function renderDiff(result) {
-  latestDiff = result;
   const values = [
     result?.summary?.new || 0,
     result?.summary?.modified || 0,
@@ -673,46 +660,7 @@ function renderDiff(result) {
   );
 }
 
-function conflictDiffItem(conflict) {
-  return [
-    ...(latestDiff?.wardrobe?.items || []),
-    ...(latestDiff?.levels?.items || []),
-  ].find(item => item.domain === conflict.domain && item.sourceKey === conflict.sourceKey);
-}
-
-function manualTemplate(conflict) {
-  const item = conflictDiffItem(conflict);
-  if (!item) return {};
-  if (conflict.domain === 'wardrobe') {
-    return {
-      kind: 'wardrobe-row',
-      targetKey: item.targetKey,
-      row: item.candidateRow || item.baselineRow || [],
-    };
-  }
-  const candidate = item.candidate || {};
-  const entries = [];
-  if (item.targetKey && candidate.levelsRaw) {
-    entries.push({ table: 'levelsRaw', key: item.targetKey, value: candidate.levelsRaw });
-  }
-  for (const [table, field] of [
-    ['levelFilters', 'levelFilters'],
-    ['levelBonus', 'levelBonus'],
-    ['addSkillsInfo', 'skills'],
-    ['addHintInfo', 'hint'],
-  ]) {
-    if (candidate[field] != null) {
-      entries.push({ table, key: item.targetKey, value: candidate[field] });
-    }
-  }
-  for (const theme of candidate.themeFilter || []) {
-    entries.push({ table: 'themeFilter', key: theme.name, value: theme.prefix });
-  }
-  return { kind: 'level-entries', targetKey: item.targetKey, entries };
-}
-
 function renderReview(review) {
-  latestReview = review;
   const root = qs('#conflict-list');
   root.replaceChildren();
   if (!review?.conflicts?.length) {
@@ -770,7 +718,7 @@ function renderReview(review) {
     const manualBox = node('div', 'gu-manual-resolution');
     manualBox.hidden = true;
     const textarea = node('textarea', 'ui-control');
-    textarea.value = JSON.stringify(manualTemplate(conflict), null, 2);
+    textarea.value = JSON.stringify(conflict.manualResolutionTemplate || {}, null, 2);
     const save = node('button', 'ui-btn ui-btn-sm ui-btn-success', '儲存手動決策');
     save.type = 'button';
     manual.addEventListener('click', () => {
@@ -897,8 +845,6 @@ qs('#create-session-form').addEventListener('submit', event => {
       note: qs('#session-note').value.trim(),
     });
     qs('#create-session-form').reset();
-    latestDiff = null;
-    latestReview = null;
     resetApplyState();
     resetCloseoutState();
     await refreshState();
@@ -950,8 +896,6 @@ qs('#wardrobe-manual-form').addEventListener('submit', event => {
   runAction('手動新增服裝', async () => {
     await api('wardrobe.manual-add', { row });
     qs('#wardrobe-manual-form').reset();
-    latestDiff = null;
-    latestReview = null;
     resetApplyState();
     resetCloseoutState();
     await refreshState();
@@ -974,9 +918,6 @@ qs('#wardrobe-add-all').addEventListener('click', async () => {
     searchFingerprint: wardrobeSearchState.searchFingerprint,
   }));
   if (!result) return;
-
-  latestDiff = null;
-  latestReview = null;
   resetApplyState();
   resetCloseoutState();
   await refreshState();

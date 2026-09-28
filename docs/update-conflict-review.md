@@ -52,7 +52,9 @@ Wardrobe resolution shape:
 }
 ```
 
-The row must pass the canonical 18-column wardrobe validator and its `type|id` identity must equal `targetKey`.
+The row must pass the canonical 18-column wardrobe validator. On manual save, the backend derives `targetKey` from `row[1]` (type) and `row[2]` (id), replacing any stale/null key or supplying an omitted key. Persisted decisions still require exact row/key agreement and an unambiguous `type|id` identity.
+
+`manual-unmapped-category` conflicts retain the original manual row in `manualResolutionTemplate`, even when the preview `targetKey` is null. Correct the category/id in that row and save; staging/apply uses the corrected identity. This editable template is a starting point, not an approved resolution. Existing `use-source` restrictions remain unchanged.
 
 Level resolution shape:
 
@@ -216,7 +218,7 @@ import {
 
 ### listConflictReview(options)
 
-Builds a fresh Gate 12G preview and returns all current conflicts with decision status.
+Builds a fresh Gate 12G preview and returns all current conflicts with decision status. Each conflict also includes `manualResolutionTemplate` when a valid editable template can be derived, so the UI does not depend on an earlier in-memory diff response.
 
 ### listConflictDecisions(options)
 
@@ -373,6 +375,8 @@ Gate 12H adds:
 It also extends `scripts/update-session.mjs` so an optional persisted conflict-review container receives basic session-level integrity checks.
 
 ## Validation
+
+2026-09-28 continuation: focused Gate 12H/12I tests 26/26 PASS; targeted ESLint PASS; `npm run check` PASS with 353/353 Node tests and zero TypeScript diagnostics. Guided Update Playwright tests pass 4/4 after correcting the unmapped-category fixture, covering stale target keys and null preview keys through reload/refresh/edit/save. The first full browser run inside Codex's network-restricted sandbox was 13 passed / 23 failed because existing page resources were blocked plus one corrected fixture error; the normal CatDesk workspace rerun passed the complete browser suite **36/36**. See [project history](project-history.md#2026-09-28-manual-wardrobe-resolution-continuation) for details.
 
 Validation completed on 2026-09-21:
 

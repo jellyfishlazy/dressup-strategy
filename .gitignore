@@ -3,3 +3,5 @@ test-results/
 playwright-report/
 .staging/
 .update-workspace/
+scripts/audit-tags.out.txt
+wardrobe-stats-*.txt

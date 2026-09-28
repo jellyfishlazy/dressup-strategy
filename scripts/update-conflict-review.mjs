@@ -301,6 +301,47 @@ function sourceResolution(item) {
   return levelSourceResolution(item);
 }
 
+function manualResolutionTemplate(item) {
+  if (item.domain === 'wardrobe') {
+    if (!Array.isArray(item.candidateRow)) return null;
+    return {
+      kind: 'wardrobe-row',
+      targetKey: item.targetKey,
+      row: cloneJson(item.candidateRow),
+    };
+  }
+
+  if (!item.targetKey || !item.candidate) return null;
+  const entries = [{
+    table: 'levelsRaw',
+    key: item.targetKey,
+    value: cloneJson(item.candidate.levelsRaw),
+  }];
+  for (const [table, field] of [
+    ['levelFilters', 'levelFilters'],
+    ['levelBonus', 'levelBonus'],
+    ['addSkillsInfo', 'skills'],
+    ['addHintInfo', 'hint'],
+  ]) {
+    const value = item.candidate[field];
+    if (value !== null && value !== undefined) {
+      entries.push({ table, key: item.targetKey, value: cloneJson(value) });
+    }
+  }
+  for (const theme of item.candidate.themeFilter || []) {
+    entries.push({
+      table: 'themeFilter',
+      key: theme.name,
+      value: theme.prefix,
+    });
+  }
+  return {
+    kind: 'level-entries',
+    targetKey: item.targetKey,
+    entries,
+  };
+}
+
 function resolvedTargetKey(decision, payload, item) {
   if (decision === 'keep-local') return item.targetKey ?? null;
   return payload.targetKey;
@@ -409,6 +450,7 @@ export async function listConflictReview(options = {}) {
       reasons: cloneJson(item.reasons || []),
       differences: cloneJson(item.differences || []),
       conflicts: cloneJson(item.conflicts || []),
+      manualResolutionTemplate: manualResolutionTemplate(item),
       fingerprint: conflictFingerprint(preview, item),
       decision: decorated,
       reviewed: decorated?.state === 'current',
@@ -504,6 +546,9 @@ export async function saveConflictDecision(options = {}) {
     assertResolution(options.domain, payload);
   } else if (options.decision === 'manual-resolution') {
     payload = cloneJson(options.resolvedPayload);
+    if (options.domain === 'wardrobe' && wardrobeRowErrors(payload?.row).length === 0) {
+      payload.targetKey = payload.row[1] + '|' + payload.row[2];
+    }
     assertResolution(options.domain, payload);
   } else if (options.resolvedPayload !== undefined && options.resolvedPayload !== null) {
     throw new Error('keep-local does not accept resolvedPayload');

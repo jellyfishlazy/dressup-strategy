@@ -20,8 +20,9 @@ test('Gate 10H-G BigUse switch-all renders in bounded chunks and remains interac
   const elapsed = Date.now() - started;
 
   const rows = page.locator('#clothes .table-body .table-row');
+  const total = await page.evaluate(() => globalThis.wardrobe.length);
   await expect(rows).toHaveCount(500);
-  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('500 / 32486');
+  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('500 / ' + total);
   expect(elapsed).toBeLessThan(20_000);
 
   const addA = rows.first().getByRole('button', { name: 'A', exact: true });
@@ -32,7 +33,7 @@ test('Gate 10H-G BigUse switch-all renders in bounded chunks and remains interac
   await page.locator('#clothes .biguse-load-more button').click();
   const moreElapsed = Date.now() - moreStarted;
   await expect(rows).toHaveCount(1000);
-  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('1000 / 32486');
+  await expect(page.locator('#clothes .biguse-load-more button')).toContainText('1000 / ' + total);
   expect(moreElapsed).toBeLessThan(10_000);
 
   await page.locator('#categoryTab a[data-switch-cate="妝容"]').click();
