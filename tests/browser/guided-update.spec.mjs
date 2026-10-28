@@ -63,6 +63,7 @@ test.beforeAll(async () => {
     'var wardrobe = ' + JSON.stringify([
       wardrobeRow('春樱', '发型', '001', '活动-限时登录', '樱花套装'),
       wardrobeRow('星夜发饰', '发型', '002', '活动-限时登录', '星夜套装'),
+      wardrobeRow('测试类别', 'Unknown category', '099', 'Store', 'Test'),
     ]) + ';',
     "var wardrobe_lastupd = '2026/9/21';",
     '',
@@ -224,6 +225,56 @@ test('Gate 12L desktop Guided Update loads six-step local workflow without brows
 
   expect(failures).toEqual([]);
 });
+
+for (const type of ['髮型', 'Unknown category']) {
+  test(`Gate 12L ${type} manual conflict JSON remains editable after review reload`, async ({ page }) => {
+    await page.goto(baseURL + '/guided-update/', { waitUntil: 'domcontentloaded' });
+    const cancelCurrent = page.getByRole('button', { name: '取消本次更新' });
+    if (await cancelCurrent.isVisible()) {
+      page.once('dialog', dialog => dialog.accept());
+      await cancelCurrent.click();
+      await expect(page.locator('#create-session-form')).toBeVisible();
+    }
+    await page.locator('#session-name').fill('Manual conflict JSON');
+    await page.locator('#create-session-button').click();
+    await expect(page.locator('#session-badge')).toHaveText('進行中');
+
+    await page.locator('#wardrobe-manual-entry').evaluate(details => { details.open = true; });
+    await page.locator('#manual-name').fill('手動覆寫春櫻');
+    await page.locator('#manual-type').selectOption(type);
+    await page.locator('#manual-id').fill('001');
+    await page.locator('#manual-stars').selectOption('5');
+    await page.locator('#manual-source').fill('手動補資料');
+    await page.locator('#manual-suit').fill('櫻花套裝');
+    await page.locator('#manual-version').fill('V1');
+    await page.locator('#wardrobe-manual-form button[type="submit"]').click();
+
+    await page.locator('#run-diff').click();
+    await expect(page.locator('#conflict-list')).toContainText(`${type}|001`);
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#server-status')).toHaveText('Local API 已連線');
+    await page.locator('#refresh-review').click();
+
+    const card = page.locator('.gu-conflict').filter({ hasText: `${type}|001` });
+    await card.getByRole('button', { name: '手動調整 JSON' }).click();
+    const textarea = card.locator('textarea');
+    const payload = JSON.parse(await textarea.inputValue());
+    expect(payload.kind).toBe('wardrobe-row');
+    expect(payload.targetKey).toBe(type === '髮型' ? '髮型|001' : null);
+    expect(payload.row[1]).toBe(type);
+    expect(payload.row).toHaveLength(18);
+
+    payload.row[0] = '手動修正版';
+    payload.row[1] = '髮型';
+    payload.row[2] = '100';
+    await textarea.fill(JSON.stringify(payload, null, 2));
+    await card.getByRole('button', { name: '儲存手動決策' }).click();
+
+    await expect(page.locator('#global-success')).toContainText(`儲存衝突決策：${type}|001完成`);
+    await expect(page.locator('#review-badge')).toHaveText('審查完成');
+  });
+}
 
 test('Gate 12L mobile Guided Update collapses the workflow to one-column content', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

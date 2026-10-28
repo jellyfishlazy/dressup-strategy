@@ -166,6 +166,17 @@ test('cart totals preserve accessory discount, bonuses, rounding and category ou
   assert.equal(cart.totalScore.toCsv()[3], '515');
 });
 
+test('cart total follows the selected level weights and attribute directions', async () => {
+  const type = { type: '髮型', mainType: '髮型', score: { S: 100, A: 50 }, deviation: {} };
+  const model = await cartModel({ typeInfo: { '髮型': type } });
+  const cart = model.createShoppingCart();
+  cart.put(model.Clothes(['fixture', '髮型', '001', '5', '', 'S', '', 'S', 'A', '', 'A', '', 'S', '', '', '', '', '']));
+  cart.calc({ simple: 0.93, cute: -0.6, active: 0.93, pure: -1.2, cool: 1.2 });
+  assert.equal(cart.totalScore.sumScore, 396); // 93 + 30 + 93 + 60 + 120
+  cart.calc({ simple: -1, cute: 2, active: 3, pure: 4, cool: 5 });
+  assert.equal(cart.totalScore.sumScore, 800); // Only active and cool match: 300 + 500.
+});
+
 test('rating and Clothes CSV conversion preserve values without overwriting globals', async () => {
   const type = { type: '髮型', mainType: '髮型', score: { S: 100 }, deviation: { S: 2, 3: 1 } };
   const names = ['name', 'type', 'id', 'stars', 'simple', 'cute', 'active', 'pure', 'cool', 'extra', 'source', 'isSuit', 'version', 'real', 'symbol', 'score', 'dev'];

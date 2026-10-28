@@ -147,6 +147,7 @@ function previewWardrobeItem(sourceItem, planItem, local, converters) {
         ? 'manual wardrobe category is not a canonical local category'
         : 'source category has no explicit or exact local mapping'],
       targetKey: null,
+      ...(manual ? { candidateRow: cloneJson(sourceItem.coreRow) } : {}),
     };
   }
 

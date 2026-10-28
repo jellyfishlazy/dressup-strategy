@@ -65,6 +65,21 @@ test('native DOM facade exposes required collection/static and sticky-header API
   assert.equal(stopped, true, 'return false should preserve jQuery-style stopPropagation behavior');
 });
 
+test('native DOM append/prepend render numeric scores including zero alongside text and nodes', () => {
+  const context = {
+    globalThis: {}, window: {},
+    document: { createTextNode: value => ({ nodeType: 3, textContent: String(value) }) },
+  };
+  vm.runInNewContext(read('src/legacy/native-dom.js'), context);
+  const target = {
+    nodeType: 1, children: [],
+    appendChild(node) { this.children.push(node); },
+    insertBefore(node) { this.children.unshift(node); },
+  };
+  context.globalThis.Dom(target).append(0, 87048, -1.5, '總分', { nodeType: 3, textContent: 'tail' }).prepend(2.5);
+  assert.deepEqual(target.children.map(node => node.textContent), ['2.5', '0', '87048', '-1.5', '總分', 'tail']);
+});
+
 test('main runtime is included in repository lint gate', () => {
   const pkg = JSON.parse(read('package.json'));
   for (const file of ['main.mjs', 'model.mjs', 'ui.mjs', 'nikki.mjs', 'onekeystrategy.mjs', 'onekeystrategy_lan.mjs', 'clock.mjs', 'sharewardrobe.mjs']) {

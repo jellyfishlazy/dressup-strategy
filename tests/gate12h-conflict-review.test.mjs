@@ -13,9 +13,11 @@ import {
   completeUpdateSession,
   createUpdateSession,
 } from '../scripts/update-session.mjs';
-import { addWardrobeToUpdate } from '../scripts/update-wardrobe.mjs';
+import { addManualWardrobeToUpdate, addWardrobeToUpdate } from '../scripts/update-wardrobe.mjs';
+import { generateApplyReadyStaging } from '../scripts/update-staging.mjs';
+import { applyWardrobeManifestToPath } from '../scripts/wardrobe-apply.mjs';
 import { addLevelsToUpdate } from '../scripts/update-levels.mjs';
-import { addPlannedItems } from '../scripts/update-completeness.mjs';
+import { addManualPlannedWardrobe, addPlannedItems } from '../scripts/update-completeness.mjs';
 import {
   clearConflictDecisions,
   listConflictDecisions,
@@ -153,6 +155,14 @@ test('Gate 12H lists current conflicts and saves keep-local decisions', async t 
   assert.equal(review.reviewedCount, 0);
   assert.equal(review.unresolvedCount, 2);
   assert.equal(review.readyForNextGate, false);
+  const wardrobeConflict = review.conflicts.find(item => item.domain === 'wardrobe');
+  assert.equal(wardrobeConflict.manualResolutionTemplate.kind, 'wardrobe-row');
+  assert.equal(wardrobeConflict.manualResolutionTemplate.targetKey, '連身裙|003');
+  assert.equal(wardrobeConflict.manualResolutionTemplate.row.length, 18);
+  const levelConflict = review.conflicts.find(item => item.domain === 'levels');
+  assert.equal(levelConflict.manualResolutionTemplate.kind, 'level-entries');
+  assert.equal(levelConflict.manualResolutionTemplate.targetKey, 'I-1-1');
+  assert.ok(levelConflict.manualResolutionTemplate.entries.some(entry => entry.table === 'levelsRaw'));
 
   const saved = await saveConflictDecision({
     ...f.options,
@@ -263,6 +273,66 @@ test('Gate 12H accepts validated manual wardrobe and level resolutions', async t
   assert.equal(review.unresolvedCount, 0);
   assert.equal(review.staleDecisionCount, 0);
   assert.equal(review.readyForNextGate, true);
+});
+
+test('Gate 12H derives manual identity from the row without weakening stored validation', async t => {
+  const f = fixture(t);
+  for (const targetKey of ['連身裙|003', null, undefined]) {
+    const payload = { kind: 'wardrobe-row', targetKey, row: localWardrobeRow('Corrected', '髮型', '099') };
+    const saved = await saveConflictDecision({
+      ...f.options, domain: 'wardrobe', sourceKey: '连衣裙|003',
+      decision: 'manual-resolution', resolvedPayload: payload,
+    });
+    assert.equal(saved.decision.resolvedTargetKey, '髮型|099');
+    assert.equal(saved.decision.resolvedPayload.targetKey, '髮型|099');
+    assert.equal(payload.targetKey, targetKey);
+  }
+  const before = readFileSync(f.sessionPath);
+  for (const [type, id] of [['', '099'], ['髮型', 99], ['髮型|鞋子', '099']]) {
+    await assert.rejects(saveConflictDecision({
+      ...f.options, domain: 'wardrobe', sourceKey: '连衣裙|003', decision: 'manual-resolution',
+      resolvedPayload: { kind: 'wardrobe-row', row: localWardrobeRow('Invalid', type, id) },
+    }), /invalid manual resolution/);
+    assert.deepEqual(readFileSync(f.sessionPath), before);
+  }
+  const persisted = JSON.parse(before);
+  persisted.review.conflictDecisions[0].resolvedPayload.row[2] = '100';
+  writeFileSync(f.sessionPath, JSON.stringify(persisted));
+  await assert.rejects(listConflictReview(f.options), /row identity does not match targetKey/);
+});
+
+test('Gate 12H unmapped manual row can be corrected, staged and applied', async t => {
+  const f = fixture(t);
+  writeFileSync(f.localWardrobePath, readFileSync(f.localWardrobePath, 'utf8') + '\nvar lastVersion = "V1";\n');
+  const row = localWardrobeRow('Manual candidate', 'Unknown category', '099');
+  addManualWardrobeToUpdate({ ...f.options, row });
+  addManualPlannedWardrobe({ ...f.options, row });
+  const review = await listConflictReview(f.options);
+  const conflict = review.conflicts.find(item => item.conflictKind === 'manual-unmapped-category');
+  assert.equal(conflict.targetKey, null);
+  assert.deepEqual(conflict.manualResolutionTemplate, { kind: 'wardrobe-row', targetKey: null, row });
+  await assert.rejects(saveConflictDecision({
+    ...f.options, domain: 'wardrobe', sourceKey: conflict.sourceKey, decision: 'use-source',
+  }), /use-source is not available/);
+  const payload = conflict.manualResolutionTemplate;
+  payload.row[1] = '連身裙';
+  payload.row[2] = '100';
+  const saved = await saveConflictDecision({
+    ...f.options, domain: 'wardrobe', sourceKey: conflict.sourceKey,
+    decision: 'manual-resolution', resolvedPayload: payload,
+  });
+  assert.equal(saved.decision.previewTargetKey, null);
+  assert.equal(saved.decision.resolvedTargetKey, '連身裙|100');
+  for (const item of review.conflicts.filter(item => item !== conflict)) {
+    await saveConflictDecision({ ...f.options, domain: item.domain, sourceKey: item.sourceKey, decision: 'keep-local' });
+  }
+  const staged = await generateApplyReadyStaging({ ...f.options, outputRoot: join(f.root, 'staging') });
+  const rows = JSON.parse(readFileSync(join(staged.outputDir, 'wardrobe-input.json'), 'utf8'));
+  assert.deepEqual(rows.find(row => row[2] === '100'), payload.row);
+  const manifest = JSON.parse(readFileSync(join(staged.outputDir, 'wardrobe-manifest.json'), 'utf8'));
+  const applied = applyWardrobeManifestToPath(manifest, f.localWardrobePath);
+  assert.equal(applied.applied, true);
+  assert.ok(readFileSync(f.localWardrobePath, 'utf8').includes('Manual candidate'));
 });
 
 test('Gate 12H rejects malformed manual resolutions atomically', async t => {

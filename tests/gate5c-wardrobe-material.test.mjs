@@ -70,5 +70,6 @@ test('secondary entry points no longer parse wardrobe columns by magic index', (
     assert.doesNotMatch(source, /WardrobeDomain|InventoryDomain/, file);
   }
   const exc = readFileSync(new URL('../material_exc.js', import.meta.url), 'utf8');
-  assert.match(exc, /^﻿?\/\*[\s\S]*?wardrobe\[i\][\s\S]*?\*\//, 'material_exc magic-index-looking code remains commented/dead');
+  assert.doesNotMatch(exc, /wardrobe\[i\]|wardrobe_a|wspos/, 'material_exc no longer keeps dead magic-index code');
+  assert.match(exc, /var manualScoring = /);
 });

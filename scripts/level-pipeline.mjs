@@ -107,12 +107,8 @@ function findMatchingDelimiter(source, start, open, close) {
   throw new Error('unterminated ' + open + close + ' block');
 }
 
-function escapeRegex(value) {
-  return value.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&');
-}
-
 function variableBlock(source, name, open, close) {
-  const re = new RegExp('\\bvar\\s+' + escapeRegex(name) + '\\s*=\\s*\\' + open);
+  const re = new RegExp('\\bvar\\s+' + RegExp.escape(name) + '\\s*=\\s*\\' + open);
   const match = re.exec(source);
   if (!match) throw new Error('level table not found: ' + name);
   const start = match.index + match[0].lastIndexOf(open);

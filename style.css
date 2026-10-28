@@ -42,6 +42,15 @@
 .weightContainer label.active{
 	font-weight: bold;
 }
+.ui-page-main .weightContainer label.active {
+	color: #fff;
+	background: var(--ui-color-primary);
+	border-color: var(--ui-color-primary);
+}
+.ui-page-main .weightContainer label:focus-within {
+	outline: 2px solid var(--ui-color-primary);
+	outline-offset: 2px;
+}
 .weightContainer input{
 	width: 7em;
 	padding-left: 3px;
