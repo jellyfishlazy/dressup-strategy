@@ -28,6 +28,65 @@ async function openCleanMain(page) {
   await expect(page.locator('#clothes .table-head')).toBeVisible();
 }
 
+test('Main keeps the level total in its table row and clear attribute selection on desktop and mobile', async ({ page }) => {
+  const failures = collectBrowserFailures(page);
+  await openCleanMain(page);
+  const totalRow = page.locator('#shoppingCart .table-body > .table-row').first();
+  const score = totalRow.locator('.score');
+  await expect(totalRow.locator('.table-td').nth(2)).toHaveText('總分');
+  await expect(score).toHaveText('0');
+  await expect(page.locator('.main-score-summary')).toHaveCount(0);
+  await page.locator('#clothes .table-td.name a.button').first().click();
+
+  for (const theme of ['關卡: I-1-1', '關卡: I-1-2']) {
+    await page.locator('#theme').selectOption(theme);
+    const total = await page.evaluate(async () => {
+      const { shoppingCart } = await import('/model.mjs');
+      return shoppingCart.totalScore.sumScore;
+    });
+    expect(total).toBeGreaterThan(0);
+    await expect(score).toHaveText(String(total));
+    const singleScore = await page.evaluate(async () => {
+      const { shoppingCart } = await import('/model.mjs');
+      return Object.values(shoppingCart.cart)[0].sumScore;
+    });
+    await expect(page.locator('#shoppingCart .table-body > .table-row').nth(1).locator('.score')).toHaveText(String(singleScore));
+    await expect(totalRow.locator('.table-td').nth(2)).toHaveText('總分');
+  }
+
+  const beforeRemoval = Number(await score.innerText());
+  await page.locator('#shoppingCart button[aria-label="從推薦穿戴移除"]').first().click();
+  expect(Number(await score.innerText())).toBeLessThan(beforeRemoval);
+  await page.locator('#btn-clear-shopping-cart').click();
+  await expect(score).toHaveText('0');
+  await page.locator('#clothes button[aria-label="加入推薦穿戴"]').first().click();
+  expect(Number(await score.innerText())).toBeGreaterThan(0);
+
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const selected = page.locator('input[name="simple"]:checked').locator('..');
+    await expect(selected).toHaveCSS('background-color', 'rgb(51, 122, 183)');
+    await expect(selected).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await selected.hover();
+    await expect(selected).toHaveCSS('background-color', 'rgb(51, 122, 183)');
+    const selectedInput = page.locator('input[name="simple"]:checked');
+    const oldValue = await selectedInput.inputValue();
+    await selectedInput.focus();
+    await expect(selected).toHaveCSS('outline-style', 'solid');
+    await selectedInput.press('ArrowRight');
+    const changed = page.locator('input[name="simple"]:checked');
+    expect(await changed.inputValue()).not.toBe(oldValue);
+    await expect(changed.locator('..')).toHaveClass(/active/);
+    await expect(changed.locator('..')).toHaveCSS('background-color', 'rgb(51, 122, 183)');
+    await expect(page.locator('#theme')).toHaveValue('custom');
+    await expect(score).toBeVisible();
+    const box = await score.boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+  }
+  await expectNoFailures(failures);
+});
+
 test('Gate 10H-D Main controls, themes, categories and filters stay functional', async ({ page }) => {
   test.setTimeout(120_000);
   const failures = collectBrowserFailures(page);

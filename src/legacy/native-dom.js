@@ -42,6 +42,7 @@
 
   function appendValue(target, value, prepend) {
     if (value == null) return;
+    if (typeof value === 'number') value = String(value);
     if (typeof value === 'string') {
       if (/<[^>]+>/.test(value)) {
         var template = document.createElement('template');
